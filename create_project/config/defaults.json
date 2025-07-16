@@ -1,0 +1,28 @@
+{
+    "application": {
+        "name": "Python Project Creator",
+        "version": "0.1.0",
+        "theme": "system",
+        "window_size": {
+            "width": 800,
+            "height": 600
+        }
+    },
+    "project_generation": {
+        "default_location": "~/Projects",
+        "create_venv": true,
+        "init_git": true,
+        "create_readme": true
+    },
+    "ollama": {
+        "enabled": true,
+        "auto_detect": true,
+        "default_model": "llama3.2:latest",
+        "timeout": 30
+    },
+    "logging": {
+        "level": "INFO",
+        "file_logging": true,
+        "console_logging": true
+    }
+}

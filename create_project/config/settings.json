@@ -1,0 +1,22 @@
+{
+    "user_preferences": {
+        "theme": "system",
+        "window_size": {
+            "width": 800,
+            "height": 600
+        },
+        "recent_locations": []
+    },
+    "project_defaults": {
+        "location": "~/Projects",
+        "create_venv": true,
+        "init_git": true,
+        "create_readme": true,
+        "default_license": "MIT"
+    },
+    "ollama_settings": {
+        "enabled": true,
+        "model": "llama3.2:latest",
+        "timeout": 30
+    }
+}
