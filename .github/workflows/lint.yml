@@ -1,0 +1,120 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+
+    - name: Install dependencies
+      run: |
+        uv sync --dev
+
+    - name: Run ruff linter
+      run: |
+        uv run ruff check . --output-format=github
+
+    - name: Run ruff formatter
+      run: |
+        uv run ruff format --check . --diff
+
+  mypy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+
+    - name: Install dependencies
+      run: |
+        uv sync --dev
+
+    - name: Run mypy type checker
+      run: |
+        uv run mypy create_project/ --show-error-codes
+
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+
+    - name: Install dependencies
+      run: |
+        uv sync --dev
+
+    - name: Run pre-commit hooks
+      run: |
+        uv run pre-commit run --all-files --show-diff-on-failure
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+
+    - name: Install dependencies
+      run: |
+        uv sync --dev
+
+    - name: Check documentation links
+      run: |
+        # Check for broken links in README
+        grep -n "http" README.md || true
+        
+        # Check for TODO markers in documentation
+        find docs/ -name "*.md" -exec grep -l "TODO\|FIXME\|XXX" {} \; || true
+
+    - name: Validate configuration files
+      run: |
+        # Validate JSON files
+        python -m json.tool create_project/config/settings.json > /dev/null
+        python -m json.tool create_project/config/defaults.json > /dev/null
+        python -m json.tool create_project/config/settings.schema.json > /dev/null
+        
+        # Validate YAML files
+        python -c "import yaml; yaml.safe_load(open('.pre-commit-config.yaml'))"
+        python -c "import yaml; yaml.safe_load(open('.github/workflows/test.yml'))"
+        python -c "import yaml; yaml.safe_load(open('.github/workflows/lint.yml'))"

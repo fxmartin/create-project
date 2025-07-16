@@ -1,0 +1,81 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Run Application",
+            "type": "python",
+            "request": "launch",
+            "module": "create_project",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "APP_DEBUG": "true"
+            },
+            "justMyCode": true,
+            "purpose": ["debug-in-terminal"]
+        },
+        {
+            "name": "Python: Run Tests",
+            "type": "python",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "tests/",
+                "-v"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "justMyCode": true,
+            "purpose": ["debug-test"]
+        },
+        {
+            "name": "Python: Run Specific Test",
+            "type": "python",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "${file}",
+                "-v"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "justMyCode": true,
+            "purpose": ["debug-test"]
+        },
+        {
+            "name": "Python: Debug Configuration",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/validate-env.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "justMyCode": true
+        },
+        {
+            "name": "Python: Run with Environment Variables",
+            "type": "python",
+            "request": "launch",
+            "module": "create_project",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "APP_DEBUG": "true",
+                "LOG_LEVEL": "DEBUG",
+                "UI_THEME": "dark"
+            },
+            "justMyCode": true,
+            "purpose": ["debug-in-terminal"]
+        }
+    ]
+}

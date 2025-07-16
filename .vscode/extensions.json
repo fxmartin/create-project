@@ -1,0 +1,70 @@
+{
+    "recommendations": [
+        // Python development
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.debugpy",
+        
+        // Code formatting and linting
+        "charliermarsh.ruff",
+        
+        // Testing
+        "ms-python.pytest",
+        
+        // Git integration
+        "eamodio.gitlens",
+        
+        // Markdown support
+        "yzhang.markdown-all-in-one",
+        "shd101wyy.markdown-preview-enhanced",
+        
+        // YAML support
+        "redhat.vscode-yaml",
+        
+        // JSON support
+        "ms-vscode.vscode-json",
+        
+        // TOML support
+        "be5invis.toml",
+        
+        // Environment files
+        "mikestead.dotenv",
+        
+        // Shell script support
+        "timonwong.shellcheck",
+        
+        // Task automation
+        "ms-vscode.task-runner",
+        
+        // Code spell checker
+        "streetsidesoftware.code-spell-checker",
+        
+        // Docker support (optional)
+        "ms-azuretools.vscode-docker",
+        
+        // Better comments
+        "aaron-bond.better-comments",
+        
+        // Bracket pair colorizer
+        "coenraads.bracket-pair-colorizer-2",
+        
+        // Path intellisense
+        "christian-kohler.path-intellisense",
+        
+        // Auto rename tag
+        "formulahendry.auto-rename-tag",
+        
+        // Indent rainbow
+        "oderwat.indent-rainbow"
+    ],
+    "unwantedRecommendations": [
+        // Avoid conflicting formatters
+        "ms-python.black-formatter",
+        "ms-python.flake8",
+        "ms-python.isort",
+        
+        // Avoid conflicting linters
+        "ms-python.pylint",
+        "ms-python.mypy-type-checker"
+    ]
+}

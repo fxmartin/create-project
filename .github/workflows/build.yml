@@ -1,0 +1,192 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  build-wheel:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+
+    - name: Install dependencies
+      run: |
+        uv sync --dev
+
+    - name: Build wheel
+      run: |
+        uv build
+
+    - name: Upload wheel artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-wheel
+        path: dist/*.whl
+
+    - name: Upload source distribution
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-sdist
+        path: dist/*.tar.gz
+
+  build-executable:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+
+    - name: Install dependencies
+      run: |
+        uv sync --dev
+        uv add pyinstaller
+
+    - name: Install system dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgl1-mesa-glx libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xfixes0
+
+    - name: Build executable
+      run: |
+        uv run pyinstaller \
+          --onefile \
+          --windowed \
+          --name "Python Project Creator" \
+          --icon create_project/resources/icons/app.ico \
+          --add-data "create_project/templates:create_project/templates" \
+          --add-data "create_project/resources:create_project/resources" \
+          --add-data "create_project/config:create_project/config" \
+          --hidden-import PyQt6.QtCore \
+          --hidden-import PyQt6.QtGui \
+          --hidden-import PyQt6.QtWidgets \
+          create_project/__main__.py
+
+    - name: Upload executable (Linux)
+      if: runner.os == 'Linux'
+      uses: actions/upload-artifact@v4
+      with:
+        name: executable-linux
+        path: dist/Python*
+
+    - name: Upload executable (Windows)
+      if: runner.os == 'Windows'
+      uses: actions/upload-artifact@v4
+      with:
+        name: executable-windows
+        path: dist/Python*.exe
+
+    - name: Upload executable (macOS)
+      if: runner.os == 'macOS'
+      uses: actions/upload-artifact@v4
+      with:
+        name: executable-macos
+        path: dist/Python*
+
+  test-built-package:
+    needs: [build-wheel]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+
+    - name: Download wheel artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: python-wheel
+        path: dist/
+
+    - name: Install built package
+      run: |
+        uv pip install dist/*.whl
+
+    - name: Test installed package
+      run: |
+        python -c "import create_project; print('Package imported successfully')"
+
+  publish-to-pypi:
+    needs: [build-wheel, test-built-package]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' && github.event.action == 'published'
+    environment: release
+    permissions:
+      id-token: write
+    steps:
+    - name: Download wheel artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: python-wheel
+        path: dist/
+
+    - name: Download source distribution
+      uses: actions/download-artifact@v4
+      with:
+        name: python-sdist
+        path: dist/
+
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
+
+  create-release:
+    needs: [build-wheel, build-executable]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts/
+
+    - name: Create release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          artifacts/python-wheel/*.whl
+          artifacts/python-sdist/*.tar.gz
+          artifacts/executable-linux/*
+          artifacts/executable-windows/*.exe
+          artifacts/executable-macos/*
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
