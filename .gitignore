@@ -208,3 +208,7 @@ __marimo__/
 
 # MacOS system files
 .DS_Store
+
+# Application logs directory (keep structure, ignore files)
+logs/*.log
+logs/*.log.*

@@ -1,318 +1,308 @@
-# TODO: Section 1.2 Configure Project Dependencies
+# TODO: Section 1.3 Set Up Logging Infrastructure
 
 ## Section Overview
-- **Section**: 1.2 Configure Project Dependencies
-- **Total Estimated Hours**: 4 hours
-- **Prerequisites**: 1.1 Initialize Project Structure
-- **Key Deliverables**: pyproject.toml file with proper dependency specifications and Python 3.9.6+ requirement
+- **Section**: 1.3 Set Up Logging Infrastructure
+- **Total Estimated Hours**: 12 hours
+- **Prerequisites**: 1.1 Initialize Project Structure (base directories must exist)
+- **Key Deliverables**: 
+  - Comprehensive logging system with file rotation and console output
+  - Environment-specific logging configuration
+  - Component-specific logger factory
+  - Complete test coverage for logging functionality
 
 ## Atomic Task List
 
 ### Setup Tasks
 
-**Task S001**: Initialize UV project structure
+**Task S001**: Create base logging directory structure in utils/
 - **Type**: Setup
 - **Estimated Time**: 30min
-- **Prerequisites**: None (assumes project directory exists)
+- **Prerequisites**: None
 - **Files to Create/Modify**: 
-  - `pyproject.toml` (create)
-  - `uv.lock` (generated)
-  - `.venv/` directory (generated)
+  - `utils/` directory (if not exists)
+  - `logs/` directory for log files
+  - `utils/__init__.py`
 - **Acceptance Criteria**:
-  ☐ `uv init` command executed successfully
-  ☐ `pyproject.toml` exists with basic structure
-  ☐ Virtual environment created in `.venv/`
-  ☐ `uv.lock` file generated
+  - ✅ utils/ directory exists with proper __init__.py
+  - ✅ logs/ directory exists for log file storage
+  - ✅ Directory structure follows project conventions
+- **Implementation Notes**: 
+  - Create utils package for shared utilities
+  - Ensure logs directory is .gitignored but tracked in repo structure
+  - Follow Python package structure conventions
+
+**Task S002**: Install logging dependencies via uv add
+- **Type**: Setup
+- **Estimated Time**: 30min
+- **Prerequisites**: None
+- **Files to Create/Modify**: 
+  - `pyproject.toml` (update dependencies)
+  - `uv.lock` (auto-generated)
+- **Acceptance Criteria**:
+  - ✅ colorlog dependency added for colored console output
+  - ✅ structlog dependency added for structured logging
+  - ✅ Dependencies properly versioned and locked
 - **Implementation Notes**: 
   ```bash
-  cd create-project
-  uv init --name create-project
+  uv add colorlog structlog
   ```
-
-**Task S002**: Configure Python version requirement
-- **Type**: Setup
-- **Estimated Time**: 15min
-- **Prerequisites**: S001
-- **Files to Create/Modify**: 
-  - `pyproject.toml` (modify)
-- **Acceptance Criteria**:
-  ☐ Python version requirement set to ">=3.9.6"
-  ☐ `uv python pin 3.9` executed successfully
-  ☐ `.python-version` file created
-- **Implementation Notes**: 
-  ```toml
-  [project]
-  requires-python = ">=3.9.6"
-  ```
+  - colorlog: Enhanced console output with colors
+  - structlog: Structured logging for better log analysis
 
 ### Development Tasks
 
-**Task D001**: Add PyQt6 dependency
+**Task D001**: Create logger.py module with structured logging configuration
 - **Type**: Code
-- **Estimated Time**: 15min
-- **Prerequisites**: S001
-- **Files to Create/Modify**: 
-  - `pyproject.toml` (modify)
-  - `uv.lock` (update)
-- **Acceptance Criteria**:
-  ☐ PyQt6 added to dependencies
-  ☐ `uv add PyQt6` command executed successfully
-  ☐ Dependency appears in pyproject.toml
-  ☐ Lock file updated with PyQt6 and its dependencies
-- **Implementation Notes**: 
-  ```bash
-  uv add PyQt6
-  ```
-
-**Task D002**: Add HTTP requests dependency
-- **Type**: Code
-- **Estimated Time**: 15min
-- **Prerequisites**: S001
-- **Files to Create/Modify**: 
-  - `pyproject.toml` (modify)
-  - `uv.lock` (update)
-- **Acceptance Criteria**:
-  ☐ requests library added to dependencies
-  ☐ `uv add requests` command executed successfully
-  ☐ Dependency appears in pyproject.toml
-  ☐ Lock file updated with requests and its dependencies
-- **Implementation Notes**: 
-  ```bash
-  uv add requests
-  ```
-
-**Task D003**: Add YAML processing dependency
-- **Type**: Code
-- **Estimated Time**: 15min
-- **Prerequisites**: S001
-- **Files to Create/Modify**: 
-  - `pyproject.toml` (modify)
-  - `uv.lock` (update)
-- **Acceptance Criteria**:
-  ☐ PyYAML added to dependencies
-  ☐ `uv add pyyaml` command executed successfully
-  ☐ Dependency appears in pyproject.toml
-  ☐ Lock file updated with PyYAML and its dependencies
-- **Implementation Notes**: 
-  ```bash
-  uv add pyyaml
-  ```
-
-**Task D004**: Add template engine dependency
-- **Type**: Code
-- **Estimated Time**: 15min
-- **Prerequisites**: S001
-- **Files to Create/Modify**: 
-  - `pyproject.toml` (modify)
-  - `uv.lock` (update)
-- **Acceptance Criteria**:
-  ☐ Jinja2 added to dependencies
-  ☐ `uv add jinja2` command executed successfully
-  ☐ Dependency appears in pyproject.toml
-  ☐ Lock file updated with Jinja2 and its dependencies
-- **Implementation Notes**: 
-  ```bash
-  uv add jinja2
-  ```
-
-**Task D005**: Add development dependencies
-- **Type**: Code
-- **Estimated Time**: 30min
-- **Prerequisites**: S001
-- **Files to Create/Modify**: 
-  - `pyproject.toml` (modify)
-  - `uv.lock` (update)
-- **Acceptance Criteria**:
-  ☐ pytest added as dev dependency
-  ☐ pytest-qt added for PyQt testing
-  ☐ ruff added for linting and formatting
-  ☐ mypy added for type checking
-  ☐ All dev dependencies appear in pyproject.toml [tool.uv.dev-dependencies]
-- **Implementation Notes**: 
-  ```bash
-  uv add --dev pytest pytest-qt ruff mypy
-  ```
-
-**Task D006**: Configure project metadata
-- **Type**: Code
-- **Estimated Time**: 30min
+- **Estimated Time**: 2hrs
 - **Prerequisites**: S001, S002
 - **Files to Create/Modify**: 
-  - `pyproject.toml` (modify)
+  - `utils/logger.py`
 - **Acceptance Criteria**:
-  ☐ Project name set to "create-project"
-  ☐ Version set to "0.1.0"
-  ☐ Description added
-  ☐ Author information added
-  ☐ License specified (Apache-2.0)
-  ☐ Homepage/repository URLs added
-  ☐ Keywords added
-  ☐ Classifiers added
+  - ✅ Logger class with structured logging support
+  - ✅ Configurable log levels (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  - ✅ JSON structured output for production
+  - ✅ Human-readable format for development
+  - ✅ Support for contextual logging with metadata
 - **Implementation Notes**: 
-  ```toml
-  [project]
-  name = "create-project"
-  version = "0.1.0"
-  description = "A PyQt-based GUI application for creating Python project structures"
-  authors = [{name = "FX", email = "fx@example.com"}]
-  license = {text = "Apache-2.0"}
-  readme = "README.md"
-  keywords = ["python", "project", "template", "gui", "pyqt"]
-  classifiers = [
-      "Development Status :: 3 - Alpha",
-      "Intended Audience :: Developers",
-      "License :: OSI Approved :: Apache Software License",
-      "Operating System :: OS Independent",
-      "Programming Language :: Python :: 3",
-      "Programming Language :: Python :: 3.9",
-      "Programming Language :: Python :: 3.10",
-      "Programming Language :: Python :: 3.11",
-      "Programming Language :: Python :: 3.12",
-  ]
+  ```python
+  # Key features to implement:
+  # - Structured logging with structlog
+  # - Configurable formatters (JSON/human-readable)
+  # - Context preservation across log calls
+  # - Thread-safe logging
+  # - Performance optimizations for high-frequency logging
   ```
 
-**Task D007**: Configure entry points
+**Task D002**: Implement log rotation and file output configuration
 - **Type**: Code
-- **Estimated Time**: 15min
-- **Prerequisites**: D006
+- **Estimated Time**: 1.5hrs
+- **Prerequisites**: D001
 - **Files to Create/Modify**: 
-  - `pyproject.toml` (modify)
+  - `utils/logger.py` (extend)
 - **Acceptance Criteria**:
-  ☐ Console script entry point defined
-  ☐ GUI script entry point defined
-  ☐ Entry points reference main module correctly
+  - ✅ TimedRotatingFileHandler for daily log rotation
+  - ✅ Maximum log file size limits (10MB per file)
+  - ✅ Log file retention policy (keep 30 days)
+  - ✅ Separate log files for different log levels
+  - ✅ Compression of old log files
 - **Implementation Notes**: 
-  ```toml
-  [project.scripts]
-  create-project = "create_project.main:main"
-  create-project-gui = "create_project.gui.main:main"
+  ```python
+  # Implement log rotation with:
+  # - Daily rotation with timestamp suffix
+  # - Size-based rotation as backup
+  # - Automatic cleanup of old logs
+  # - Separate files: app.log, error.log, debug.log
+  ```
+
+**Task D003**: Configure console output formatting with colored output
+- **Type**: Code
+- **Estimated Time**: 1hr
+- **Prerequisites**: D001, S002
+- **Files to Create/Modify**: 
+  - `utils/logger.py` (extend)
+- **Acceptance Criteria**:
+  - ✅ Colored console output using colorlog
+  - ✅ Different colors for different log levels
+  - ✅ Configurable color scheme
+  - ✅ Fallback to non-colored output when colors not supported
+  - ✅ Proper formatting with timestamps and component names
+- **Implementation Notes**: 
+  ```python
+  # Color scheme:
+  # DEBUG: cyan, INFO: green, WARNING: yellow
+  # ERROR: red, CRITICAL: red+bold
+  # Include timestamp, component name, and message
+  ```
+
+**Task D004**: Create logging configuration for different environments (dev/prod)
+- **Type**: Code
+- **Estimated Time**: 1.5hrs
+- **Prerequisites**: D001, D002, D003
+- **Files to Create/Modify**: 
+  - `utils/logger.py` (extend)
+  - `config/logging.yaml` (new)
+- **Acceptance Criteria**:
+  - ✅ Environment-specific logging configurations
+  - ✅ Development: console + file output, DEBUG level
+  - ✅ Production: file output only, INFO level
+  - ✅ YAML configuration file support
+  - ✅ Runtime environment detection
+- **Implementation Notes**: 
+  ```yaml
+  # logging.yaml structure:
+  # - development: verbose console + file
+  # - production: structured file only
+  # - testing: memory handler for test isolation
+  ```
+
+**Task D005**: Implement logger factory for component-specific loggers
+- **Type**: Code
+- **Estimated Time**: 1.5hrs
+- **Prerequisites**: D001, D004
+- **Files to Create/Modify**: 
+  - `utils/logger.py` (extend)
+- **Acceptance Criteria**:
+  - ✅ LoggerFactory class for creating component loggers
+  - ✅ Component-specific logger names (ui.wizard, core.generator, etc.)
+  - ✅ Hierarchical logger structure
+  - ✅ Shared configuration across all component loggers
+  - ✅ Easy logger retrieval: get_logger('component.subcomponent')
+- **Implementation Notes**: 
+  ```python
+  # Factory pattern implementation:
+  # - Singleton factory instance
+  # - Logger name hierarchy (app.ui.wizard, app.core.generator)
+  # - Consistent configuration across all loggers
+  # - Performance optimization for repeated logger requests
   ```
 
 ### Integration Tasks
 
-**Task I001**: Configure build system
+**Task I001**: Create centralized logging initialization for the application
 - **Type**: Integration
-- **Estimated Time**: 15min
-- **Prerequisites**: S001
-- **Files to Create/Modify**: 
-  - `pyproject.toml` (modify)
-- **Acceptance Criteria**:
-  ☐ Build system configured for hatchling
-  ☐ Build backend specified correctly
-  ☐ Build requirements defined
-- **Implementation Notes**: 
-  ```toml
-  [build-system]
-  requires = ["hatchling"]
-  build-backend = "hatchling.build"
-  ```
-
-**Task I002**: Configure tool settings
-- **Type**: Integration
-- **Estimated Time**: 30min
+- **Estimated Time**: 1hr
 - **Prerequisites**: D005
 - **Files to Create/Modify**: 
-  - `pyproject.toml` (modify)
+  - `utils/logger.py` (extend)
+  - `main.py` (when created)
 - **Acceptance Criteria**:
-  ☐ Ruff configuration added with line length, select rules
-  ☐ MyPy configuration added with strict mode
-  ☐ Pytest configuration added with test discovery
-  ☐ All tool configurations work correctly
+  - ✅ Single initialization function for all logging
+  - ✅ Automatic environment detection and configuration
+  - ✅ Proper error handling during logger initialization
+  - ✅ Graceful fallback if logging setup fails
+  - ✅ Integration with application startup sequence
 - **Implementation Notes**: 
-  ```toml
-  [tool.ruff]
-  line-length = 88
-  select = ["E", "F", "W", "C90", "I", "N", "UP", "B", "A", "S", "FBT", "Q"]
-  
-  [tool.mypy]
-  python_version = "3.9"
-  strict = true
-  
-  [tool.pytest.ini_options]
-  testpaths = ["tests"]
-  python_files = ["test_*.py", "*_test.py"]
+  ```python
+  # init_logging() function:
+  # - Called once at application startup
+  # - Configures all handlers and formatters
+  # - Sets up log directories if needed
+  # - Validates configuration
   ```
 
 ### Testing Tasks
 
-**Task T001**: Test dependency installation
+**Task T001**: Write unit tests for logger configuration
 - **Type**: Test
-- **Estimated Time**: 30min
+- **Estimated Time**: 2hrs
 - **Prerequisites**: D001, D002, D003, D004, D005
 - **Files to Create/Modify**: 
-  - None (testing only)
+  - `tests/test_logger.py`
 - **Acceptance Criteria**:
-  ☐ `uv sync` completes without errors
-  ☐ All dependencies install correctly
-  ☐ Virtual environment activated successfully
-  ☐ All packages importable in Python
+  - ✅ Test logger creation and configuration
+  - ✅ Test different log levels and formatting
+  - ✅ Test environment-specific configurations
+  - ✅ Test logger factory functionality
+  - ✅ Test error handling in logger setup
 - **Implementation Notes**: 
-  ```bash
-  uv sync
-  uv run python -c "import PyQt6; import requests; import yaml; import jinja2; print('All imports successful')"
+  ```python
+  # Test categories:
+  # - Logger initialization with different configs
+  # - Log level filtering
+  # - Message formatting
+  # - Component logger creation
+  # - Configuration validation
   ```
 
-**Task T002**: Test development tools
+**Task T002**: Write integration tests for log rotation functionality
 - **Type**: Test
-- **Estimated Time**: 30min
-- **Prerequisites**: I002, T001
+- **Estimated Time**: 1.5hrs
+- **Prerequisites**: D002, T001
 - **Files to Create/Modify**: 
-  - None (testing only)
+  - `tests/test_logger.py` (extend)
 - **Acceptance Criteria**:
-  ☐ Ruff linting runs without errors
-  ☐ MyPy type checking runs without errors
-  ☐ Pytest test discovery works
-  ☐ All development tools accessible via uv run
+  - ✅ Test daily log rotation
+  - ✅ Test size-based rotation
+  - ✅ Test log file cleanup
+  - ✅ Test log retention policy
+  - ✅ Test file permissions and accessibility
 - **Implementation Notes**: 
-  ```bash
-  uv run ruff check .
-  uv run mypy --version
-  uv run pytest --collect-only
+  ```python
+  # Integration test scenarios:
+  # - Generate logs over time threshold
+  # - Generate logs over size threshold
+  # - Verify old log cleanup
+  # - Test concurrent logging during rotation
+  ```
+
+**Task T003**: Test logging across different components and environments
+- **Type**: Test
+- **Estimated Time**: 1hr
+- **Prerequisites**: I001, T001, T002
+- **Files to Create/Modify**: 
+  - `tests/test_logger.py` (extend)
+- **Acceptance Criteria**:
+  - ✅ Test logging in development environment
+  - ✅ Test logging in production environment
+  - ✅ Test component-specific logger behavior
+  - ✅ Test log message propagation
+  - ✅ Test performance under load
+- **Implementation Notes**: 
+  ```python
+  # Cross-component testing:
+  # - Mock different components logging simultaneously
+  # - Test environment switching
+  # - Verify log message routing
+  # - Performance benchmarking
   ```
 
 ### Documentation Tasks
 
-**Task DOC001**: Document dependency choices
+**Task DOC001**: Document logging configuration and usage patterns
 - **Type**: Documentation
-- **Estimated Time**: 15min
-- **Prerequisites**: All above tasks
+- **Estimated Time**: 1hr
+- **Prerequisites**: All development tasks completed
 - **Files to Create/Modify**: 
-  - `README.md` (modify or create dependencies section)
+  - `docs/logging.md`
+  - `utils/logger.py` (add docstrings)
 - **Acceptance Criteria**:
-  ☐ All main dependencies documented with purpose
-  ☐ Development dependencies explained
-  ☐ Python version requirement documented
-  ☐ Installation instructions provided
+  - ✅ Complete API documentation for logger module
+  - ✅ Usage examples for different scenarios
+  - ✅ Configuration guide for different environments
+  - ✅ Troubleshooting guide for common logging issues
+  - ✅ Performance considerations and best practices
 - **Implementation Notes**: 
-  Add section explaining:
-  - PyQt6: GUI framework
-  - requests: HTTP client for API calls
-  - PyYAML: YAML template parsing
-  - Jinja2: Template engine for file generation
+  ```markdown
+  # Documentation sections:
+  # - Quick start guide
+  # - Configuration reference
+  # - Component logger usage
+  # - Environment-specific setup
+  # - Performance optimization tips
+  ```
 
-### Task Sequencing
+## Task Sequencing
 
-**Critical Path**: S001 → S002 → D001-D005 → D006 → D007 → I001 → I002 → T001 → T002 → DOC001
+### Phase 1: Foundation (Parallel execution possible)
+- [ ] S001: Create directory structure
+- [ ] S002: Install dependencies
 
-**Parallel Execution Opportunities**:
-- D001, D002, D003, D004 can run in parallel after S001
-- T001 and I002 can run in parallel after dependencies are added
-- DOC001 can run in parallel with final testing
+### Phase 2: Core Implementation (Sequential)
+- [ ] D001: Create logger.py module
+- [ ] D002: Implement log rotation
+- [ ] D003: Configure console output
+- [ ] D004: Environment configuration
+- [ ] D005: Logger factory
 
-**Estimated Total Time**: 4 hours
+### Phase 3: Integration
+- [ ] I001: Centralized initialization
 
-## Progress Tracking
-- [ ] S001: Initialize UV project structure
-- [ ] S002: Configure Python version requirement  
-- [ ] D001: Add PyQt6 dependency
-- [ ] D002: Add HTTP requests dependency
-- [ ] D003: Add YAML processing dependency
-- [ ] D004: Add template engine dependency
-- [ ] D005: Add development dependencies
-- [ ] D006: Configure project metadata
-- [ ] D007: Configure entry points
-- [ ] I001: Configure build system
-- [ ] I002: Configure tool settings
-- [ ] T001: Test dependency installation
-- [ ] T002: Test development tools
-- [ ] DOC001: Document dependency choices
+### Phase 4: Testing (Can run in parallel)
+- [ ] T001: Unit tests
+- [ ] T002: Integration tests
+- [ ] T003: Cross-component testing
+
+### Phase 5: Documentation
+- [ ] DOC001: Documentation
+
+## Critical Path
+The critical path includes: S001 → S002 → D001 → D002 → D004 → D005 → I001
+
+These tasks must be completed in order as they have strict dependencies. Other tasks can be parallelized around this core sequence.
+
+## Success Criteria
+- All components can obtain properly configured loggers
+- Log rotation works automatically without manual intervention
+- Different environments produce appropriate log output
+- Test coverage >90% for logging functionality
+- Documentation enables easy adoption by other developers

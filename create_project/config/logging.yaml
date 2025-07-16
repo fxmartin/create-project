@@ -1,0 +1,95 @@
+# Logging configuration for different environments
+# This file defines environment-specific logging settings
+
+development:
+  level: DEBUG
+  format_json: false
+  include_context: true
+  console_colors: true
+  max_bytes: 10485760  # 10MB
+  backup_count: 30
+  handlers:
+    - console
+    - file_app
+    - file_error
+    - file_debug
+  console:
+    enabled: true
+    colors: true
+    level: DEBUG
+  file_logging:
+    enabled: true
+    directory: logs
+    app_log: app.log
+    error_log: error.log
+    debug_log: debug.log
+    rotation:
+      max_size: 10MB
+      backup_count: 30
+      compression: false
+
+production:
+  level: INFO
+  format_json: true
+  include_context: true
+  console_colors: false
+  max_bytes: 10485760  # 10MB
+  backup_count: 30
+  handlers:
+    - file_app
+    - file_error
+  console:
+    enabled: false
+    colors: false
+    level: INFO
+  file_logging:
+    enabled: true
+    directory: logs
+    app_log: app.log
+    error_log: error.log
+    rotation:
+      max_size: 10MB
+      backup_count: 30
+      compression: true
+
+testing:
+  level: WARNING
+  format_json: false
+  include_context: false
+  console_colors: false
+  max_bytes: 1048576  # 1MB for testing
+  backup_count: 5
+  handlers:
+    - memory  # Use memory handler for testing
+  console:
+    enabled: false
+    colors: false
+    level: WARNING
+  file_logging:
+    enabled: false
+    directory: /tmp/test_logs
+    app_log: test_app.log
+    error_log: test_error.log
+    rotation:
+      max_size: 1MB
+      backup_count: 5
+      compression: false
+
+# Common settings that apply to all environments
+common:
+  timestamp_format: '%Y-%m-%d %H:%M:%S'
+  log_format: '%(asctime)s [%(levelname)8s] %(name)s [%(module)s:%(funcName)s:%(lineno)d]: %(message)s'
+  json_format: '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "logger": "%(name)s", "message": "%(message)s", "module": "%(module)s", "function": "%(funcName)s", "line": %(lineno)d}'
+  
+  # Component-specific log levels can be overridden
+  component_levels:
+    # Example: set specific components to different levels
+    # 'create_project.gui': DEBUG
+    # 'create_project.core': INFO
+    # 'create_project.templates': WARNING
+    
+  # Performance settings
+  performance:
+    lazy_formatting: true
+    buffer_size: 8192
+    flush_interval: 5  # seconds
