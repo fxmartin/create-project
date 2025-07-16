@@ -1,9 +1,8 @@
 # ABOUTME: Project structure validation utilities
 # ABOUTME: Ensures all required directories and files exist
 
-import os
 from pathlib import Path
-from typing import List, Dict, Tuple
+from typing import Dict, List, Tuple
 
 
 def validate_project_structure(project_root: Path) -> Tuple[bool, List[str], List[str]]:
@@ -19,7 +18,7 @@ def validate_project_structure(project_root: Path) -> Tuple[bool, List[str], Lis
     required_dirs = [
         "create_project",
         "create_project/core",
-        "create_project/gui", 
+        "create_project/gui",
         "create_project/utils",
         "create_project/templates",
         "create_project/templates/builtin",
@@ -41,7 +40,7 @@ def validate_project_structure(project_root: Path) -> Tuple[bool, List[str], Lis
         "dist",
         "scripts"
     ]
-    
+
     required_files = [
         "create_project/__init__.py",
         "create_project/core/__init__.py",
@@ -62,22 +61,22 @@ def validate_project_structure(project_root: Path) -> Tuple[bool, List[str], Lis
         "tests/gui/__init__.py",
         "pyproject.toml"
     ]
-    
+
     missing_dirs = []
     missing_files = []
-    
+
     # Check directories
     for dir_path in required_dirs:
         full_path = project_root / dir_path
         if not full_path.exists() or not full_path.is_dir():
             missing_dirs.append(str(dir_path))
-    
+
     # Check files
     for file_path in required_files:
         full_path = project_root / file_path
         if not full_path.exists() or not full_path.is_file():
             missing_files.append(str(file_path))
-    
+
     is_valid = len(missing_dirs) == 0 and len(missing_files) == 0
     return is_valid, missing_dirs, missing_files
 
@@ -93,7 +92,7 @@ def get_structure_report(project_root: Path) -> Dict[str, any]:
         Dictionary containing validation results and statistics
     """
     is_valid, missing_dirs, missing_files = validate_project_structure(project_root)
-    
+
     return {
         "is_valid": is_valid,
         "missing_directories": missing_dirs,
@@ -116,19 +115,19 @@ def create_missing_structure(project_root: Path) -> bool:
     """
     try:
         is_valid, missing_dirs, missing_files = validate_project_structure(project_root)
-        
+
         # Create missing directories
         for dir_path in missing_dirs:
             full_path = project_root / dir_path
             full_path.mkdir(parents=True, exist_ok=True)
-        
+
         # Create missing __init__.py files
         for file_path in missing_files:
             if file_path.endswith("__init__.py"):
                 full_path = project_root / file_path
                 if not full_path.exists():
                     full_path.touch()
-        
+
         return True
     except Exception as e:
         print(f"Error creating project structure: {e}")

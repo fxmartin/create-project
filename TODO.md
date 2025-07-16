@@ -1,437 +1,318 @@
-# TODO: Section 1.1 Initialize Project Structure
+# TODO: Section 1.2 Configure Project Dependencies
 
 ## Section Overview
-- **Section**: 1.1 Initialize Project Structure
-- **Total Estimated Hours**: 8 hours
-- **Prerequisites**: None (First milestone task)
-- **Key Deliverables**: Complete project directory structure with all required folders and initial files
+- **Section**: 1.2 Configure Project Dependencies
+- **Total Estimated Hours**: 4 hours
+- **Prerequisites**: 1.1 Initialize Project Structure
+- **Key Deliverables**: pyproject.toml file with proper dependency specifications and Python 3.9.6+ requirement
 
 ## Atomic Task List
 
 ### Setup Tasks
 
-**Task S001**: Create Root Project Directory Structure
+**Task S001**: Initialize UV project structure
 - **Type**: Setup
 - **Estimated Time**: 30min
-- **Prerequisites**: None
+- **Prerequisites**: None (assumes project directory exists)
 - **Files to Create/Modify**: 
-  - `create_project/` (main package directory)
-  - `create_project/__init__.py`
+  - `pyproject.toml` (create)
+  - `uv.lock` (generated)
+  - `.venv/` directory (generated)
 - **Acceptance Criteria**:
-  - [ ] Root package directory `create_project/` exists
-  - [ ] Package has proper `__init__.py` file
-  - [ ] Package is importable in Python
+  ☐ `uv init` command executed successfully
+  ☐ `pyproject.toml` exists with basic structure
+  ☐ Virtual environment created in `.venv/`
+  ☐ `uv.lock` file generated
 - **Implementation Notes**: 
-  - Create the main package directory following Python package conventions
-  - Initialize as proper Python package with `__init__.py`
+  ```bash
+  cd create-project
+  uv init --name create-project
+  ```
 
-**Task S002**: Create Core Module Directories
+**Task S002**: Configure Python version requirement
 - **Type**: Setup
-- **Estimated Time**: 30min
+- **Estimated Time**: 15min
 - **Prerequisites**: S001
-- **Files to Create/Modify**:
-  - `create_project/core/`
-  - `create_project/core/__init__.py`
-  - `create_project/gui/`
-  - `create_project/gui/__init__.py`
-  - `create_project/utils/`
-  - `create_project/utils/__init__.py`
+- **Files to Create/Modify**: 
+  - `pyproject.toml` (modify)
 - **Acceptance Criteria**:
-  - [ ] Core modules directory structure exists
-  - [ ] All module directories have `__init__.py` files
-  - [ ] Modules are importable from main package
-- **Implementation Notes**:
-  - `core/` - Business logic and core functionality
-  - `gui/` - PyQt UI components
-  - `utils/` - Utility functions and helpers
-
-**Task S003**: Create Template System Directories
-- **Type**: Setup
-- **Estimated Time**: 30min
-- **Prerequisites**: S001
-- **Files to Create/Modify**:
-  - `create_project/templates/`
-  - `create_project/templates/__init__.py`
-  - `create_project/templates/builtin/`
-  - `create_project/templates/builtin/__init__.py`
-  - `create_project/templates/user/`
-  - `create_project/templates/user/__init__.py`
-- **Acceptance Criteria**:
-  - [ ] Template directories exist with proper structure
-  - [ ] Builtin templates directory for system templates
-  - [ ] User templates directory for custom templates
-  - [ ] All directories are proper Python packages
-- **Implementation Notes**:
-  - `templates/builtin/` - System-provided YAML templates
-  - `templates/user/` - User-defined custom templates
-
-**Task S004**: Create Resources Directory Structure
-- **Type**: Setup
-- **Estimated Time**: 30min
-- **Prerequisites**: S001
-- **Files to Create/Modify**:
-  - `create_project/resources/`
-  - `create_project/resources/__init__.py`
-  - `create_project/resources/styles/`
-  - `create_project/resources/icons/`
-  - `create_project/resources/licenses/`
-- **Acceptance Criteria**:
-  - [ ] Resources directory exists
-  - [ ] Styles subdirectory for QSS stylesheets
-  - [ ] Icons subdirectory for UI icons
-  - [ ] Licenses subdirectory for license text files
-- **Implementation Notes**:
-  - `resources/styles/` - QSS stylesheets for UI theming
-  - `resources/icons/` - Icons for GUI elements
-  - `resources/licenses/` - Full license text templates
-
-**Task S005**: Create Configuration Directory
-- **Type**: Setup
-- **Estimated Time**: 30min
-- **Prerequisites**: S001
-- **Files to Create/Modify**:
-  - `create_project/config/`
-  - `create_project/config/__init__.py`
-  - `create_project/config/settings.json`
-  - `create_project/config/defaults.json`
-- **Acceptance Criteria**:
-  - [ ] Configuration directory exists
-  - [ ] Default settings JSON file created
-  - [ ] Settings structure defined
-- **Implementation Notes**:
-  - `settings.json` - User configuration file
-  - `defaults.json` - Default application settings
-
-**Task S006**: Create Tests Directory Structure
-- **Type**: Setup
-- **Estimated Time**: 30min
-- **Prerequisites**: S001
-- **Files to Create/Modify**:
-  - `tests/`
-  - `tests/__init__.py`
-  - `tests/unit/`
-  - `tests/unit/__init__.py`
-  - `tests/integration/`
-  - `tests/integration/__init__.py`
-  - `tests/gui/`
-  - `tests/gui/__init__.py`
-- **Acceptance Criteria**:
-  - [ ] Tests directory structure exists
-  - [ ] Unit tests directory for component testing
-  - [ ] Integration tests directory for workflow testing
-  - [ ] GUI tests directory for UI testing
-- **Implementation Notes**:
-  - Follow pytest conventions for test discovery
-  - Separate unit, integration, and GUI tests
-
-**Task S007**: Create Documentation Directory
-- **Type**: Setup
-- **Estimated Time**: 30min
-- **Prerequisites**: S001
-- **Files to Create/Modify**:
-  - `docs/`
-  - `docs/user/`
-  - `docs/developer/`
-  - `docs/templates/`
-- **Acceptance Criteria**:
-  - [ ] Documentation directory structure exists
-  - [ ] User documentation directory
-  - [ ] Developer documentation directory
-  - [ ] Template documentation directory
-- **Implementation Notes**:
-  - `docs/user/` - End-user documentation
-  - `docs/developer/` - Developer API documentation
-  - `docs/templates/` - Template creation guides
-
-**Task S008**: Create Build and Distribution Directories
-- **Type**: Setup
-- **Estimated Time**: 30min
-- **Prerequisites**: S001
-- **Files to Create/Modify**:
-  - `build/`
-  - `dist/`
-  - `scripts/`
-  - `scripts/build.sh`
-  - `scripts/package.sh`
-- **Acceptance Criteria**:
-  - [ ] Build directory for temporary build files
-  - [ ] Distribution directory for final packages
-  - [ ] Scripts directory for build automation
-  - [ ] Placeholder build scripts created
-- **Implementation Notes**:
-  - `build/` - Temporary build artifacts
-  - `dist/` - Final distribution packages
-  - `scripts/` - Build and packaging scripts
+  ☐ Python version requirement set to ">=3.9.6"
+  ☐ `uv python pin 3.9` executed successfully
+  ☐ `.python-version` file created
+- **Implementation Notes**: 
+  ```toml
+  [project]
+  requires-python = ">=3.9.6"
+  ```
 
 ### Development Tasks
 
-**Task D001**: Create Main Package __init__.py
+**Task D001**: Add PyQt6 dependency
+- **Type**: Code
+- **Estimated Time**: 15min
+- **Prerequisites**: S001
+- **Files to Create/Modify**: 
+  - `pyproject.toml` (modify)
+  - `uv.lock` (update)
+- **Acceptance Criteria**:
+  ☐ PyQt6 added to dependencies
+  ☐ `uv add PyQt6` command executed successfully
+  ☐ Dependency appears in pyproject.toml
+  ☐ Lock file updated with PyQt6 and its dependencies
+- **Implementation Notes**: 
+  ```bash
+  uv add PyQt6
+  ```
+
+**Task D002**: Add HTTP requests dependency
+- **Type**: Code
+- **Estimated Time**: 15min
+- **Prerequisites**: S001
+- **Files to Create/Modify**: 
+  - `pyproject.toml` (modify)
+  - `uv.lock` (update)
+- **Acceptance Criteria**:
+  ☐ requests library added to dependencies
+  ☐ `uv add requests` command executed successfully
+  ☐ Dependency appears in pyproject.toml
+  ☐ Lock file updated with requests and its dependencies
+- **Implementation Notes**: 
+  ```bash
+  uv add requests
+  ```
+
+**Task D003**: Add YAML processing dependency
+- **Type**: Code
+- **Estimated Time**: 15min
+- **Prerequisites**: S001
+- **Files to Create/Modify**: 
+  - `pyproject.toml` (modify)
+  - `uv.lock` (update)
+- **Acceptance Criteria**:
+  ☐ PyYAML added to dependencies
+  ☐ `uv add pyyaml` command executed successfully
+  ☐ Dependency appears in pyproject.toml
+  ☐ Lock file updated with PyYAML and its dependencies
+- **Implementation Notes**: 
+  ```bash
+  uv add pyyaml
+  ```
+
+**Task D004**: Add template engine dependency
+- **Type**: Code
+- **Estimated Time**: 15min
+- **Prerequisites**: S001
+- **Files to Create/Modify**: 
+  - `pyproject.toml` (modify)
+  - `uv.lock` (update)
+- **Acceptance Criteria**:
+  ☐ Jinja2 added to dependencies
+  ☐ `uv add jinja2` command executed successfully
+  ☐ Dependency appears in pyproject.toml
+  ☐ Lock file updated with Jinja2 and its dependencies
+- **Implementation Notes**: 
+  ```bash
+  uv add jinja2
+  ```
+
+**Task D005**: Add development dependencies
 - **Type**: Code
 - **Estimated Time**: 30min
 - **Prerequisites**: S001
-- **Files to Create/Modify**:
-  - `create_project/__init__.py`
+- **Files to Create/Modify**: 
+  - `pyproject.toml` (modify)
+  - `uv.lock` (update)
 - **Acceptance Criteria**:
-  - [ ] Package version defined
-  - [ ] Main package imports configured
-  - [ ] Package metadata included
-- **Implementation Notes**:
-```python
-# ABOUTME: Main package initialization for create-project
-# ABOUTME: Defines package metadata and core imports
+  ☐ pytest added as dev dependency
+  ☐ pytest-qt added for PyQt testing
+  ☐ ruff added for linting and formatting
+  ☐ mypy added for type checking
+  ☐ All dev dependencies appear in pyproject.toml [tool.uv.dev-dependencies]
+- **Implementation Notes**: 
+  ```bash
+  uv add --dev pytest pytest-qt ruff mypy
+  ```
 
-__version__ = "0.1.0"
-__author__ = "Your Name"
-__description__ = "Python Project Structure Creator"
-
-# Core imports
-from .core import *
-from .gui import *
-from .utils import *
-```
-
-**Task D002**: Create Core Module __init__.py
+**Task D006**: Configure project metadata
 - **Type**: Code
 - **Estimated Time**: 30min
-- **Prerequisites**: S002
-- **Files to Create/Modify**:
-  - `create_project/core/__init__.py`
+- **Prerequisites**: S001, S002
+- **Files to Create/Modify**: 
+  - `pyproject.toml` (modify)
 - **Acceptance Criteria**:
-  - [ ] Core module imports defined
-  - [ ] Main classes exposed at package level
-- **Implementation Notes**:
-```python
-# ABOUTME: Core module initialization
-# ABOUTME: Exposes main business logic classes
+  ☐ Project name set to "create-project"
+  ☐ Version set to "0.1.0"
+  ☐ Description added
+  ☐ Author information added
+  ☐ License specified (Apache-2.0)
+  ☐ Homepage/repository URLs added
+  ☐ Keywords added
+  ☐ Classifiers added
+- **Implementation Notes**: 
+  ```toml
+  [project]
+  name = "create-project"
+  version = "0.1.0"
+  description = "A PyQt-based GUI application for creating Python project structures"
+  authors = [{name = "FX", email = "fx@example.com"}]
+  license = {text = "Apache-2.0"}
+  readme = "README.md"
+  keywords = ["python", "project", "template", "gui", "pyqt"]
+  classifiers = [
+      "Development Status :: 3 - Alpha",
+      "Intended Audience :: Developers",
+      "License :: OSI Approved :: Apache Software License",
+      "Operating System :: OS Independent",
+      "Programming Language :: Python :: 3",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.11",
+      "Programming Language :: Python :: 3.12",
+  ]
+  ```
 
-# Import statements will be added as modules are created
-# from .project_generator import ProjectGenerator
-# from .template_engine import TemplateEngine
-# from .config_manager import ConfigManager
-```
-
-**Task D003**: Create GUI Module __init__.py
+**Task D007**: Configure entry points
 - **Type**: Code
+- **Estimated Time**: 15min
+- **Prerequisites**: D006
+- **Files to Create/Modify**: 
+  - `pyproject.toml` (modify)
+- **Acceptance Criteria**:
+  ☐ Console script entry point defined
+  ☐ GUI script entry point defined
+  ☐ Entry points reference main module correctly
+- **Implementation Notes**: 
+  ```toml
+  [project.scripts]
+  create-project = "create_project.main:main"
+  create-project-gui = "create_project.gui.main:main"
+  ```
+
+### Integration Tasks
+
+**Task I001**: Configure build system
+- **Type**: Integration
+- **Estimated Time**: 15min
+- **Prerequisites**: S001
+- **Files to Create/Modify**: 
+  - `pyproject.toml` (modify)
+- **Acceptance Criteria**:
+  ☐ Build system configured for hatchling
+  ☐ Build backend specified correctly
+  ☐ Build requirements defined
+- **Implementation Notes**: 
+  ```toml
+  [build-system]
+  requires = ["hatchling"]
+  build-backend = "hatchling.build"
+  ```
+
+**Task I002**: Configure tool settings
+- **Type**: Integration
 - **Estimated Time**: 30min
-- **Prerequisites**: S002
-- **Files to Create/Modify**:
-  - `create_project/gui/__init__.py`
+- **Prerequisites**: D005
+- **Files to Create/Modify**: 
+  - `pyproject.toml` (modify)
 - **Acceptance Criteria**:
-  - [ ] GUI module imports defined
-  - [ ] Main UI classes exposed
-- **Implementation Notes**:
-```python
-# ABOUTME: GUI module initialization
-# ABOUTME: Exposes PyQt UI components
-
-# Import statements will be added as GUI modules are created
-# from .wizard import MainWizard
-# from .project_type import ProjectTypeStep
-# from .basic_info import BasicInfoStep
-```
-
-**Task D004**: Create Utils Module __init__.py
-- **Type**: Code
-- **Estimated Time**: 30min
-- **Prerequisites**: S002
-- **Files to Create/Modify**:
-  - `create_project/utils/__init__.py`
-- **Acceptance Criteria**:
-  - [ ] Utility module imports defined
-  - [ ] Helper functions exposed
-- **Implementation Notes**:
-```python
-# ABOUTME: Utils module initialization
-# ABOUTME: Exposes utility functions and helpers
-
-# Import statements will be added as utility modules are created
-# from .logger import get_logger
-# from .validators import validate_project_name
-# from .file_utils import create_directory
-```
-
-**Task D005**: Create Main Entry Point
-- **Type**: Code
-- **Estimated Time**: 1hr
-- **Prerequisites**: S001, D001
-- **Files to Create/Modify**:
-  - `create_project/__main__.py`
-  - `create_project/main.py`
-- **Acceptance Criteria**:
-  - [ ] Application can be run as `python -m create_project`
-  - [ ] Main entry point defined
-  - [ ] Basic application structure in place
-- **Implementation Notes**:
-```python
-# __main__.py
-# ABOUTME: Main entry point for running as module
-# ABOUTME: Handles command-line execution
-
-from .main import main
-
-if __name__ == "__main__":
-    main()
-```
-
-**Task D006**: Create Basic Project Structure Validation
-- **Type**: Code
-- **Estimated Time**: 1hr
-- **Prerequisites**: D001, D002
-- **Files to Create/Modify**:
-  - `create_project/utils/structure_validator.py`
-- **Acceptance Criteria**:
-  - [ ] Function to validate project structure exists
-  - [ ] All required directories are checked
-  - [ ] Missing directories are reported
-- **Implementation Notes**:
-```python
-# ABOUTME: Project structure validation utilities
-# ABOUTME: Ensures all required directories and files exist
-
-def validate_project_structure(project_root):
-    """Validate that all required directories exist"""
-    required_dirs = [
-        "create_project/core",
-        "create_project/gui", 
-        "create_project/utils",
-        "create_project/templates",
-        "create_project/resources",
-        "create_project/config",
-        "tests",
-        "docs"
-    ]
-    # Implementation details...
-```
+  ☐ Ruff configuration added with line length, select rules
+  ☐ MyPy configuration added with strict mode
+  ☐ Pytest configuration added with test discovery
+  ☐ All tool configurations work correctly
+- **Implementation Notes**: 
+  ```toml
+  [tool.ruff]
+  line-length = 88
+  select = ["E", "F", "W", "C90", "I", "N", "UP", "B", "A", "S", "FBT", "Q"]
+  
+  [tool.mypy]
+  python_version = "3.9"
+  strict = true
+  
+  [tool.pytest.ini_options]
+  testpaths = ["tests"]
+  python_files = ["test_*.py", "*_test.py"]
+  ```
 
 ### Testing Tasks
 
-**Task T001**: Create Basic Structure Tests
-- **Type**: Test
-- **Estimated Time**: 1hr
-- **Prerequisites**: S006, D006
-- **Files to Create/Modify**:
-  - `tests/unit/test_structure.py`
-- **Acceptance Criteria**:
-  - [ ] Test validates all directories exist
-  - [ ] Test validates all __init__.py files exist
-  - [ ] Test validates package imports work
-- **Implementation Notes**:
-```python
-# ABOUTME: Tests for project structure validation
-# ABOUTME: Ensures all required directories and files are present
-
-import pytest
-import os
-from create_project.utils.structure_validator import validate_project_structure
-
-def test_all_directories_exist():
-    """Test that all required directories exist"""
-    # Test implementation...
-
-def test_all_init_files_exist():
-    """Test that all __init__.py files exist"""
-    # Test implementation...
-```
-
-**Task T002**: Create Package Import Tests
+**Task T001**: Test dependency installation
 - **Type**: Test
 - **Estimated Time**: 30min
-- **Prerequisites**: S006, D001, D002, D003, D004
-- **Files to Create/Modify**:
-  - `tests/unit/test_imports.py`
+- **Prerequisites**: D001, D002, D003, D004, D005
+- **Files to Create/Modify**: 
+  - None (testing only)
 - **Acceptance Criteria**:
-  - [ ] Test imports main package successfully
-  - [ ] Test imports all subpackages successfully
-  - [ ] Test package metadata is accessible
-- **Implementation Notes**:
-```python
-# ABOUTME: Tests for package import functionality
-# ABOUTME: Validates all modules can be imported correctly
+  ☐ `uv sync` completes without errors
+  ☐ All dependencies install correctly
+  ☐ Virtual environment activated successfully
+  ☐ All packages importable in Python
+- **Implementation Notes**: 
+  ```bash
+  uv sync
+  uv run python -c "import PyQt6; import requests; import yaml; import jinja2; print('All imports successful')"
+  ```
 
-def test_main_package_import():
-    """Test main package can be imported"""
-    import create_project
-    assert hasattr(create_project, '__version__')
-
-def test_subpackage_imports():
-    """Test all subpackages can be imported"""
-    from create_project import core, gui, utils
-    # Additional assertions...
-```
+**Task T002**: Test development tools
+- **Type**: Test
+- **Estimated Time**: 30min
+- **Prerequisites**: I002, T001
+- **Files to Create/Modify**: 
+  - None (testing only)
+- **Acceptance Criteria**:
+  ☐ Ruff linting runs without errors
+  ☐ MyPy type checking runs without errors
+  ☐ Pytest test discovery works
+  ☐ All development tools accessible via uv run
+- **Implementation Notes**: 
+  ```bash
+  uv run ruff check .
+  uv run mypy --version
+  uv run pytest --collect-only
+  ```
 
 ### Documentation Tasks
 
-**Task DOC001**: Create Basic README Structure
+**Task DOC001**: Document dependency choices
 - **Type**: Documentation
-- **Estimated Time**: 1hr
-- **Prerequisites**: S001
-- **Files to Create/Modify**:
-  - `README.md`
+- **Estimated Time**: 15min
+- **Prerequisites**: All above tasks
+- **Files to Create/Modify**: 
+  - `README.md` (modify or create dependencies section)
 - **Acceptance Criteria**:
-  - [ ] README contains project description
-  - [ ] Installation instructions included
-  - [ ] Basic usage examples provided
-  - [ ] Directory structure documented
-- **Implementation Notes**:
-```markdown
-# Python Project Structure Creator
+  ☐ All main dependencies documented with purpose
+  ☐ Development dependencies explained
+  ☐ Python version requirement documented
+  ☐ Installation instructions provided
+- **Implementation Notes**: 
+  Add section explaining:
+  - PyQt6: GUI framework
+  - requests: HTTP client for API calls
+  - PyYAML: YAML template parsing
+  - Jinja2: Template engine for file generation
 
-A PyQt-based GUI application for creating Python project structures.
+### Task Sequencing
 
-## Installation
+**Critical Path**: S001 → S002 → D001-D005 → D006 → D007 → I001 → I002 → T001 → T002 → DOC001
 
-## Usage
+**Parallel Execution Opportunities**:
+- D001, D002, D003, D004 can run in parallel after S001
+- T001 and I002 can run in parallel after dependencies are added
+- DOC001 can run in parallel with final testing
 
-## Project Structure
+**Estimated Total Time**: 4 hours
 
-## Contributing
-```
-
-**Task DOC002**: Create Developer Setup Guide
-- **Type**: Documentation
-- **Estimated Time**: 30min
-- **Prerequisites**: S007
-- **Files to Create/Modify**:
-  - `docs/developer/setup.md`
-- **Acceptance Criteria**:
-  - [ ] Development environment setup documented
-  - [ ] Required dependencies listed
-  - [ ] Build process documented
-- **Implementation Notes**:
-- Document uv usage for dependency management
-- Include Python version requirements (3.9.6+)
-- Document PyQt installation process
-
-### Task Categories Summary:
-
-**Setup Tasks (S001-S008)**: 4 hours
-- Create complete directory structure
-- Initialize Python packages
-- Set up resource directories
-
-**Development Tasks (D001-D006)**: 4 hours  
-- Create package initialization files
-- Implement basic structure validation
-- Set up main entry points
-
-**Testing Tasks (T001-T002)**: 1.5 hours
-- Create structure validation tests
-- Implement package import tests
-
-**Documentation Tasks (DOC001-DOC002)**: 1.5 hours
-- Create README and setup documentation
-
-### Task Sequencing:
-1. **Phase 1**: Setup Tasks (S001-S008) - Can be done in parallel after S001
-2. **Phase 2**: Development Tasks (D001-D006) - Sequential, depends on Phase 1
-3. **Phase 3**: Testing Tasks (T001-T002) - Depends on Phase 2 completion
-4. **Phase 4**: Documentation Tasks (DOC001-DOC002) - Can be done in parallel with Phase 3
-
-### Critical Path:
-S001 → S002 → D001 → D002 → D006 → T001 → DOC001
-
-### Parallel Execution Opportunities:
-- S003-S008 can run in parallel after S002
-- D002, D003, D004 can run in parallel after D001
-- T002 can run in parallel with T001
-- DOC002 can run in parallel with DOC001
+## Progress Tracking
+- [ ] S001: Initialize UV project structure
+- [ ] S002: Configure Python version requirement  
+- [ ] D001: Add PyQt6 dependency
+- [ ] D002: Add HTTP requests dependency
+- [ ] D003: Add YAML processing dependency
+- [ ] D004: Add template engine dependency
+- [ ] D005: Add development dependencies
+- [ ] D006: Configure project metadata
+- [ ] D007: Configure entry points
+- [ ] I001: Configure build system
+- [ ] I002: Configure tool settings
+- [ ] T001: Test dependency installation
+- [ ] T002: Test development tools
+- [ ] DOC001: Document dependency choices

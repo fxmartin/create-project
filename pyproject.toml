@@ -1,12 +1,56 @@
 [project]
 name = "create-project"
 version = "0.1.0"
-description = "Add your description here"
+description = "A PyQt-based GUI application for creating Python project structures"
+authors = [{name = "FX", email = "fx@example.com"}]
+license = {text = "Apache-2.0"}
 readme = "README.md"
-requires-python = ">=3.13"
-dependencies = []
+requires-python = ">=3.9.6"
+keywords = ["python", "project", "template", "gui", "pyqt"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "jinja2>=3.1.6",
+    "pyqt6>=6.9.1",
+    "pyyaml>=6.0.2",
+    "requests>=2.32.4",
+]
 
 [dependency-groups]
 dev = [
+    "mypy>=1.17.0",
     "pytest>=8.4.1",
+    "pytest-qt>=4.5.0",
+    "ruff>=0.12.3",
 ]
+
+[project.scripts]
+create-project = "create_project.main:main"
+create-project-gui = "create_project.gui.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "C90", "I", "N", "UP", "B", "A", "S", "FBT", "Q"]
+
+[tool.mypy]
+python_version = "3.9"
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]

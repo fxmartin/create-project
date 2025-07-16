@@ -34,8 +34,29 @@ uv run python -m create_project
 ### Requirements
 
 - Python 3.9.6 or higher
-- PyQt6 (for GUI)
-- Additional dependencies listed in `pyproject.toml`
+- See Dependencies section below for detailed package requirements
+
+## Dependencies
+
+### Main Dependencies
+
+The application requires the following main packages:
+
+- **PyQt6** (>=6.9.1): GUI framework for the wizard interface
+- **requests** (>=2.32.4): HTTP client for API calls and external integrations
+- **PyYAML** (>=6.0.2): YAML template parsing and configuration file handling
+- **Jinja2** (>=3.1.6): Template engine for file generation and variable substitution
+
+### Development Dependencies
+
+For development and testing:
+
+- **pytest** (>=8.4.1): Testing framework
+- **pytest-qt** (>=4.5.0): PyQt-specific testing utilities
+- **ruff** (>=0.12.3): Fast Python linter and formatter
+- **mypy** (>=1.17.0): Static type checking
+
+All dependencies are managed through `pyproject.toml` and installed automatically with `uv sync`.
 
 ## Usage
 
