@@ -214,7 +214,6 @@ app/
 ├── utils/
 │   ├── __init__.py
 │   ├── config_manager.py      # Settings management
-│   ├── logger.py              # Logging setup
 │   └── validators.py          # Input validation
 ├── templates/                 # Built-in project templates
 │   ├── one_off_script.yaml
@@ -226,6 +225,7 @@ app/
 ├── resources/
 │   ├── icons/                 # UI icons
 │   └── styles/                # QSS stylesheets
+├── logger.py                  # Enhanced logging utility (existing)
 ├── settings.json              # User settings
 ├── .env                       # Environment configuration
 ├── logs/                      # Application logs
@@ -235,22 +235,125 @@ app/
 ## Logging & Debugging
 
 ### Logging Configuration
-- **Framework**: Python's standard logging module
+- **Implementation**: Use existing `logger.py` file in project root
+- **Framework**: Enhanced logging utility with colored terminal output
 - **Levels**: DEBUG, INFO, WARNING, ERROR, CRITICAL
-- **Format**: `%(asctime)s - %(name)s - %(levelname)s - %(message)s`
+- **Features**:
+  - Colored console output based on log levels
+  - Performance optimizations through caching
+  - Terminal detection for color support
+  - Environment variable configuration via LOG_LEVEL
+- **Format**: `%(levelname)s: %(message)s` (colored in terminals)
 - **Output**: 
-  - Console (during development)
+  - Console (during development) - colored output
   - File: `logs/app.log` (rotating, max 10MB, 5 backups)
 - **Level Configuration**: Set via LOG_LEVEL in .env file
 
+### Integration with Existing Logger
+The application should import and use the existing `logger.py` module:
+```python
+from logger import Logger, log_info, log_error, log_debug, log_warn
+
+# Create application-specific logger
+app_logger = Logger("ProjectCreator")
+
+# Or use convenience functions
+log_info("Application started")
+log_error("Failed to create project", exc_info=True)
+log_warn("Template validation warning")
+log_debug("Processing template variables")
+```
+
+### Comprehensive Logging Requirements
+**CRITICAL**: The application must implement extensive logging throughout all components to provide detailed execution tracing. This includes:
+
+#### Mandatory Logging Levels
+- **INFO**: All significant application events and state changes
+- **WARNING**: All non-critical issues, validation problems, and recoverable errors
+- **ERROR**: All exceptions, failures, and critical issues
+- **DEBUG**: Detailed execution flow for troubleshooting
+
+#### Required Logging Coverage
+Every major operation must be logged with appropriate level:
+
+**Application Lifecycle:**
+```python
+log_info("Application starting up")
+log_info("Loading configuration from settings.json")
+log_info("Initializing UI components")
+log_info("Checking Ollama availability")
+log_info("Application ready for user interaction")
+```
+
+**User Interactions:**
+```python
+log_info(f"User selected project type: {project_type}")
+log_info(f"User entered project name: {project_name}")
+log_info(f"User chose location: {project_path}")
+log_debug("Validating user input")
+log_warn("Project name contains special characters")
+```
+
+**Template Processing:**
+```python
+log_info(f"Loading template: {template_name}")
+log_debug(f"Template variables: {variables}")
+log_info("Starting template rendering")
+log_debug(f"Processing file: {file_path}")
+log_warn("Template missing optional variable")
+```
+
+**File Operations:**
+```python
+log_info(f"Creating project directory: {project_path}")
+log_debug(f"Creating subdirectory: {subdir}")
+log_info(f"Generating file: {file_name}")
+log_debug(f"Writing {len(content)} bytes to {file_path}")
+log_warn(f"File already exists, skipping: {file_path}")
+```
+
+**Git Operations:**
+```python
+log_info("Initializing git repository")
+log_debug("Setting up .gitignore")
+log_info("Making initial commit")
+log_warn("Git user not configured")
+```
+
+**Ollama Integration:**
+```python
+log_info("Connecting to Ollama API")
+log_debug(f"Sending request to model: {model}")
+log_info("Received AI response")
+log_warn("Ollama response timeout, using cached result")
+```
+
+**Error Handling:**
+```python
+log_error("Failed to create directory", exc_info=True)
+log_error(f"Template validation failed: {validation_error}")
+log_warn("Permission denied, trying alternative location")
+```
+
 ### Log Categories
-- **UI Events**: User interactions, wizard navigation
-- **Template Processing**: Template loading, variable substitution
-- **File Operations**: Directory creation, file generation
-- **Git Operations**: Repository initialization, commits
-- **Ollama Integration**: API calls, responses, errors
-- **Settings**: Configuration loading, validation
-- **Errors**: All exceptions and error conditions
+All categories must include INFO, WARNING, and ERROR messages for complete traceability:
+
+- **UI Events**: User interactions, wizard navigation, button clicks, form submissions
+- **Template Processing**: Template loading, variable substitution, file generation, validation
+- **File Operations**: Directory creation, file generation, permission checks, disk space
+- **Git Operations**: Repository initialization, commits, configuration, status checks
+- **Ollama Integration**: API calls, responses, errors, caching, availability checks
+- **Settings**: Configuration loading, validation, updates, environment variables
+- **Performance**: Execution times, resource usage, cache hit/miss ratios
+- **Security**: Input validation, path sanitization, permission checks
+- **Errors**: All exceptions and error conditions with full context
+
+### Logging Performance Requirements
+- **Startup**: Log application initialization within first 5 seconds
+- **Operation Tracing**: Every user action must generate at least one log entry
+- **Progress Tracking**: Long operations must log progress updates every 2-3 seconds
+- **Error Context**: All errors must include sufficient context for debugging
+- **Debug Mode**: When LOG_LEVEL=DEBUG, provide step-by-step execution details
 
 ## Distribution & Installation
 
@@ -269,6 +372,7 @@ app/
 - **Python**: 3.8+
 - **PyQt**: 5.15+ or 6.0+
 - **Additional**: requests, pyyaml, jinja2
+- **Logging**: Use existing `logger.py` module (no additional dependencies)
 
 ## Development Considerations
 
@@ -285,10 +389,11 @@ app/
 - **Caching**: Cache template parsing results
 
 ### Security Considerations
-- **Input Validation**: Sanitize all user inputs
-- **File Permissions**: Validate write permissions before creation
-- **Command Injection**: Sanitize commands passed to subprocess
-- **Path Traversal**: Validate all file paths
+- **Input Validation**: Sanitize all user inputs (with INFO/WARN logging)
+- **File Permissions**: Validate write permissions before creation (with DEBUG logging)
+- **Command Injection**: Sanitize commands passed to subprocess (with WARN logging)
+- **Path Traversal**: Validate all file paths (with DEBUG logging)
+- **Logging Security**: Ensure no sensitive data (passwords, tokens) appears in logs
 
 ## Success Metrics
 - **User Experience**: Complete wizard flow in under 2 minutes
