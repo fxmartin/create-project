@@ -1,5 +1,7 @@
 # Python Project Structure Creator
 
+**Note: This project is a real-life experiment in "vibe coding" with Claude Code. The process, methodology, and conclusions will be documented in a separate repository for research purposes.**
+
 A PyQt-based GUI application that automates the creation of Python project directory structures with templates, configuration, and best practices.
 
 ## 🚀 Quick Start
