@@ -1,22 +1,18 @@
 {
-    "user_preferences": {
+    "ui": {
         "theme": "system",
-        "window_size": {
-            "width": 800,
-            "height": 600
-        },
-        "recent_locations": []
+        "window_size": [800, 600],
+        "remember_window_state": true
     },
-    "project_defaults": {
-        "location": "~/Projects",
-        "create_venv": true,
-        "init_git": true,
-        "create_readme": true,
-        "default_license": "MIT"
+    "templates": {
+        "builtin_path": "./templates",
+        "custom_path": "~/.project-creator/templates",
+        "auto_update": false
     },
-    "ollama_settings": {
-        "enabled": true,
-        "model": "llama3.2:latest",
-        "timeout": 30
+    "ollama": {
+        "api_url": "http://localhost:11434",
+        "timeout": 30,
+        "preferred_model": "llama3.2:latest",
+        "enable_cache": true
     }
 }

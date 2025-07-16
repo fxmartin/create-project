@@ -1,28 +1,29 @@
 {
-    "application": {
-        "name": "Python Project Creator",
+    "app": {
         "version": "0.1.0",
-        "theme": "system",
-        "window_size": {
-            "width": 800,
-            "height": 600
-        }
+        "debug": false,
+        "data_dir": "./data"
     },
-    "project_generation": {
-        "default_location": "~/Projects",
-        "create_venv": true,
-        "init_git": true,
-        "create_readme": true
+    "ui": {
+        "theme": "system",
+        "window_size": [800, 600],
+        "remember_window_state": true
+    },
+    "templates": {
+        "builtin_path": "./templates",
+        "custom_path": "~/.project-creator/templates",
+        "auto_update": false
     },
     "ollama": {
-        "enabled": true,
-        "auto_detect": true,
-        "default_model": "llama3.2:latest",
-        "timeout": 30
+        "api_url": "http://localhost:11434",
+        "timeout": 30,
+        "preferred_model": "llama3.2:latest",
+        "enable_cache": true
     },
     "logging": {
         "level": "INFO",
-        "file_logging": true,
-        "console_logging": true
+        "file_enabled": true,
+        "console_enabled": true,
+        "max_files": 5
     }
 }

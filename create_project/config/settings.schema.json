@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/settings.schema.json",
+  "title": "Python Project Creator Settings",
+  "description": "Configuration schema for the Python Project Creator application",
+  "type": "object",
+  "properties": {
+    "app": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "description": "Application version in semantic version format"
+        },
+        "debug": {
+          "type": "boolean",
+          "description": "Enable debug mode"
+        },
+        "data_dir": {
+          "type": "string",
+          "description": "Directory for application data storage"
+        }
+      },
+      "required": ["version"],
+      "additionalProperties": false
+    },
+    "ui": {
+      "type": "object",
+      "properties": {
+        "theme": {
+          "type": "string",
+          "enum": ["system", "light", "dark"],
+          "description": "UI theme preference"
+        },
+        "window_size": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 400
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "Window size [width, height]"
+        },
+        "remember_window_state": {
+          "type": "boolean",
+          "description": "Remember window position and size"
+        }
+      },
+      "additionalProperties": false
+    },
+    "templates": {
+      "type": "object",
+      "properties": {
+        "builtin_path": {
+          "type": "string",
+          "description": "Path to built-in templates"
+        },
+        "custom_path": {
+          "type": "string",
+          "description": "Path to custom user templates"
+        },
+        "auto_update": {
+          "type": "boolean",
+          "description": "Automatically update templates"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ollama": {
+      "type": "object",
+      "properties": {
+        "api_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Ollama API endpoint URL"
+        },
+        "timeout": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 300,
+          "description": "Request timeout in seconds"
+        },
+        "preferred_model": {
+          "type": ["string", "null"],
+          "description": "Preferred Ollama model name"
+        },
+        "enable_cache": {
+          "type": "boolean",
+          "description": "Enable response caching"
+        }
+      },
+      "additionalProperties": false
+    },
+    "logging": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+          "description": "Logging level"
+        },
+        "file_enabled": {
+          "type": "boolean",
+          "description": "Enable file logging"
+        },
+        "console_enabled": {
+          "type": "boolean",
+          "description": "Enable console logging"
+        },
+        "max_files": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "description": "Maximum number of log files to retain"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
