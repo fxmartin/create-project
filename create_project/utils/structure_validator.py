@@ -2,7 +2,7 @@
 # ABOUTME: Ensures all required directories and files exist
 
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 
 def validate_project_structure(project_root: Path) -> Tuple[bool, List[str], List[str]]:
@@ -36,8 +36,6 @@ def validate_project_structure(project_root: Path) -> Tuple[bool, List[str], Lis
         "docs/user",
         "docs/developer",
         "docs/templates",
-        "build",
-        "dist",
         "scripts",
     ]
 
@@ -81,7 +79,7 @@ def validate_project_structure(project_root: Path) -> Tuple[bool, List[str], Lis
     return is_valid, missing_dirs, missing_files
 
 
-def get_structure_report(project_root: Path) -> Dict[str, any]:
+def get_structure_report(project_root: Path) -> Dict[str, Any]:
     """
     Generate a comprehensive structure validation report.
 
