@@ -33,11 +33,12 @@ _LOG_LEVEL_CACHE = {
     "WARN": logging.WARNING,
     "WARNING": logging.WARNING,
     "ERROR": logging.ERROR,
-    "CRITICAL": logging.CRITICAL
+    "CRITICAL": logging.CRITICAL,
 }
 
 # Cache environment variables
 _ENV_LOG_LEVEL = None
+
 
 def _get_env_log_level():
     """Get cached environment log level"""
@@ -45,6 +46,7 @@ def _get_env_log_level():
     if _ENV_LOG_LEVEL is None:
         _ENV_LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
     return _ENV_LOG_LEVEL
+
 
 def _is_terminal():
     """Check if output is a terminal for color support"""
@@ -63,11 +65,11 @@ class ColoredFormatter(logging.Formatter):
         # Pre-formatted color strings for performance
         if self._colors_enabled:
             self._color_map = {
-                "DEBUG": "\033[36mDEBUG\033[0m",      # Cyan
-                "INFO": "\033[32mINFO\033[0m",        # Green
+                "DEBUG": "\033[36mDEBUG\033[0m",  # Cyan
+                "INFO": "\033[32mINFO\033[0m",  # Green
                 "WARNING": "\033[33mWARNING\033[0m",  # Yellow
-                "ERROR": "\033[31mERROR\033[0m",      # Red
-                "CRITICAL": "\033[91mCRITICAL\033[0m" # Bright Red
+                "ERROR": "\033[31mERROR\033[0m",  # Red
+                "CRITICAL": "\033[91mCRITICAL\033[0m",  # Bright Red
             }
         else:
             self._color_map = {}
@@ -160,6 +162,7 @@ class Logger:
 # Lazy initialization for default logger
 _default_logger = None
 
+
 def _get_default_logger():
     """Get or create default logger instance lazily"""
     global _default_logger
@@ -173,25 +176,31 @@ def log_debug(message: str):
     """Log debug message using default logger"""
     _get_default_logger().debug(message)
 
+
 def log_info(message: str):
     """Log info message using default logger"""
     _get_default_logger().info(message)
+
 
 def log_warn(message: str):
     """Log warning message using default logger"""
     _get_default_logger().warn(message)
 
+
 def log_warning(message: str):
     """Log warning message using default logger"""
     _get_default_logger().warning(message)
+
 
 def log_error(message: str):
     """Log error message using default logger"""
     _get_default_logger().error(message)
 
+
 def log_critical(message: str):
     """Log critical message using default logger"""
     _get_default_logger().critical(message)
+
 
 def log(level, message: str):
     """Log with specified level using default logger"""

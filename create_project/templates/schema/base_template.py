@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, validator
 
 class TemplateCategory(str, Enum):
     """Template categories based on project types."""
+
     SCRIPT = "script"
     CLI_SINGLE = "cli_single"
     CLI_COMPLEX = "cli_complex"
@@ -21,6 +22,7 @@ class TemplateCategory(str, Enum):
 
 class TemplateLicense(str, Enum):
     """Common license types for templates."""
+
     MIT = "MIT"
     APACHE_2_0 = "Apache-2.0"
     GPL_3_0 = "GPL-3.0"
@@ -33,83 +35,61 @@ class TemplateMetadata(BaseModel):
     """Template metadata information."""
 
     name: str = Field(
-        ...,
-        description="Human-readable template name",
-        min_length=1,
-        max_length=100
+        ..., description="Human-readable template name", min_length=1, max_length=100
     )
 
     description: str = Field(
-        ...,
-        description="Detailed template description",
-        min_length=1,
-        max_length=500
+        ..., description="Detailed template description", min_length=1, max_length=500
     )
 
     version: str = Field(
         ...,
         description="Template version (semantic versioning)",
-        pattern=r"^(\d+)\.(\d+)\.(\d+)(-[\w\d\.-]+)?(\+[\w\d\.-]+)?$"
+        pattern=r"^(\d+)\.(\d+)\.(\d+)(-[\w\d\.-]+)?(\+[\w\d\.-]+)?$",
     )
 
-    category: TemplateCategory = Field(
-        ...,
-        description="Template category"
-    )
+    category: TemplateCategory = Field(..., description="Template category")
 
     tags: List[str] = Field(
-        default_factory=list,
-        description="Template tags for organization and search"
+        default_factory=list, description="Template tags for organization and search"
     )
 
     author: str = Field(
-        ...,
-        description="Template author name",
-        min_length=1,
-        max_length=100
+        ..., description="Template author name", min_length=1, max_length=100
     )
 
     author_email: Optional[str] = Field(
         None,
         description="Template author email",
-        pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+        pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
     )
 
     license: TemplateLicense = Field(
-        default=TemplateLicense.MIT,
-        description="Template license"
+        default=TemplateLicense.MIT, description="Template license"
     )
 
     created: datetime = Field(
-        default_factory=datetime.now,
-        description="Template creation date"
+        default_factory=datetime.now, description="Template creation date"
     )
 
-    updated: Optional[datetime] = Field(
-        None,
-        description="Template last update date"
-    )
+    updated: Optional[datetime] = Field(None, description="Template last update date")
 
     min_python_version: str = Field(
         default="3.9.6",
         description="Minimum Python version required",
-        pattern=r"^(\d+)\.(\d+)\.(\d+)$"
+        pattern=r"^(\d+)\.(\d+)\.(\d+)$",
     )
 
     compatibility: List[str] = Field(
         default_factory=lambda: ["macOS", "Linux", "Windows"],
-        description="Supported operating systems"
+        description="Supported operating systems",
     )
 
     documentation_url: Optional[str] = Field(
-        None,
-        description="URL to template documentation"
+        None, description="URL to template documentation"
     )
 
-    source_url: Optional[str] = Field(
-        None,
-        description="URL to template source code"
-    )
+    source_url: Optional[str] = Field(None, description="URL to template source code")
 
     @validator("tags")
     def validate_tags(cls, v):
@@ -119,7 +99,9 @@ class TemplateMetadata(BaseModel):
 
         for tag in v:
             if not tag.replace("-", "").replace("_", "").isalnum():
-                raise ValueError(f"Tag '{tag}' must be alphanumeric (hyphens and underscores allowed)")
+                raise ValueError(
+                    f"Tag '{tag}' must be alphanumeric (hyphens and underscores allowed)"
+                )
             if tag != tag.lower():
                 raise ValueError(f"Tag '{tag}' must be lowercase")
 
@@ -149,12 +131,11 @@ class TemplateConfiguration(BaseModel):
     schema_version: str = Field(
         default="1.0.0",
         description="Template schema version",
-        pattern=r"^(\d+)\.(\d+)\.(\d+)$"
+        pattern=r"^(\d+)\.(\d+)\.(\d+)$",
     )
 
     template_suffix: str = Field(
-        default=".j2",
-        description="Template file suffix for Jinja2 templates"
+        default=".j2", description="Template file suffix for Jinja2 templates"
     )
 
     ignore_patterns: List[str] = Field(
@@ -169,20 +150,16 @@ class TemplateConfiguration(BaseModel):
             ".pytest_cache/",
             ".mypy_cache/",
             ".venv/",
-            "venv/"
+            "venv/",
         ],
-        description="Patterns to ignore during template processing"
+        description="Patterns to ignore during template processing",
     )
 
     preserve_permissions: bool = Field(
-        default=True,
-        description="Whether to preserve file permissions"
+        default=True, description="Whether to preserve file permissions"
     )
 
-    encoding: str = Field(
-        default="utf-8",
-        description="Default file encoding"
-    )
+    encoding: str = Field(default="utf-8", description="Default file encoding")
 
     @validator("template_suffix")
     def validate_template_suffix(cls, v):
@@ -195,14 +172,11 @@ class TemplateConfiguration(BaseModel):
 class BaseTemplate(BaseModel):
     """Base template model containing metadata and configuration."""
 
-    metadata: TemplateMetadata = Field(
-        ...,
-        description="Template metadata information"
-    )
+    metadata: TemplateMetadata = Field(..., description="Template metadata information")
 
     configuration: TemplateConfiguration = Field(
         default_factory=TemplateConfiguration,
-        description="Template configuration settings"
+        description="Template configuration settings",
     )
 
     def get_template_id(self) -> str:
@@ -258,8 +232,7 @@ class BaseTemplate(BaseModel):
 
     class Config:
         """Pydantic configuration."""
+
         validate_assignment = True
         extra = "forbid"
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+        json_encoders = {datetime: lambda v: v.isoformat()}

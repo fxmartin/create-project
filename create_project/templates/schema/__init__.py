@@ -28,5 +28,5 @@ __all__ = [
     "ConditionalExpression",
     "TemplateAction",
     "ActionType",
-    "TemplateHooks"
+    "TemplateHooks",
 ]

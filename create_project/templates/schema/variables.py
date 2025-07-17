@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, validator
 
 class VariableType(str, Enum):
     """Supported variable types for templates."""
+
     STRING = "string"
     BOOLEAN = "boolean"
     INTEGER = "integer"
@@ -25,19 +26,14 @@ class VariableType(str, Enum):
 class ChoiceItem(BaseModel):
     """Choice item for choice and multichoice variables."""
 
-    value: str = Field(
-        ...,
-        description="Choice value"
-    )
+    value: str = Field(..., description="Choice value")
 
     label: Optional[str] = Field(
-        None,
-        description="Human-readable label for the choice"
+        None, description="Human-readable label for the choice"
     )
 
     description: Optional[str] = Field(
-        None,
-        description="Detailed description of the choice"
+        None, description="Detailed description of the choice"
     )
 
     def get_display_label(self) -> str:
@@ -50,25 +46,29 @@ class ValidationRule(BaseModel):
 
     rule_type: str = Field(
         ...,
-        description="Type of validation rule (pattern, min_length, max_length, etc.)"
+        description="Type of validation rule (pattern, min_length, max_length, etc.)",
     )
 
-    value: Any = Field(
-        ...,
-        description="Value for the validation rule"
-    )
+    value: Any = Field(..., description="Value for the validation rule")
 
     message: Optional[str] = Field(
-        None,
-        description="Custom error message for validation failure"
+        None, description="Custom error message for validation failure"
     )
 
     @validator("rule_type")
     def validate_rule_type(cls, v):
         """Validate rule type is supported."""
         valid_types = {
-            "pattern", "min_length", "max_length", "min_value", "max_value",
-            "min_items", "max_items", "required", "format", "custom"
+            "pattern",
+            "min_length",
+            "max_length",
+            "min_value",
+            "max_value",
+            "min_items",
+            "max_items",
+            "required",
+            "format",
+            "custom",
         }
         if v not in valid_types:
             raise ValueError(f"Invalid rule type '{v}'. Must be one of: {valid_types}")
@@ -78,31 +78,39 @@ class ValidationRule(BaseModel):
 class ConditionalLogic(BaseModel):
     """Conditional logic for showing/hiding variables."""
 
-    variable: str = Field(
-        ...,
-        description="Variable name to check"
-    )
+    variable: str = Field(..., description="Variable name to check")
 
     operator: str = Field(
-        ...,
-        description="Comparison operator (==, !=, in, not_in, contains, etc.)"
+        ..., description="Comparison operator (==, !=, in, not_in, contains, etc.)"
     )
 
-    value: Any = Field(
-        ...,
-        description="Value to compare against"
-    )
+    value: Any = Field(..., description="Value to compare against")
 
     @validator("operator")
     def validate_operator(cls, v):
         """Validate operator is supported."""
         valid_operators = {
-            "==", "!=", "<", "<=", ">", ">=", "in", "not_in",
-            "contains", "not_contains", "startswith", "endswith",
-            "is_empty", "is_not_empty", "matches", "not_matches"
+            "==",
+            "!=",
+            "<",
+            "<=",
+            ">",
+            ">=",
+            "in",
+            "not_in",
+            "contains",
+            "not_contains",
+            "startswith",
+            "endswith",
+            "is_empty",
+            "is_not_empty",
+            "matches",
+            "not_matches",
         }
         if v not in valid_operators:
-            raise ValueError(f"Invalid operator '{v}'. Must be one of: {valid_operators}")
+            raise ValueError(
+                f"Invalid operator '{v}'. Must be one of: {valid_operators}"
+            )
         return v
 
 
@@ -112,64 +120,47 @@ class TemplateVariable(BaseModel):
     name: str = Field(
         ...,
         description="Variable name (must be valid identifier)",
-        pattern=r"^[a-zA-Z_][a-zA-Z0-9_]*$"
+        pattern=r"^[a-zA-Z_][a-zA-Z0-9_]*$",
     )
 
-    type: VariableType = Field(
-        ...,
-        description="Variable type"
-    )
+    type: VariableType = Field(..., description="Variable type")
 
     description: str = Field(
         ...,
         description="Human-readable description of the variable",
         min_length=1,
-        max_length=200
+        max_length=200,
     )
 
-    default: Optional[Any] = Field(
-        None,
-        description="Default value for the variable"
-    )
+    default: Optional[Any] = Field(None, description="Default value for the variable")
 
-    required: bool = Field(
-        default=True,
-        description="Whether the variable is required"
-    )
+    required: bool = Field(default=True, description="Whether the variable is required")
 
-    prompt: Optional[str] = Field(
-        None,
-        description="Custom prompt text for user input"
-    )
+    prompt: Optional[str] = Field(None, description="Custom prompt text for user input")
 
     help_text: Optional[str] = Field(
-        None,
-        description="Additional help text for the variable"
+        None, description="Additional help text for the variable"
     )
 
     choices: Optional[List[ChoiceItem]] = Field(
-        None,
-        description="Available choices for choice/multichoice variables"
+        None, description="Available choices for choice/multichoice variables"
     )
 
     validation_rules: List[ValidationRule] = Field(
-        default_factory=list,
-        description="Validation rules for the variable"
+        default_factory=list, description="Validation rules for the variable"
     )
 
     show_if: Optional[List[ConditionalLogic]] = Field(
-        None,
-        description="Conditions for showing this variable"
+        None, description="Conditions for showing this variable"
     )
 
     hide_if: Optional[List[ConditionalLogic]] = Field(
-        None,
-        description="Conditions for hiding this variable"
+        None, description="Conditions for hiding this variable"
     )
 
     filters: List[str] = Field(
         default_factory=list,
-        description="Template filters to apply (snake_case, kebab_case, etc.)"
+        description="Template filters to apply (snake_case, kebab_case, etc.)",
     )
 
     @validator("choices")
@@ -179,9 +170,13 @@ class TemplateVariable(BaseModel):
             var_type = values["type"]
             if var_type in [VariableType.CHOICE, VariableType.MULTICHOICE]:
                 if not v or len(v) == 0:
-                    raise ValueError(f"Choices must be provided for {var_type} variables")
+                    raise ValueError(
+                        f"Choices must be provided for {var_type} variables"
+                    )
                 if len(v) < 2:
-                    raise ValueError(f"At least 2 choices required for {var_type} variables")
+                    raise ValueError(
+                        f"At least 2 choices required for {var_type} variables"
+                    )
         return v
 
     @validator("default")
@@ -228,7 +223,9 @@ class TemplateVariable(BaseModel):
             pass
         else:  # STRING and others
             if not isinstance(v, str):
-                raise ValueError(f"Default value for {var_type} variable must be string")
+                raise ValueError(
+                    f"Default value for {var_type} variable must be string"
+                )
 
         return v
 
@@ -236,14 +233,26 @@ class TemplateVariable(BaseModel):
     def validate_filters(cls, v):
         """Validate template filters are supported."""
         supported_filters = {
-            "snake_case", "kebab_case", "camel_case", "pascal_case",
-            "upper", "lower", "title", "capitalize", "strip",
-            "slugify", "sanitize", "replace_spaces", "normalize_path"
+            "snake_case",
+            "kebab_case",
+            "camel_case",
+            "pascal_case",
+            "upper",
+            "lower",
+            "title",
+            "capitalize",
+            "strip",
+            "slugify",
+            "sanitize",
+            "replace_spaces",
+            "normalize_path",
         }
 
         for filter_name in v:
             if filter_name not in supported_filters:
-                raise ValueError(f"Unsupported filter '{filter_name}'. Supported: {supported_filters}")
+                raise ValueError(
+                    f"Unsupported filter '{filter_name}'. Supported: {supported_filters}"
+                )
 
         return v
 
@@ -300,7 +309,9 @@ class TemplateVariable(BaseModel):
         elif self.type == VariableType.EMAIL:
             if not isinstance(value, str):
                 errors.append(f"Variable '{self.name}' must be string")
-            elif not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", value):
+            elif not re.match(
+                r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", value
+            ):
                 errors.append(f"Variable '{self.name}' must be valid email address")
         elif self.type == VariableType.URL:
             if not isinstance(value, str):
@@ -314,7 +325,9 @@ class TemplateVariable(BaseModel):
             if self.choices:
                 valid_values = [c.value for c in self.choices]
                 if value not in valid_values:
-                    errors.append(f"Variable '{self.name}' must be one of: {valid_values}")
+                    errors.append(
+                        f"Variable '{self.name}' must be one of: {valid_values}"
+                    )
         elif self.type == VariableType.MULTICHOICE:
             if not isinstance(value, list):
                 errors.append(f"Variable '{self.name}' must be list")
@@ -322,7 +335,9 @@ class TemplateVariable(BaseModel):
                 valid_values = [c.value for c in self.choices]
                 for item in value:
                     if item not in valid_values:
-                        errors.append(f"Invalid choice '{item}' for variable '{self.name}'. Must be one of: {valid_values}")
+                        errors.append(
+                            f"Invalid choice '{item}' for variable '{self.name}'. Must be one of: {valid_values}"
+                        )
 
         # Apply validation rules
         for rule in self.validation_rules:
@@ -338,34 +353,57 @@ class TemplateVariable(BaseModel):
         try:
             if rule.rule_type == "pattern":
                 if isinstance(value, str) and not re.match(rule.value, value):
-                    msg = rule.message or f"Variable '{self.name}' must match pattern: {rule.value}"
+                    msg = (
+                        rule.message
+                        or f"Variable '{self.name}' must match pattern: {rule.value}"
+                    )
                     errors.append(msg)
             elif rule.rule_type == "min_length":
                 if hasattr(value, "__len__") and len(value) < rule.value:
-                    msg = rule.message or f"Variable '{self.name}' must be at least {rule.value} characters"
+                    msg = (
+                        rule.message
+                        or f"Variable '{self.name}' must be at least {rule.value} characters"
+                    )
                     errors.append(msg)
             elif rule.rule_type == "max_length":
                 if hasattr(value, "__len__") and len(value) > rule.value:
-                    msg = rule.message or f"Variable '{self.name}' must be at most {rule.value} characters"
+                    msg = (
+                        rule.message
+                        or f"Variable '{self.name}' must be at most {rule.value} characters"
+                    )
                     errors.append(msg)
             elif rule.rule_type == "min_value":
                 if isinstance(value, (int, float)) and value < rule.value:
-                    msg = rule.message or f"Variable '{self.name}' must be at least {rule.value}"
+                    msg = (
+                        rule.message
+                        or f"Variable '{self.name}' must be at least {rule.value}"
+                    )
                     errors.append(msg)
             elif rule.rule_type == "max_value":
                 if isinstance(value, (int, float)) and value > rule.value:
-                    msg = rule.message or f"Variable '{self.name}' must be at most {rule.value}"
+                    msg = (
+                        rule.message
+                        or f"Variable '{self.name}' must be at most {rule.value}"
+                    )
                     errors.append(msg)
             elif rule.rule_type == "min_items":
                 if isinstance(value, list) and len(value) < rule.value:
-                    msg = rule.message or f"Variable '{self.name}' must have at least {rule.value} items"
+                    msg = (
+                        rule.message
+                        or f"Variable '{self.name}' must have at least {rule.value} items"
+                    )
                     errors.append(msg)
             elif rule.rule_type == "max_items":
                 if isinstance(value, list) and len(value) > rule.value:
-                    msg = rule.message or f"Variable '{self.name}' must have at most {rule.value} items"
+                    msg = (
+                        rule.message
+                        or f"Variable '{self.name}' must have at most {rule.value} items"
+                    )
                     errors.append(msg)
         except Exception as e:
-            errors.append(f"Error applying validation rule '{rule.rule_type}': {str(e)}")
+            errors.append(
+                f"Error applying validation rule '{rule.rule_type}': {str(e)}"
+            )
 
         return errors
 
@@ -389,7 +427,9 @@ class TemplateVariable(BaseModel):
 
         return True
 
-    def _evaluate_condition(self, condition: ConditionalLogic, variable_values: Dict[str, Any]) -> bool:
+    def _evaluate_condition(
+        self, condition: ConditionalLogic, variable_values: Dict[str, Any]
+    ) -> bool:
         """Evaluate a single conditional logic statement."""
         if condition.variable not in variable_values:
             return False
@@ -437,5 +477,6 @@ class TemplateVariable(BaseModel):
 
     class Config:
         """Pydantic configuration."""
+
         validate_assignment = True
         extra = "forbid"

@@ -8,10 +8,10 @@ from typing import Dict, List, Tuple
 def validate_project_structure(project_root: Path) -> Tuple[bool, List[str], List[str]]:
     """
     Validate that all required directories and files exist.
-    
+
     Args:
         project_root: Path to the project root directory
-        
+
     Returns:
         Tuple of (is_valid, missing_dirs, missing_files)
     """
@@ -38,7 +38,7 @@ def validate_project_structure(project_root: Path) -> Tuple[bool, List[str], Lis
         "docs/templates",
         "build",
         "dist",
-        "scripts"
+        "scripts",
     ]
 
     required_files = [
@@ -59,7 +59,7 @@ def validate_project_structure(project_root: Path) -> Tuple[bool, List[str], Lis
         "tests/unit/__init__.py",
         "tests/integration/__init__.py",
         "tests/gui/__init__.py",
-        "pyproject.toml"
+        "pyproject.toml",
     ]
 
     missing_dirs = []
@@ -84,10 +84,10 @@ def validate_project_structure(project_root: Path) -> Tuple[bool, List[str], Lis
 def get_structure_report(project_root: Path) -> Dict[str, any]:
     """
     Generate a comprehensive structure validation report.
-    
+
     Args:
         project_root: Path to the project root directory
-        
+
     Returns:
         Dictionary containing validation results and statistics
     """
@@ -99,17 +99,17 @@ def get_structure_report(project_root: Path) -> Dict[str, any]:
         "missing_files": missing_files,
         "directories_count": len([d for d in (project_root).rglob("*") if d.is_dir()]),
         "files_count": len([f for f in (project_root).rglob("*") if f.is_file()]),
-        "project_root": str(project_root)
+        "project_root": str(project_root),
     }
 
 
 def create_missing_structure(project_root: Path) -> bool:
     """
     Create any missing directories and basic files.
-    
+
     Args:
         project_root: Path to the project root directory
-        
+
     Returns:
         True if structure was created successfully, False otherwise
     """

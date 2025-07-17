@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, validator
 
 class ActionType(str, Enum):
     """Types of template actions."""
+
     COMMAND = "command"
     PYTHON = "python"
     GIT = "git"
@@ -21,6 +22,7 @@ class ActionType(str, Enum):
 
 class Platform(str, Enum):
     """Supported platforms for actions."""
+
     WINDOWS = "windows"
     MACOS = "macos"
     LINUX = "linux"
@@ -30,59 +32,42 @@ class Platform(str, Enum):
 class TemplateAction(BaseModel):
     """Template action for post-creation commands."""
 
-    name: str = Field(
-        ...,
-        description="Action name for logging and identification"
-    )
+    name: str = Field(..., description="Action name for logging and identification")
 
-    type: ActionType = Field(
-        ...,
-        description="Type of action to perform"
-    )
+    type: ActionType = Field(..., description="Type of action to perform")
 
-    command: str = Field(
-        ...,
-        description="Command to execute or action to perform"
-    )
+    command: str = Field(..., description="Command to execute or action to perform")
 
     description: str = Field(
-        ...,
-        description="Human-readable description of the action"
+        ..., description="Human-readable description of the action"
     )
 
     working_directory: Optional[str] = Field(
-        None,
-        description="Working directory for the action (relative to project root)"
+        None, description="Working directory for the action (relative to project root)"
     )
 
     platforms: List[Platform] = Field(
         default_factory=lambda: [Platform.WINDOWS, Platform.MACOS, Platform.LINUX],
-        description="Platforms where this action should run"
+        description="Platforms where this action should run",
     )
 
     condition: Optional[str] = Field(
-        None,
-        description="Jinja2 condition for running this action"
+        None, description="Jinja2 condition for running this action"
     )
 
     required: bool = Field(
         default=True,
-        description="Whether action failure should stop template generation"
+        description="Whether action failure should stop template generation",
     )
 
-    timeout: Optional[int] = Field(
-        None,
-        description="Action timeout in seconds"
-    )
+    timeout: Optional[int] = Field(None, description="Action timeout in seconds")
 
     environment: Dict[str, str] = Field(
-        default_factory=dict,
-        description="Environment variables for the action"
+        default_factory=dict, description="Environment variables for the action"
     )
 
     arguments: List[str] = Field(
-        default_factory=list,
-        description="Additional arguments for the action"
+        default_factory=list, description="Additional arguments for the action"
     )
 
     @validator("command")
@@ -139,7 +124,7 @@ class TemplateAction(BaseModel):
             "darwin": Platform.MACOS,
             "linux": Platform.LINUX,
             "win32": Platform.WINDOWS,
-            "cygwin": Platform.WINDOWS
+            "cygwin": Platform.WINDOWS,
         }
 
         current_platform = platform_map.get(platform.lower())
@@ -151,7 +136,10 @@ class TemplateAction(BaseModel):
             return True
 
         # Check UNIX platform (macOS + Linux)
-        if Platform.UNIX in self.platforms and current_platform in [Platform.MACOS, Platform.LINUX]:
+        if Platform.UNIX in self.platforms and current_platform in [
+            Platform.MACOS,
+            Platform.LINUX,
+        ]:
             return True
 
         return False
@@ -168,10 +156,11 @@ class TemplateAction(BaseModel):
             r"format\s+[a-zA-Z]:",
             r">\s*/dev/null",
             r"&\s*$",
-            r";\s*$"
+            r";\s*$",
         ]
 
         import re
+
         for pattern in dangerous_patterns:
             if re.search(pattern, command):
                 raise ValueError(f"Command contains dangerous pattern: {pattern}")
@@ -182,34 +171,25 @@ class TemplateAction(BaseModel):
 class ActionGroup(BaseModel):
     """Group of related actions."""
 
-    name: str = Field(
-        ...,
-        description="Group name"
-    )
+    name: str = Field(..., description="Group name")
 
-    description: str = Field(
-        ...,
-        description="Group description"
-    )
+    description: str = Field(..., description="Group description")
 
     actions: List[TemplateAction] = Field(
-        default_factory=list,
-        description="Actions in this group"
+        default_factory=list, description="Actions in this group"
     )
 
     condition: Optional[str] = Field(
-        None,
-        description="Condition for running this entire group"
+        None, description="Condition for running this entire group"
     )
 
     parallel: bool = Field(
-        default=False,
-        description="Whether actions in this group can run in parallel"
+        default=False, description="Whether actions in this group can run in parallel"
     )
 
     continue_on_error: bool = Field(
         default=False,
-        description="Whether to continue if an action in this group fails"
+        description="Whether to continue if an action in this group fails",
     )
 
     def validate_actions(self) -> List[str]:
@@ -220,7 +200,9 @@ class ActionGroup(BaseModel):
         names = [action.name for action in self.actions]
         if len(names) != len(set(names)):
             duplicates = [name for name in set(names) if names.count(name) > 1]
-            errors.append(f"Duplicate action names in group '{self.name}': {duplicates}")
+            errors.append(
+                f"Duplicate action names in group '{self.name}': {duplicates}"
+            )
 
         return errors
 
@@ -229,33 +211,27 @@ class TemplateHooks(BaseModel):
     """Template hooks for different stages of project generation."""
 
     pre_generate: List[TemplateAction] = Field(
-        default_factory=list,
-        description="Actions to run before project generation"
+        default_factory=list, description="Actions to run before project generation"
     )
 
     post_generate: List[TemplateAction] = Field(
-        default_factory=list,
-        description="Actions to run after project generation"
+        default_factory=list, description="Actions to run after project generation"
     )
 
     pre_file: List[TemplateAction] = Field(
-        default_factory=list,
-        description="Actions to run before each file is generated"
+        default_factory=list, description="Actions to run before each file is generated"
     )
 
     post_file: List[TemplateAction] = Field(
-        default_factory=list,
-        description="Actions to run after each file is generated"
+        default_factory=list, description="Actions to run after each file is generated"
     )
 
     on_error: List[TemplateAction] = Field(
-        default_factory=list,
-        description="Actions to run when an error occurs"
+        default_factory=list, description="Actions to run when an error occurs"
     )
 
     cleanup: List[TemplateAction] = Field(
-        default_factory=list,
-        description="Actions to run for cleanup (always runs)"
+        default_factory=list, description="Actions to run for cleanup (always runs)"
     )
 
     def get_all_actions(self) -> List[TemplateAction]:
@@ -285,5 +261,6 @@ class TemplateHooks(BaseModel):
 
 class Config:
     """Pydantic configuration."""
+
     validate_assignment = True
     extra = "forbid"

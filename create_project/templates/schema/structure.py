@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, validator
 
 class ItemType(str, Enum):
     """Types of items in template structure."""
+
     FILE = "file"
     DIRECTORY = "directory"
     SYMLINK = "symlink"
@@ -18,6 +19,7 @@ class ItemType(str, Enum):
 
 class FileEncoding(str, Enum):
     """Supported file encodings."""
+
     UTF8 = "utf-8"
     ASCII = "ascii"
     LATIN1 = "latin-1"
@@ -26,6 +28,7 @@ class FileEncoding(str, Enum):
 
 class FilePermissions(str, Enum):
     """Common file permission patterns."""
+
     READ_ONLY = "444"
     READ_WRITE = "644"
     EXECUTABLE = "755"
@@ -37,14 +40,10 @@ class FilePermissions(str, Enum):
 class ConditionalExpression(BaseModel):
     """Expression for conditional file/directory creation."""
 
-    expression: str = Field(
-        ...,
-        description="Jinja2 conditional expression"
-    )
+    expression: str = Field(..., description="Jinja2 conditional expression")
 
     variables: Optional[List[str]] = Field(
-        None,
-        description="Variables used in the expression (for dependency tracking)"
+        None, description="Variables used in the expression (for dependency tracking)"
     )
 
     @validator("expression")
@@ -54,10 +53,14 @@ class ConditionalExpression(BaseModel):
             raise ValueError("Expression cannot be empty")
 
         # Basic checks for Jinja2 syntax
-        if not (v.startswith("{{") and v.endswith("}}")) and not ("{{" in v and "}}" in v):
+        if not (v.startswith("{{") and v.endswith("}}")) and not (
+            "{{" in v and "}}" in v
+        ):
             # Allow simple variable references without {{ }}
             if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", v):
-                raise ValueError("Expression must be valid Jinja2 syntax or simple variable name")
+                raise ValueError(
+                    "Expression must be valid Jinja2 syntax or simple variable name"
+                )
 
         return v.strip()
 
@@ -65,64 +68,48 @@ class ConditionalExpression(BaseModel):
 class FileItem(BaseModel):
     """File item in template structure."""
 
-    name: str = Field(
-        ...,
-        description="File name (can include template variables)"
-    )
+    name: str = Field(..., description="File name (can include template variables)")
 
-    type: ItemType = Field(
-        default=ItemType.FILE,
-        description="Item type"
-    )
+    type: ItemType = Field(default=ItemType.FILE, description="Item type")
 
     content: Optional[str] = Field(
-        None,
-        description="Inline file content (Jinja2 template)"
+        None, description="Inline file content (Jinja2 template)"
     )
 
     template_file: Optional[str] = Field(
-        None,
-        description="Path to template file relative to template directory"
+        None, description="Path to template file relative to template directory"
     )
 
     source_file: Optional[str] = Field(
-        None,
-        description="Path to source file to copy (for binary files)"
+        None, description="Path to source file to copy (for binary files)"
     )
 
     encoding: FileEncoding = Field(
-        default=FileEncoding.UTF8,
-        description="File encoding"
+        default=FileEncoding.UTF8, description="File encoding"
     )
 
     permissions: FilePermissions = Field(
-        default=FilePermissions.READ_WRITE,
-        description="File permissions"
+        default=FilePermissions.READ_WRITE, description="File permissions"
     )
 
     executable: bool = Field(
-        default=False,
-        description="Whether file should be executable"
+        default=False, description="Whether file should be executable"
     )
 
     condition: Optional[ConditionalExpression] = Field(
-        None,
-        description="Condition for creating this file"
+        None, description="Condition for creating this file"
     )
 
     target_path: Optional[str] = Field(
-        None,
-        description="Custom target path (overrides default path calculation)"
+        None, description="Custom target path (overrides default path calculation)"
     )
 
     is_binary: bool = Field(
-        default=False,
-        description="Whether file is binary (no template processing)"
+        default=False, description="Whether file is binary (no template processing)"
     )
 
     preserve_line_endings: bool = Field(
-        default=False,
-        description="Preserve original line endings"
+        default=False, description="Preserve original line endings"
     )
 
     @validator("name")
@@ -138,9 +125,28 @@ class FileItem(BaseModel):
 
         # Check for reserved names on Windows
         reserved_names = {
-            "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4",
-            "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2",
-            "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+            "CON",
+            "PRN",
+            "AUX",
+            "NUL",
+            "COM1",
+            "COM2",
+            "COM3",
+            "COM4",
+            "COM5",
+            "COM6",
+            "COM7",
+            "COM8",
+            "COM9",
+            "LPT1",
+            "LPT2",
+            "LPT3",
+            "LPT4",
+            "LPT5",
+            "LPT6",
+            "LPT7",
+            "LPT8",
+            "LPT9",
         }
 
         base_name = v.split(".")[0].upper()
@@ -174,7 +180,9 @@ class FileItem(BaseModel):
         if isinstance(v, str):
             # Check if it's a valid octal permission string
             if not re.match(r"^[0-7]{3}$", v):
-                raise ValueError("Permissions must be a 3-digit octal string (e.g., '644')")
+                raise ValueError(
+                    "Permissions must be a 3-digit octal string (e.g., '644')"
+                )
         return v
 
     def validate_content_source(self):
@@ -185,7 +193,9 @@ class FileItem(BaseModel):
         if len(non_none_sources) == 0:
             raise ValueError("File must have content, template_file, or source_file")
         elif len(non_none_sources) > 1:
-            raise ValueError("File can only have one of: content, template_file, or source_file")
+            raise ValueError(
+                "File can only have one of: content, template_file, or source_file"
+            )
 
     def get_final_permissions(self) -> str:
         """Get final file permissions considering executable flag."""
@@ -200,50 +210,42 @@ class FileItem(BaseModel):
 
     def is_templated(self) -> bool:
         """Check if file content should be processed as template."""
-        return not self.is_binary and (self.content is not None or self.template_file is not None)
+        return not self.is_binary and (
+            self.content is not None or self.template_file is not None
+        )
 
 
 class DirectoryItem(BaseModel):
     """Directory item in template structure."""
 
     name: str = Field(
-        ...,
-        description="Directory name (can include template variables)"
+        ..., description="Directory name (can include template variables)"
     )
 
-    type: ItemType = Field(
-        default=ItemType.DIRECTORY,
-        description="Item type"
-    )
+    type: ItemType = Field(default=ItemType.DIRECTORY, description="Item type")
 
     files: List[FileItem] = Field(
-        default_factory=list,
-        description="Files in this directory"
+        default_factory=list, description="Files in this directory"
     )
 
     directories: List["DirectoryItem"] = Field(
-        default_factory=list,
-        description="Subdirectories in this directory"
+        default_factory=list, description="Subdirectories in this directory"
     )
 
     permissions: FilePermissions = Field(
-        default=FilePermissions.EXECUTABLE,
-        description="Directory permissions"
+        default=FilePermissions.EXECUTABLE, description="Directory permissions"
     )
 
     condition: Optional[ConditionalExpression] = Field(
-        None,
-        description="Condition for creating this directory"
+        None, description="Condition for creating this directory"
     )
 
     target_path: Optional[str] = Field(
-        None,
-        description="Custom target path (overrides default path calculation)"
+        None, description="Custom target path (overrides default path calculation)"
     )
 
     create_if_empty: bool = Field(
-        default=True,
-        description="Create directory even if it contains no files"
+        default=True, description="Create directory even if it contains no files"
     )
 
     @validator("name")
@@ -259,9 +261,28 @@ class DirectoryItem(BaseModel):
 
         # Check for reserved names
         reserved_names = {
-            "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4",
-            "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2",
-            "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+            "CON",
+            "PRN",
+            "AUX",
+            "NUL",
+            "COM1",
+            "COM2",
+            "COM3",
+            "COM4",
+            "COM5",
+            "COM6",
+            "COM7",
+            "COM8",
+            "COM9",
+            "LPT1",
+            "LPT2",
+            "LPT3",
+            "LPT4",
+            "LPT5",
+            "LPT6",
+            "LPT7",
+            "LPT8",
+            "LPT9",
         }
 
         if v.upper() in reserved_names:
@@ -319,28 +340,38 @@ class DirectoryItem(BaseModel):
         # Check for duplicate file names
         file_names = [f.name for f in self.files]
         if len(file_names) != len(set(file_names)):
-            duplicates = [name for name in set(file_names) if file_names.count(name) > 1]
-            errors.append(f"Duplicate file names in directory '{self.name}': {duplicates}")
+            duplicates = [
+                name for name in set(file_names) if file_names.count(name) > 1
+            ]
+            errors.append(
+                f"Duplicate file names in directory '{self.name}': {duplicates}"
+            )
 
         # Check for duplicate directory names
         dir_names = [d.name for d in self.directories]
         if len(dir_names) != len(set(dir_names)):
             duplicates = [name for name in set(dir_names) if dir_names.count(name) > 1]
-            errors.append(f"Duplicate directory names in directory '{self.name}': {duplicates}")
+            errors.append(
+                f"Duplicate directory names in directory '{self.name}': {duplicates}"
+            )
 
         # Check for name conflicts between files and directories
         file_names_set = set(file_names)
         dir_names_set = set(dir_names)
         conflicts = file_names_set.intersection(dir_names_set)
         if conflicts:
-            errors.append(f"Name conflicts between files and directories in '{self.name}': {conflicts}")
+            errors.append(
+                f"Name conflicts between files and directories in '{self.name}': {conflicts}"
+            )
 
         # Validate files
         for file in self.files:
             try:
                 file.validate_content_source()
             except ValueError as e:
-                errors.append(f"File '{file.name}' in directory '{self.name}': {str(e)}")
+                errors.append(
+                    f"File '{file.name}' in directory '{self.name}': {str(e)}"
+                )
 
         # Recursively validate subdirectories
         for subdir in self.directories:
@@ -363,18 +394,15 @@ class ProjectStructure(BaseModel):
     """Complete project structure definition."""
 
     root_directory: DirectoryItem = Field(
-        ...,
-        description="Root directory of the project"
+        ..., description="Root directory of the project"
     )
 
     global_ignore_patterns: List[str] = Field(
-        default_factory=list,
-        description="Global patterns to ignore during generation"
+        default_factory=list, description="Global patterns to ignore during generation"
     )
 
     preserve_empty_directories: bool = Field(
-        default=False,
-        description="Whether to preserve empty directories"
+        default=False, description="Whether to preserve empty directories"
     )
 
     def validate_structure(self) -> List[str]:
@@ -388,7 +416,9 @@ class ProjectStructure(BaseModel):
         # Check for reasonable structure size
         total_items = self.root_directory.calculate_total_size()
         if total_items > 1000:
-            errors.append(f"Project structure is very large ({total_items} items). Consider simplifying.")
+            errors.append(
+                f"Project structure is very large ({total_items} items). Consider simplifying."
+            )
 
         return errors
 
@@ -416,29 +446,21 @@ DirectoryItem.model_rebuild()
 class TemplateFile(BaseModel):
     """Template file content and metadata."""
 
-    name: str = Field(
-        ...,
-        description="Template file name"
-    )
+    name: str = Field(..., description="Template file name")
 
-    content: str = Field(
-        ...,
-        description="Template file content (Jinja2 template)"
-    )
+    content: str = Field(..., description="Template file content (Jinja2 template)")
 
     encoding: FileEncoding = Field(
-        default=FileEncoding.UTF8,
-        description="Template file encoding"
+        default=FileEncoding.UTF8, description="Template file encoding"
     )
 
     description: Optional[str] = Field(
-        None,
-        description="Description of template file purpose"
+        None, description="Description of template file purpose"
     )
 
     variables_used: List[str] = Field(
         default_factory=list,
-        description="Variables used in this template (for dependency tracking)"
+        description="Variables used in this template (for dependency tracking)",
     )
 
     @validator("name")
@@ -461,13 +483,11 @@ class TemplateFiles(BaseModel):
     """Collection of template files."""
 
     files: List[TemplateFile] = Field(
-        default_factory=list,
-        description="Template files"
+        default_factory=list, description="Template files"
     )
 
     base_path: str = Field(
-        default="templates",
-        description="Base path for template files"
+        default="templates", description="Base path for template files"
     )
 
     def find_template(self, name: str) -> Optional[TemplateFile]:
@@ -493,5 +513,6 @@ class TemplateFiles(BaseModel):
 # Configuration for the models
 class Config:
     """Pydantic configuration."""
+
     validate_assignment = True
     extra = "forbid"

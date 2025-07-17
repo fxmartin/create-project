@@ -57,35 +57,46 @@ class TestProjectStructure:
         assert isinstance(missing_files, list), "missing_files should be list"
 
         # Structure should be valid
-        assert is_valid, f"Project structure invalid. Missing dirs: {missing_dirs}, Missing files: {missing_files}"
+        assert is_valid, (
+            f"Project structure invalid. Missing dirs: {missing_dirs}, Missing files: {missing_files}"
+        )
 
     def test_structure_report_generation(self, project_root):
         """Test structure report generation."""
         report = get_structure_report(project_root)
 
         assert "is_valid" in report, "Report should contain is_valid"
-        assert "missing_directories" in report, "Report should contain missing_directories"
+        assert "missing_directories" in report, (
+            "Report should contain missing_directories"
+        )
         assert "missing_files" in report, "Report should contain missing_files"
         assert "directories_count" in report, "Report should contain directories_count"
         assert "files_count" in report, "Report should contain files_count"
         assert "project_root" in report, "Report should contain project_root"
 
         assert report["is_valid"] is True, "Project structure should be valid"
-        assert len(report["missing_directories"]) == 0, "Should have no missing directories"
+        assert len(report["missing_directories"]) == 0, (
+            "Should have no missing directories"
+        )
         assert len(report["missing_files"]) == 0, "Should have no missing files"
 
     def test_package_imports_work(self, project_root):
         """Test that package imports work correctly."""
         # Test main package import
         import create_project
+
         assert hasattr(create_project, "__version__"), "Package should have version"
 
         # Test subpackage imports
         from create_project import core, gui, utils
+
         assert core is not None, "Core module should be importable"
         assert gui is not None, "GUI module should be importable"
         assert utils is not None, "Utils module should be importable"
 
         # Test utils import
         from create_project.utils import structure_validator
-        assert structure_validator is not None, "Structure validator should be importable"
+
+        assert structure_validator is not None, (
+            "Structure validator should be importable"
+        )

@@ -27,7 +27,7 @@ class LoggerConfig:
         console_colors: bool = True,
     ):
         """Initialize logger configuration.
-        
+
         Args:
             level: Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
             format_json: Whether to use JSON formatting
@@ -66,7 +66,7 @@ class StructuredLogger:
 
     def __init__(self, name: str, config: LoggerConfig):
         """Initialize structured logger.
-        
+
         Args:
             name: Logger name (typically module or component name)
             config: Logger configuration
@@ -113,13 +113,13 @@ class StructuredLogger:
                     "WARNING": "yellow",
                     "ERROR": "red",
                     "CRITICAL": "red,bg_white",
-                }
+                },
             )
         else:
             # Use plain formatter
             formatter = logging.Formatter(
                 "%(asctime)s [%(levelname)8s] %(name)s: %(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S"
+                datefmt="%Y-%m-%d %H:%M:%S",
             )
 
         handler.setFormatter(formatter)
@@ -133,7 +133,7 @@ class StructuredLogger:
         app_handler = logging.handlers.RotatingFileHandler(
             self.config.log_dir / "app.log",
             maxBytes=self.config.max_bytes,
-            backupCount=self.config.backup_count
+            backupCount=self.config.backup_count,
         )
         app_formatter = self._get_file_formatter()
         app_handler.setFormatter(app_formatter)
@@ -143,7 +143,7 @@ class StructuredLogger:
         error_handler = logging.handlers.RotatingFileHandler(
             self.config.log_dir / "error.log",
             maxBytes=self.config.max_bytes,
-            backupCount=self.config.backup_count
+            backupCount=self.config.backup_count,
         )
         error_handler.setLevel(logging.ERROR)
         error_handler.setFormatter(app_formatter)
@@ -154,7 +154,7 @@ class StructuredLogger:
             debug_handler = logging.handlers.RotatingFileHandler(
                 self.config.log_dir / "debug.log",
                 maxBytes=self.config.max_bytes,
-                backupCount=self.config.backup_count
+                backupCount=self.config.backup_count,
             )
             debug_handler.setFormatter(app_formatter)
             handlers.append(debug_handler)
@@ -175,7 +175,7 @@ class StructuredLogger:
             # Human-readable formatter
             return logging.Formatter(
                 "%(asctime)s [%(levelname)8s] %(name)s [%(module)s:%(funcName)s:%(lineno)d]: %(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S"
+                datefmt="%Y-%m-%d %H:%M:%S",
             )
 
     def _setup_structlog(self) -> None:
@@ -189,7 +189,9 @@ class StructuredLogger:
         if self.config.format_json:
             processors.append(structlog.processors.JSONRenderer())
         else:
-            processors.append(structlog.dev.ConsoleRenderer(colors=self.config.console_colors))
+            processors.append(
+                structlog.dev.ConsoleRenderer(colors=self.config.console_colors)
+            )
 
         structlog.configure(
             processors=processors,
@@ -265,13 +267,15 @@ def get_environment() -> str:
 
 
 # Configuration loading from YAML
-def load_config_from_yaml(config_file: Optional[str] = None, environment: Optional[str] = None) -> LoggerConfig:
+def load_config_from_yaml(
+    config_file: Optional[str] = None, environment: Optional[str] = None
+) -> LoggerConfig:
     """Load logger configuration from YAML file.
-    
+
     Args:
         config_file: Path to YAML configuration file
         environment: Environment name (development, production, testing)
-        
+
     Returns:
         LoggerConfig instance loaded from YAML
     """
@@ -311,12 +315,12 @@ def load_config_from_yaml(config_file: Optional[str] = None, environment: Option
 # Default configuration factory
 def get_default_config(environment: Optional[str] = None) -> LoggerConfig:
     """Get default logger configuration for the specified environment.
-    
+
     Attempts to load from YAML configuration first, falls back to hardcoded defaults.
-    
+
     Args:
         environment: Environment name (development, production, testing)
-        
+
     Returns:
         LoggerConfig instance with environment-appropriate settings
     """
@@ -362,11 +366,11 @@ _default_logger: Optional[StructuredLogger] = None
 
 def get_logger(name: str, config: Optional[LoggerConfig] = None) -> StructuredLogger:
     """Get or create a logger instance.
-    
+
     Args:
         name: Logger name (typically module or component name)
         config: Optional logger configuration (uses default if not provided)
-        
+
     Returns:
         StructuredLogger instance
     """
@@ -378,9 +382,9 @@ def get_logger(name: str, config: Optional[LoggerConfig] = None) -> StructuredLo
 
 def init_logging(config: Optional[LoggerConfig] = None) -> None:
     """Initialize logging system with the specified configuration.
-    
+
     This should be called once at application startup.
-    
+
     Args:
         config: Optional logger configuration (uses default if not provided)
     """
@@ -404,10 +408,10 @@ def init_logging(config: Optional[LoggerConfig] = None) -> None:
 
 def get_default_logger() -> StructuredLogger:
     """Get the default application logger.
-    
+
     Returns:
         Default StructuredLogger instance
-        
+
     Raises:
         RuntimeError: If logging hasn't been initialized
     """

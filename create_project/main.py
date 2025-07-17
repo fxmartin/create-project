@@ -4,7 +4,7 @@
 import sys
 from pathlib import Path
 
-from .utils import init_logging, get_default_logger
+from .utils import get_default_logger, init_logging
 
 
 def main():
@@ -19,7 +19,7 @@ def main():
         print(f"Error initializing logging: {e}")
         print("Python Project Creator starting...")
         logger = None
-    
+
     if logger:
         logger.info("Project structure initialized successfully!")
     else:
@@ -41,7 +41,7 @@ def main():
         "create_project/resources",
         "create_project/config",
         "tests",
-        "docs"
+        "docs",
     ]
 
     missing_dirs = []
@@ -65,6 +65,7 @@ def main():
         print("All required directories present!")
         print("Ready for development!")
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())
