@@ -72,11 +72,64 @@ class TemplateConfig(BaseModel):
         default=False, description="Automatically update templates"
     )
 
+    # Template Schema Settings
+    validate_on_load: bool = Field(
+        default=True, description="Validate templates when loading"
+    )
+    allow_custom_validators: bool = Field(
+        default=False, description="Allow custom Python validators in templates"
+    )
+    max_template_size_mb: int = Field(
+        default=10, ge=1, le=100, description="Maximum template size in MB"
+    )
+    enable_template_cache: bool = Field(
+        default=True, description="Cache loaded and validated templates"
+    )
+    template_file_extensions: List[str] = Field(
+        default_factory=lambda: [".yaml", ".yml"],
+        description="Allowed template file extensions",
+    )
+
+    # Security Settings
+    allow_external_commands: bool = Field(
+        default=False, description="Allow templates to run external commands"
+    )
+    command_whitelist: List[str] = Field(
+        default_factory=lambda: ["git", "npm", "pip", "python", "uv"],
+        description="Whitelisted commands for template actions",
+    )
+
+    # Variable Settings
+    variable_name_pattern: str = Field(
+        default=r"^[a-zA-Z][a-zA-Z0-9_]*$",
+        description="Regex pattern for variable names",
+    )
+    max_variables_per_template: int = Field(
+        default=50, ge=1, le=200, description="Maximum variables per template"
+    )
+
     @field_validator("builtin_path", "custom_path")
     @classmethod
     def validate_template_paths(cls, v):
         """Expand user paths and validate template directories."""
         return os.path.expanduser(v)
+
+    @field_validator("template_file_extensions")
+    @classmethod
+    def validate_extensions(cls, v):
+        """Ensure extensions start with a dot."""
+        return [ext if ext.startswith(".") else f".{ext}" for ext in v]
+
+    @field_validator("variable_name_pattern")
+    @classmethod
+    def validate_regex_pattern(cls, v):
+        """Validate the regex pattern is valid."""
+        import re
+        try:
+            re.compile(v)
+        except re.error as e:
+            raise ValueError(f"Invalid regex pattern: {e}")
+        return v
 
 
 class OllamaConfig(BaseModel):
