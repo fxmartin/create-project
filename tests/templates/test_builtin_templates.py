@@ -1,10 +1,11 @@
 # ABOUTME: Test file for built-in template validation and functionality
 # ABOUTME: Comprehensive tests for all 6 built-in YAML templates
 
+from pathlib import Path
+from typing import Any, Dict
+
 import pytest
 import yaml
-from pathlib import Path
-from typing import Dict, Any
 
 from create_project.templates.schema.template import Template
 from create_project.templates.validator import TemplateValidator
@@ -27,13 +28,13 @@ class TestBuiltinTemplates:
     def _load_template_yaml(self, template_path: Path) -> Dict[str, Any]:
         """Load template YAML with Jinja2 syntax handling."""
         import re
-        
-        with open(template_path, "r") as f:
+
+        with open(template_path) as f:
             content = f.read()
             # Replace Jinja2 syntax with placeholders for YAML parsing
-            test_content = re.sub(r'\{\{python_version\}\}', '3.9.6', content)  # Replace python_version with valid value  
-            test_content = re.sub(r'\{\{[^}]+\}\}', 'PLACEHOLDER', test_content)
-            test_content = re.sub(r'\{\%[^%]+\%\}', '', test_content)
+            test_content = re.sub(r"\{\{python_version\}\}", "3.9.6", content)  # Replace python_version with valid value
+            test_content = re.sub(r"\{\{[^}]+\}\}", "PLACEHOLDER", test_content)
+            test_content = re.sub(r"\{\%[^%]+\%\}", "", test_content)
             return yaml.safe_load(test_content)
 
     @pytest.fixture
@@ -174,9 +175,9 @@ class TestBuiltinTemplates:
             assert "root_directory" in structure, (
                 f"Template {template_name} structure missing root_directory"
             )
-            
+
             root_dir = structure["root_directory"]
-            
+
             # Check that root_directory has name
             assert "name" in root_dir, (
                 f"Template {template_name} structure root_directory missing name"
@@ -328,7 +329,7 @@ class TestBuiltinTemplates:
                         template_licenses.add(choice["value"])
                     elif isinstance(choice, str):
                         template_licenses.add(choice)
-                
+
                 invalid_licenses = template_licenses - valid_licenses
                 assert not invalid_licenses, (
                     f"Template {template_name} has invalid license choices: {invalid_licenses}"
@@ -341,9 +342,10 @@ class TestTemplateIntegration:
     def test_templates_can_be_loaded_by_loader(self, builtin_templates_dir: Path):
         """Test that templates can be loaded by the template loader."""
         from unittest.mock import Mock
-        from create_project.templates.loader import TemplateLoader
+
         from create_project.config.config_manager import ConfigManager
-        
+        from create_project.templates.loader import TemplateLoader
+
         # Create mock config that returns the builtin templates directory
         config = Mock(spec=ConfigManager)
         config.get_setting.side_effect = lambda key, default: {
@@ -351,7 +353,7 @@ class TestTemplateIntegration:
             "templates.builtin_directory": str(builtin_templates_dir),
             "templates.user_directory": str(builtin_templates_dir / "user"),
         }.get(key, default)
-        
+
         loader = TemplateLoader(config_manager=config)
 
         # Test loading all templates
@@ -373,14 +375,14 @@ class TestTemplateIntegration:
 
     def test_templates_can_be_rendered(self, builtin_templates_dir: Path):
         """Test that templates can be rendered with sample data."""
-        from create_project.templates.loader import TemplateLoader
-        from create_project.templates.engine import TemplateEngine
         from create_project.config import ConfigManager
-        
+        from create_project.templates.engine import TemplateEngine
+        from create_project.templates.loader import TemplateLoader
+
         # Create config with builtin templates directory
         config = ConfigManager()
         config.set_setting("templates.builtin_directory", str(builtin_templates_dir))
-        
+
         loader = TemplateLoader(config_manager=config)
         engine = TemplateEngine()
 
@@ -402,7 +404,7 @@ class TestTemplateIntegration:
         for template_info in templates:
             # Load the actual template
             template = loader.load_template(template_info["template_id"])
-            
+
             # Verify we can access basic template properties
             assert template.metadata.name is not None
             assert len(template.variables) > 0
