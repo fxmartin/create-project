@@ -33,15 +33,16 @@ class TemplateLoader:
         self.config_manager = config_manager or ConfigManager()
         self.logger = get_logger(__name__)
 
-        # Get template configuration
-        self.template_directories = self.config_manager.get_setting(
-            "templates.directories", ["templates"]
-        )
+        # Get template configuration using correct field names from TemplateConfig model
         self.builtin_templates_dir = self.config_manager.get_setting(
-            "templates.builtin_directory", "templates/builtin"
+            "templates.builtin_path", "create_project/templates/builtin"
         )
-        self.user_templates_dir = self.config_manager.get_setting(
-            "templates.user_directory", "templates/user"
+        self.user_templates_dir = Path(self.config_manager.get_setting(
+            "templates.custom_path", "~/.project-creator/templates"
+        )).expanduser()
+        # For backward compatibility, also check old field names
+        self.template_directories = self.config_manager.get_setting(
+            "templates.directories", []
         )
 
         self.logger.info(

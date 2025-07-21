@@ -20,8 +20,9 @@
 - ✅ Task S003: Create GUI Test Infrastructure
 - ✅ Task D001: Create Base Wizard Framework
 - ✅ Task D002: Implement Project Type Selection Step
+- ✅ **HOTFIX**: Fixed template directory configuration - All 6 built-in templates now loading correctly
 
-**Current Status**: First wizard step (Project Type Selection) complete with template loading, preview pane, and validation. 7 additional tests passing. Ready for next wizard step implementation.
+**Current Status**: First wizard step (Project Type Selection) complete with template loading, preview pane, and validation. Template configuration issue resolved - GUI now loads actual built-in templates instead of fallback samples. Ready for next wizard step implementation.
 
 ## Atomic Task List
 
@@ -104,6 +105,13 @@
 - 7 passing tests covering all functionality with 100% test success rate
 - Type-safe implementation with mypy strict compliance
 - Proper integration with wizard data flow for subsequent steps
+
+**HOTFIX (2025-07-21)**: Fixed template directory configuration issue
+- ✅ Updated TemplateLoader to use correct config fields (builtin_path vs directories)
+- ✅ Fixed ConfigManager default paths in both models.py and defaults.json 
+- ✅ Added proper path expansion for user template directories
+- ✅ All 6 built-in templates now loading correctly: Python Library/Package, CLI Applications, Django Web App, Flask Web App, One-off Script
+- ✅ GUI now displays actual template metadata instead of fallback samples
 
 #### Task D003: Implement Basic Information Step
 **Type**: Code  

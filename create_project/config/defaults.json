@@ -10,7 +10,7 @@
         "remember_window_state": true
     },
     "templates": {
-        "builtin_path": "./templates",
+        "builtin_path": "create_project/templates/builtin",
         "custom_path": "~/.project-creator/templates",
         "auto_update": false
     },

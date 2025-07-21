@@ -62,7 +62,7 @@ class TemplateConfig(BaseModel):
     """Template system configuration settings."""
 
     builtin_path: str = Field(
-        default="./templates", description="Path to built-in templates"
+        default="create_project/templates/builtin", description="Path to built-in templates"
     )
     custom_path: str = Field(
         default="~/.project-creator/templates",

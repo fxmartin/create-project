@@ -182,6 +182,7 @@ class ProjectWizard(QWizard):
         self,
         config_manager: ConfigManager,
         template_engine: TemplateEngine,
+        template_loader=None,  # Add template_loader parameter
         ai_service: Optional[AIService] = None,
         parent=None
     ):
@@ -191,6 +192,7 @@ class ProjectWizard(QWizard):
         Args:
             config_manager: Configuration manager instance
             template_engine: Template engine instance
+            template_loader: Template loader instance
             ai_service: Optional AI service for assistance
             parent: Parent widget
         """
@@ -198,6 +200,7 @@ class ProjectWizard(QWizard):
         
         self.config_manager = config_manager
         self.template_engine = template_engine
+        self.template_loader = template_loader
         self.ai_service = ai_service
         
         # Wizard data

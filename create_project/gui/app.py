@@ -42,7 +42,11 @@ def setup_application() -> QApplication:
     app.setOrganizationName("CreateProject")
     
     # Enable high DPI scaling
-    app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
+    try:
+        app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
+    except AttributeError:
+        # PyQt6 may have different attribute names
+        pass
     
     # Set default style
     app.setStyle("Fusion")  # Cross-platform style
@@ -72,7 +76,7 @@ def load_configuration() -> ConfigManager:
         sys.exit(1)
 
 
-def initialize_services(config_manager: ConfigManager) -> tuple[TemplateEngine, Optional[AIService]]:
+def initialize_services(config_manager: ConfigManager) -> tuple[TemplateEngine, TemplateLoader, Optional[AIService]]:
     """
     Initialize backend services.
     
@@ -80,25 +84,25 @@ def initialize_services(config_manager: ConfigManager) -> tuple[TemplateEngine, 
         config_manager: Configuration manager instance
         
     Returns:
-        Tuple of (template_engine, ai_service)
+        Tuple of (template_engine, template_loader, ai_service)
     """
-    # Initialize template loader and engine
+    # Initialize template engine and loader
     try:
-        template_loader = TemplateLoader()
-        template_engine = TemplateEngine(template_loader)
-        logger.info("Template engine initialized")
+        template_engine = TemplateEngine(config_manager)
+        template_loader = TemplateLoader(config_manager)
+        logger.info("Template engine and loader initialized")
     except Exception as e:
-        logger.error(f"Failed to initialize template engine: {e}")
+        logger.error(f"Failed to initialize template services: {e}")
         QMessageBox.critical(
             None,
             "Initialization Error",
-            f"Failed to initialize template engine:\n\n{str(e)}"
+            f"Failed to initialize template services:\n\n{str(e)}"
         )
         sys.exit(1)
     
     # Initialize AI service if enabled
     ai_service = None
-    if config_manager.get("ai.enabled", True):
+    if config_manager.get_setting("ai.enabled", True):
         try:
             ai_service = AIService(config_manager)
             ai_service.initialize()
@@ -110,7 +114,7 @@ def initialize_services(config_manager: ConfigManager) -> tuple[TemplateEngine, 
             logger.warning(f"Failed to initialize AI service: {e}")
             # Continue without AI service
     
-    return template_engine, ai_service
+    return template_engine, template_loader, ai_service
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -169,15 +173,16 @@ def main() -> int:
         
         # Override AI setting if requested
         if args.no_ai:
-            config_manager.set("ai.enabled", False)
+            config_manager.set_setting("ai.enabled", False)
         
         # Initialize services
-        template_engine, ai_service = initialize_services(config_manager)
+        template_engine, template_loader, ai_service = initialize_services(config_manager)
         
         # Create and show wizard
         wizard = ProjectWizard(
             config_manager=config_manager,
             template_engine=template_engine,
+            template_loader=template_loader,
             ai_service=ai_service
         )
         

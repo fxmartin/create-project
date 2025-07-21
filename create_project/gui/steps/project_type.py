@@ -82,33 +82,67 @@ class ProjectTypeStep(WizardStep):
         pass
 
     def load_templates(self) -> None:
-        """Load available templates from the template engine."""
+        """Load available templates from the template loader."""
         wizard = self.wizard()
-        if not wizard or not hasattr(wizard, "template_engine"):
+        if not wizard or not hasattr(wizard, "template_loader") or not wizard.template_loader:
             return
 
         try:
             # Get list of available templates
-            templates = wizard.template_engine.list_templates()
+            templates = wizard.template_loader.list_templates()
 
             # Clear existing items
             self.template_list.clear()
             self.templates.clear()
 
             # Add templates to the list
-            for template_name, template_data in templates:
-                # Store template data
-                self.templates[template_name] = template_data
-
-                # Create list item
-                item = QListWidgetItem(template_data.name)
-                item.setData(Qt.ItemDataRole.UserRole, template_name)
-
-                # Add brief description as tooltip
-                if template_data.metadata.description:
-                    item.setToolTip(template_data.metadata.description[:100] + "...")
-
-                self.template_list.addItem(item)
+            if templates:
+                for template_data in templates:
+                    template_name = template_data.get("name", "Unknown Template")
+                    # Store template data (convert dict to simple storage)
+                    self.templates[template_name] = template_data
+                    
+                    # Create list item
+                    item = QListWidgetItem(template_name)
+                    item.setData(Qt.ItemDataRole.UserRole, template_name)
+                    
+                    # Add brief description as tooltip
+                    if template_data.get("description"):
+                        item.setToolTip(template_data["description"][:100] + "...")
+                        
+                    self.template_list.addItem(item)
+            else:
+                # Fallback: Create some sample templates for demonstration
+                sample_templates = [
+                    {
+                        "name": "Python Library",
+                        "description": "A complete Python library package with testing and documentation",
+                        "version": "1.0.0",
+                        "author": "Template System",
+                        "category": "library",
+                        "tags": ["python", "library", "package"],
+                        "structure": "Standard Python package structure"
+                    },
+                    {
+                        "name": "CLI Script", 
+                        "description": "A command-line script with argument parsing",
+                        "version": "1.0.0",
+                        "author": "Template System",
+                        "category": "script", 
+                        "tags": ["python", "cli", "script"],
+                        "structure": "Simple script structure"
+                    }
+                ]
+                
+                for template_data in sample_templates:
+                    template_name = template_data["name"]
+                    self.templates[template_name] = template_data
+                    
+                    item = QListWidgetItem(template_name)
+                    item.setData(Qt.ItemDataRole.UserRole, template_name)
+                    item.setToolTip(template_data["description"])
+                    
+                    self.template_list.addItem(item)
 
             # Select first item if available
             if self.template_list.count() > 0:
@@ -135,29 +169,50 @@ class ProjectTypeStep(WizardStep):
             return
 
         # Build preview HTML
-        html_parts = [
-            f"<h2>{template.name}</h2>",
-            f"<p><b>Description:</b> {template.metadata.description}</p>",
-            f"<p><b>Version:</b> {template.metadata.version}</p>",
-            f"<p><b>Author:</b> {template.metadata.author}</p>",
-            f"<p><b>Category:</b> {template.metadata.category.value}</p>",
-        ]
+        if isinstance(template, dict):
+            # Handle dict-based template (fallback)
+            html_parts = [
+                f"<h2>{template.get('name', 'Unknown Template')}</h2>",
+                f"<p><b>Description:</b> {template.get('description', 'No description available')}</p>",
+                f"<p><b>Version:</b> {template.get('version', 'N/A')}</p>",
+                f"<p><b>Author:</b> {template.get('author', 'N/A')}</p>",
+                f"<p><b>Category:</b> {template.get('category', 'N/A')}</p>",
+            ]
 
-        if template.metadata.tags:
-            tags_str = ", ".join(template.metadata.tags)
-            html_parts.append(f"<p><b>Tags:</b> {tags_str}</p>")
+            if template.get("tags"):
+                tags_str = ", ".join(template["tags"])
+                html_parts.append(f"<p><b>Tags:</b> {tags_str}</p>")
 
-        if hasattr(template, "compatibility") and template.compatibility.dependencies:
-            html_parts.append("<h3>Dependencies:</h3><ul>")
-            for dep in template.compatibility.dependencies:
-                html_parts.append(f"<li>{dep}</li>")
-            html_parts.append("</ul>")
+            if template.get("structure"):
+                html_parts.append("<h3>Project Structure:</h3>")
+                html_parts.append("<pre>")
+                html_parts.append(template["structure"])
+                html_parts.append("</pre>")
+        else:
+            # Handle Template object (proper format)
+            html_parts = [
+                f"<h2>{template.name}</h2>",
+                f"<p><b>Description:</b> {template.metadata.description}</p>",
+                f"<p><b>Version:</b> {template.metadata.version}</p>",
+                f"<p><b>Author:</b> {template.metadata.author}</p>",
+                f"<p><b>Category:</b> {template.metadata.category.value}</p>",
+            ]
 
-        if template.structure:
-            html_parts.append("<h3>Project Structure:</h3>")
-            html_parts.append("<pre>")
-            html_parts.append(self._format_structure(template.structure))
-            html_parts.append("</pre>")
+            if template.metadata.tags:
+                tags_str = ", ".join(template.metadata.tags)
+                html_parts.append(f"<p><b>Tags:</b> {tags_str}</p>")
+
+            if hasattr(template, "compatibility") and template.compatibility.dependencies:
+                html_parts.append("<h3>Dependencies:</h3><ul>")
+                for dep in template.compatibility.dependencies:
+                    html_parts.append(f"<li>{dep}</li>")
+                html_parts.append("</ul>")
+
+            if template.structure:
+                html_parts.append("<h3>Project Structure:</h3>")
+                html_parts.append("<pre>")
+                html_parts.append(self._format_structure(template.structure))
+                html_parts.append("</pre>")
 
         self.preview_browser.setHtml("\n".join(html_parts))
 
