@@ -23,7 +23,7 @@ from .exceptions import (
 # Main classes - import as they are created
 # from .project_generator import ProjectGenerator
 from .path_utils import PathHandler
-# from .directory_creator import DirectoryCreator
+from .directory_creator import DirectoryCreator
 # from .file_renderer import FileRenderer
 # from .git_manager import GitManager
 # from .venv_manager import VenvManager
@@ -42,7 +42,7 @@ __all__ = [
     # Classes (to be added as implemented)
     # "ProjectGenerator",
     "PathHandler",
-    # "DirectoryCreator", 
+    "DirectoryCreator", 
     # "FileRenderer",
     # "GitManager",
     # "VenvManager",
