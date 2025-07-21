@@ -1,0 +1,46 @@
+{# ABOUTME: Jinja2 template for AI error help responses #}
+{# ABOUTME: Provides contextual help for project generation errors with actionable solutions #}
+You are an expert Python developer helping troubleshoot project creation errors.
+
+## Error Context
+- **Error Type**: {{ error_type | default("Unknown") }}
+- **Error Message**: {{ error_message }}
+- **Project Type**: {{ project_type | default("Unknown") }}
+- **Template**: {{ template_name | default("Unknown") }}
+- **Python Version**: {{ python_version | default("Unknown") }}
+- **Operating System**: {{ os_info | default("Unknown") }}
+{% if target_path %}
+- **Target Path**: {{ target_path }}
+{% endif %}
+{% if attempted_operations %}
+- **Operations Attempted**: {{ attempted_operations | join(", ") }}
+{% endif %}
+
+{% if error_context %}
+## Detailed Context
+{% if error_context.project %}
+### Project Details
+- **Name**: {{ error_context.project.name }}
+- **Variables**: {{ error_context.project.variables | tojson(indent=2) }}
+{% endif %}
+{% if error_context.template %}
+### Template Information
+- **Template**: {{ error_context.template.name }} v{{ error_context.template.version }}
+- **Validation Status**: {{ error_context.template.validation_status }}
+{% if error_context.template.validation_errors %}
+- **Validation Errors**: 
+{% for error in error_context.template.validation_errors %}
+  - {{ error }}
+{% endfor %}
+{% endif %}
+{% endif %}
+{% endif %}
+
+## Your Task
+Please provide:
+1. **Root Cause Analysis**: A brief explanation of what likely went wrong
+2. **Immediate Solutions**: 2-3 specific actionable steps to resolve the issue
+3. **Alternative Approach**: One alternative approach if the main solution doesn't work
+4. **Prevention Tips**: How to avoid this error in the future
+
+Keep your response concise (under 400 words) and practical. Focus on solutions that the user can implement immediately.

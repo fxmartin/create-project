@@ -1,5 +1,5 @@
 # ABOUTME: AI Service Facade providing unified interface for all AI operations
-# ABOUTME: Integrates Ollama detection, response generation, caching, and context collection with graceful degradation
+# ABOUTME: Integrates Ollama detection, response generation, caching with graceful degradation
 
 """
 AI Service Facade for unified AI operations.
@@ -18,23 +18,22 @@ The facade handles:
 - Structured logging for all operations
 """
 
-from typing import Dict, Any, List, Optional, Union, AsyncGenerator
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from structlog import get_logger
 
-from .exceptions import AIError, OllamaNotFoundError, ContextCollectionError
-from .ollama_detector import OllamaDetector, OllamaStatus
-from .ollama_client import OllamaClient
-from .model_manager import ModelManager, ModelInfo
-from .response_generator import ResponseGenerator, GenerationConfig, ResponseQuality
-from .cache_manager import ResponseCacheManager
-from .context_collector import ErrorContextCollector, CompleteErrorContext
 from ..config.config_manager import ConfigManager
-from ..core.exceptions import ProjectGenerationError
 from ..templates.schema.template import Template
-
+from .cache_manager import ResponseCacheManager
+from .context_collector import ErrorContextCollector
+from .exceptions import OllamaNotFoundError
+from .model_manager import ModelInfo, ModelManager
+from .ollama_client import OllamaClient
+from .ollama_detector import OllamaDetector, OllamaStatus
+from .response_generator import GenerationConfig, ResponseGenerator
 
 logger = get_logger(__name__)
 
@@ -63,13 +62,13 @@ class AIServiceConfig:
     preferred_models: List[str] = None
     context_collection_enabled: bool = True
     max_context_size_kb: int = 4
-    
+
     def __post_init__(self):
         """Initialize default preferred models."""
         if self.preferred_models is None:
             self.preferred_models = [
                 "codellama:13b",
-                "llama2:13b", 
+                "llama2:13b",
                 "mistral:7b",
                 "codellama:7b",
                 "llama2:7b"
@@ -118,7 +117,7 @@ class AIService:
         cache_manager: Response caching system
         context_collector: Error context collection
     """
-    
+
     def __init__(
         self,
         config_manager: Optional[ConfigManager] = None,
@@ -133,7 +132,7 @@ class AIService:
         self.logger = logger.bind(component="ai_service")
         self.config_manager = config_manager
         self.config = ai_config or AIServiceConfig()
-        
+
         # Initialize service status
         self._service_status = AIServiceStatus(
             service_available=False,
@@ -143,7 +142,7 @@ class AIService:
             context_collection_enabled=False,
             ollama_status=None
         )
-        
+
         # Initialize components (lazy loading)
         self._detector: Optional[OllamaDetector] = None
         self._client: Optional[OllamaClient] = None
@@ -151,17 +150,17 @@ class AIService:
         self._response_generator: Optional[ResponseGenerator] = None
         self._cache_manager: Optional[ResponseCacheManager] = None
         self._context_collector: Optional[ErrorContextCollector] = None
-        
+
         # Initialization flag
         self._initialized = False
-        
+
         self.logger.info(
             "AI service initialized",
             enabled=self.config.enabled,
             ollama_url=self.config.ollama_url,
             cache_enabled=self.config.cache_enabled
         )
-    
+
     async def initialize(self) -> AIServiceStatus:
         """Initialize AI service components and check availability.
         
@@ -170,9 +169,9 @@ class AIService:
         """
         if self._initialized:
             return self._service_status
-        
+
         self.logger.info("Starting AI service initialization")
-        
+
         try:
             # Check if AI service is enabled
             if not self.config.enabled:
@@ -188,11 +187,11 @@ class AIService:
                 )
                 self._initialized = True
                 return self._service_status
-            
+
             # Initialize detector and check Ollama availability
             self._detector = OllamaDetector(service_url=self.config.ollama_url)
             ollama_status = self._detector.detect()
-            
+
             if not (ollama_status.is_installed and ollama_status.is_running):
                 self.logger.warning(
                     "Ollama not available",
@@ -211,23 +210,23 @@ class AIService:
                 )
                 self._initialized = True
                 return self._service_status
-            
+
             # Initialize HTTP client
             self._client = OllamaClient.get_instance(
                 base_url=self.config.ollama_url,
                 timeout=self.config.ollama_timeout
             )
-            
+
             # Initialize model manager and load models
             self._model_manager = ModelManager(client=self._client)
             models = self._model_manager.get_models()
-            
+
             # Initialize response generator
             self._response_generator = ResponseGenerator(
                 model_manager=self._model_manager,
-                client=self._client
+                ollama_client=self._client
             )
-            
+
             # Initialize cache manager if enabled
             if self.config.cache_enabled:
                 self._cache_manager = ResponseCacheManager(
@@ -235,11 +234,11 @@ class AIService:
                     default_ttl_hours=self.config.cache_ttl_hours
                 )
                 await self._cache_manager.load_cache()
-            
+
             # Initialize context collector if enabled
             if self.config.context_collection_enabled:
                 self._context_collector = ErrorContextCollector()
-            
+
             # Update service status
             self._service_status = AIServiceStatus(
                 service_available=True,
@@ -249,18 +248,18 @@ class AIService:
                 context_collection_enabled=self.config.context_collection_enabled,
                 ollama_status=ollama_status
             )
-            
+
             self._initialized = True
-            
+
             self.logger.info(
                 "AI service initialization completed",
                 models_available=len(models),
                 cache_enabled=self.config.cache_enabled,
                 context_collection_enabled=self.config.context_collection_enabled
             )
-            
+
             return self._service_status
-            
+
         except Exception as e:
             self.logger.error(
                 "AI service initialization failed",
@@ -278,7 +277,7 @@ class AIService:
             )
             self._initialized = True
             return self._service_status
-    
+
     async def get_status(self) -> AIServiceStatus:
         """Get current AI service status.
         
@@ -288,7 +287,7 @@ class AIService:
         if not self._initialized:
             await self.initialize()
         return self._service_status
-    
+
     async def is_available(self) -> bool:
         """Check if AI service is available.
         
@@ -297,7 +296,7 @@ class AIService:
         """
         status = await self.get_status()
         return status.service_available
-    
+
     async def get_available_models(self) -> List[ModelInfo]:
         """Get list of available models.
         
@@ -309,9 +308,9 @@ class AIService:
         """
         if not await self.is_available():
             raise OllamaNotFoundError("AI service not available")
-        
+
         return self._model_manager.get_models()
-    
+
     async def generate_help_response(
         self,
         error: Exception,
@@ -346,11 +345,11 @@ class AIService:
             error_type=type(error).__name__,
             template_name=template.name if template else None
         )
-        
+
         # Check if service is available
         if not await self.is_available():
             return self._get_fallback_help_response(error, template)
-        
+
         try:
             # Collect error context if enabled
             context = None
@@ -365,19 +364,19 @@ class AIService:
                         attempted_operations=attempted_operations,
                         partial_results=partial_results
                     )
-                    
+
                     self.logger.debug(
                         "Error context collected",
                         context_size_bytes=context.context_size_bytes,
                         collection_duration_ms=context.collection_duration_ms
                     )
-                    
+
                 except Exception as ctx_error:
                     self.logger.warning(
                         "Failed to collect error context",
                         error=str(ctx_error)
                     )
-            
+
             # Check cache if enabled
             cache_key = None
             if self.config.cache_enabled and self._cache_manager:
@@ -389,11 +388,11 @@ class AIService:
                 }
                 cache_key = self._cache_manager.generate_key(cache_params)
                 cached_response = self._cache_manager.get(cache_key)
-                
+
                 if cached_response:
                     self.logger.debug("Using cached response")
                     return cached_response
-            
+
             # Generate response using AI
             generation_config = config or GenerationConfig()
             response = await self._response_generator.generate_response(
@@ -410,19 +409,19 @@ class AIService:
                 },
                 config=generation_config
             )
-            
+
             # Cache the response if enabled
             if self.config.cache_enabled and self._cache_manager and cache_key:
                 self._cache_manager.put(cache_key, response)
-            
+
             self.logger.info(
                 "Help response generated successfully",
                 response_length=len(response),
                 from_cache=False
             )
-            
+
             return response
-            
+
         except Exception as e:
             self.logger.error(
                 "Failed to generate AI help response",
@@ -431,7 +430,7 @@ class AIService:
             )
             # Fallback to static help
             return self._get_fallback_help_response(error, template)
-    
+
     async def stream_help_response(
         self,
         error: Exception,
@@ -463,13 +462,13 @@ class AIService:
             error_type=type(error).__name__,
             template_name=template.name if template else None
         )
-        
+
         # Check if service is available
         if not await self.is_available():
             fallback_response = self._get_fallback_help_response(error, template)
             yield fallback_response
             return
-        
+
         try:
             # Collect error context if enabled
             context = None
@@ -489,11 +488,11 @@ class AIService:
                         "Failed to collect error context for streaming",
                         error=str(ctx_error)
                     )
-            
+
             # Stream response using AI
             generation_config = config or GenerationConfig()
             full_response = ""
-            
+
             async for chunk in self._response_generator.stream_response(
                 prompt_type="error_help",
                 context={
@@ -510,7 +509,7 @@ class AIService:
             ):
                 full_response += chunk
                 yield chunk
-            
+
             # Cache the full response if enabled
             if self.config.cache_enabled and self._cache_manager and full_response:
                 cache_params = {
@@ -521,12 +520,12 @@ class AIService:
                 }
                 cache_key = self._cache_manager.generate_key(cache_params)
                 self._cache_manager.put(cache_key, full_response)
-            
+
             self.logger.info(
                 "Streamed help response completed",
                 response_length=len(full_response)
             )
-            
+
         except Exception as e:
             self.logger.error(
                 "Failed to stream AI help response",
@@ -536,7 +535,7 @@ class AIService:
             # Fallback to static help
             fallback_response = self._get_fallback_help_response(error, template)
             yield fallback_response
-    
+
     async def get_suggestions(
         self,
         context: Dict[str, Any],
@@ -558,10 +557,10 @@ class AIService:
             suggestion_type=suggestion_type,
             context_keys=list(context.keys())
         )
-        
+
         if not await self.is_available():
             return self._get_fallback_suggestions(context, suggestion_type)
-        
+
         try:
             generation_config = config or GenerationConfig()
             response = await self._response_generator.generate_response(
@@ -569,18 +568,18 @@ class AIService:
                 context={"suggestion_type": suggestion_type, **context},
                 config=generation_config
             )
-            
+
             # Parse response into list of suggestions
             suggestions = []
-            for line in response.split('\n'):
+            for line in response.split("\n"):
                 line = line.strip()
-                if line and (line.startswith('-') or line.startswith('•') or line.startswith('*')):
+                if line and (line.startswith("-") or line.startswith("•") or line.startswith("*")):
                     suggestions.append(line[1:].strip())
                 elif line and len(suggestions) < 10:  # Limit to 10 suggestions
                     suggestions.append(line)
-            
+
             return suggestions[:10] if suggestions else self._get_fallback_suggestions(context, suggestion_type)
-            
+
         except Exception as e:
             self.logger.error(
                 "Failed to generate suggestions",
@@ -588,28 +587,28 @@ class AIService:
                 suggestion_type=suggestion_type
             )
             return self._get_fallback_suggestions(context, suggestion_type)
-    
+
     async def cleanup(self) -> None:
         """Cleanup AI service resources."""
         self.logger.info("Cleaning up AI service resources")
-        
+
         try:
             # Persist cache if enabled
             if self._cache_manager and self.config.cache_enabled:
                 await self._cache_manager.persist_cache()
-            
+
             # Close HTTP clients
             if self._client:
                 self._client.close_clients()
-            
+
             self.logger.info("AI service cleanup completed")
-            
+
         except Exception as e:
             self.logger.error(
                 "Error during AI service cleanup",
                 error=str(e)
             )
-    
+
     def _get_fallback_help_response(
         self,
         error: Exception,
@@ -626,7 +625,7 @@ class AIService:
         """
         error_type = type(error).__name__
         template_name = template.name if template else "unknown"
-        
+
         fallback_responses = {
             "TemplateError": f"Template processing failed for '{template_name}'. Check that all required variables are provided and template syntax is correct.",
             "PathError": "Path-related error occurred. Verify the target directory exists and you have proper permissions.",
@@ -634,9 +633,9 @@ class AIService:
             "VirtualEnvError": "Virtual environment creation failed. Check Python installation and available tools (venv, virtualenv, uv).",
             "ProjectGenerationError": f"Project generation failed for template '{template_name}'. Review the template configuration and try again.",
         }
-        
+
         base_response = fallback_responses.get(error_type, f"An error occurred during project generation: {str(error)}")
-        
+
         return f"""
 {base_response}
 
@@ -654,7 +653,7 @@ Troubleshooting Steps:
 
 For more detailed assistance, ensure Ollama is installed and running to enable AI-powered help.
 """.strip()
-    
+
     def _get_fallback_suggestions(
         self,
         context: Dict[str, Any],
@@ -692,14 +691,14 @@ For more detailed assistance, ensure Ollama is installed and running to enable A
                 "Verify path length limitations"
             ]
         }
-        
+
         return fallback_suggestions.get(suggestion_type, fallback_suggestions["general"])
-    
+
     async def __aenter__(self):
         """Async context manager entry."""
         await self.initialize()
         return self
-    
+
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Async context manager exit."""
         await self.cleanup()

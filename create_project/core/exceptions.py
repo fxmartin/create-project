@@ -94,3 +94,12 @@ class ThreadingError(ProjectGenerationError):
     issues occur during project generation.
     """
     pass
+
+
+class AIAssistanceError(ProjectGenerationError):
+    """AI assistance errors.
+    
+    Raised when AI assistance features fail, but does not prevent
+    project generation from continuing without AI help.
+    """
+    pass

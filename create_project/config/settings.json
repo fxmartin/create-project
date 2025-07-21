@@ -9,6 +9,32 @@
         "custom_path": "~/.project-creator/templates",
         "auto_update": false
     },
+    "ai": {
+        "enabled": true,
+        "ollama_url": "http://localhost:11434",
+        "ollama_timeout": 30,
+        "cache_enabled": true,
+        "cache_ttl_hours": 24,
+        "max_cache_entries": 100,
+        "preferred_models": [
+            "codellama:13b",
+            "llama2:13b", 
+            "mistral:7b",
+            "codellama:7b",
+            "llama2:7b"
+        ],
+        "context_collection_enabled": true,
+        "max_context_size_kb": 4,
+        "enable_ai_assistance": true,
+        "response_quality_check": true,
+        "max_response_tokens": 1000,
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "stream_responses": false,
+        "prompt_templates": {
+            "custom_path": "~/.project-creator/ai-templates"
+        }
+    },
     "ollama": {
         "api_url": "http://localhost:11434",
         "timeout": 30,
