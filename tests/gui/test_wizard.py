@@ -19,29 +19,112 @@ from pathlib import Path
 from PyQt6.QtWidgets import QWizard, QMessageBox
 from PyQt6.QtCore import Qt
 
-# Note: These imports will work once the wizard module is implemented
-# from create_project.gui.wizard import ProjectWizard
+from create_project.gui.wizard import ProjectWizard, WizardData
+
+
+class TestWizardData:
+    """Test suite for the WizardData class."""
+    
+    def test_wizard_data_initialization(self):
+        """Test WizardData initialization with defaults."""
+        data = WizardData()
+        
+        assert data.template_id is None
+        assert data.template_name is None
+        assert data.project_name is None
+        assert data.author is None
+        assert data.version is None
+        assert data.description is None
+        assert data.location is None
+        assert data.license is None
+        assert data.init_git is True
+        assert data.create_venv is True
+        assert data.venv_tool is None
+        assert data.additional_options == {}
+    
+    def test_wizard_data_target_path(self):
+        """Test target path calculation."""
+        data = WizardData()
+        
+        # No path when missing components
+        assert data.target_path is None
+        
+        # Set location only
+        data.location = Path("/home/user/projects")
+        assert data.target_path is None
+        
+        # Set project name
+        data.project_name = "my_project"
+        assert data.target_path == Path("/home/user/projects/my_project")
+    
+    def test_wizard_data_to_variables(self):
+        """Test conversion to template variables."""
+        data = WizardData(
+            project_name="test_project",
+            author="Test Author",
+            version="1.0.0",
+            description="Test description",
+            license="MIT",
+            additional_options={"include_tests": True, "python_version": "3.9"}
+        )
+        
+        variables = data.to_variables()
+        
+        assert variables["project_name"] == "test_project"
+        assert variables["author"] == "Test Author"
+        assert variables["version"] == "1.0.0"
+        assert variables["description"] == "Test description"
+        assert variables["license"] == "MIT"
+        assert variables["include_tests"] is True
+        assert variables["python_version"] == "3.9"
 
 
 class TestProjectWizard:
     """Test suite for the ProjectWizard class."""
     
-    @pytest.mark.skip(reason="ProjectWizard not yet implemented")
     def test_wizard_initialization(self, qtbot, mock_config_manager, mock_template_engine):
         """Test that the wizard initializes correctly with dependencies."""
-        # This test will be implemented when ProjectWizard is created
-        pass
+        wizard = ProjectWizard(
+            config_manager=mock_config_manager,
+            template_engine=mock_template_engine
+        )
+        qtbot.addWidget(wizard)
+        
+        assert wizard is not None
+        assert wizard.config_manager == mock_config_manager
+        assert wizard.template_engine == mock_template_engine
+        assert wizard.ai_service is None  # No AI service provided
+        assert wizard.windowTitle() == "Create Python Project"
     
-    @pytest.mark.skip(reason="ProjectWizard not yet implemented")
     def test_wizard_has_expected_pages(self, qtbot, mock_config_manager, mock_template_engine):
         """Test that the wizard contains all expected pages."""
+        wizard = ProjectWizard(
+            config_manager=mock_config_manager,
+            template_engine=mock_template_engine
+        )
+        qtbot.addWidget(wizard)
+        
         # Expected pages:
         # 1. Project Type Selection
         # 2. Basic Information
         # 3. Location Selection
         # 4. Options Configuration
         # 5. Review and Create
-        pass
+        assert wizard.pageIds() == [0, 1, 2, 3, 4]
+        
+        # Check page titles
+        expected_titles = [
+            "Select Project Type",
+            "Basic Information",
+            "Select Location",
+            "Configure Options",
+            "Review and Create"
+        ]
+        
+        for page_id, expected_title in enumerate(expected_titles):
+            page = wizard.page(page_id)
+            assert page is not None
+            assert page.title() == expected_title
     
     @pytest.mark.skip(reason="ProjectWizard not yet implemented")
     def test_navigation_forward(self, qtbot, qt_bot_helper, mock_config_manager, mock_template_engine):

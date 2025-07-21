@@ -45,7 +45,7 @@ def mock_config_manager():
     
     Returns a ConfigManager mock with sensible defaults for GUI testing.
     """
-    config = MagicMock(spec=ConfigManager)
+    config = MagicMock()
     
     # Set up default configuration values
     config.get.side_effect = lambda key, default=None: {
@@ -71,7 +71,7 @@ def mock_template_engine():
     
     Returns a TemplateEngine mock with test templates.
     """
-    engine = MagicMock(spec=TemplateEngine)
+    engine = MagicMock()
     
     # Mock template data
     test_templates = [

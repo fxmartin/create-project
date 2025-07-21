@@ -8,10 +8,7 @@ This module contains the main wizard interface and base components for
 guiding users through project creation with a step-by-step interface.
 """
 
-from typing import TYPE_CHECKING
+from .wizard import ProjectWizard, WizardData, ProjectGenerationThread
+from .base_step import WizardStep
 
-if TYPE_CHECKING:
-    from .wizard import ProjectWizard
-    from .base_step import WizardStep
-
-__all__ = ["ProjectWizard", "WizardStep"]
+__all__ = ["ProjectWizard", "WizardStep", "WizardData", "ProjectGenerationThread"]

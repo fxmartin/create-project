@@ -30,7 +30,13 @@ if TYPE_CHECKING:
         LicensePreviewWidget
     )
 
+# Import main function for easy access
+from .app import main
+
 __all__ = [
+    # Main entry point
+    "main",
+    
     # Main wizard
     "ProjectWizard",
     
