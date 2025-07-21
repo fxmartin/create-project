@@ -78,7 +78,7 @@ class TemplateAction(BaseModel):
             raise ValueError("Command cannot be empty")
         return v.strip()
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def validate_command_type_consistency(self):
         """Validate command based on action type."""
         command = self.command

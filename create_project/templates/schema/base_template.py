@@ -118,7 +118,7 @@ class TemplateMetadata(BaseModel):
                 raise ValueError(f"Invalid OS '{os_name}'. Must be one of: {valid_os}")
         return v
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def validate_updated_after_created(self):
         """Ensure updated date is after created date."""
         if self.updated is not None and self.created is not None:

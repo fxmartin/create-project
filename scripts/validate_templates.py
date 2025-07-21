@@ -10,9 +10,10 @@ Pydantic schema models to identify any structural or validation issues.
 """
 
 import sys
-import yaml
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any, Dict
+
+import yaml
 
 # Add the project root to the path
 project_root = Path(__file__).parent.parent
