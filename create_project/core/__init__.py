@@ -24,7 +24,7 @@ from .exceptions import (
 # from .project_generator import ProjectGenerator
 from .path_utils import PathHandler
 from .directory_creator import DirectoryCreator
-# from .file_renderer import FileRenderer
+from .file_renderer import FileRenderer
 # from .git_manager import GitManager
 # from .venv_manager import VenvManager
 # from .command_executor import CommandExecutor
@@ -43,7 +43,7 @@ __all__ = [
     # "ProjectGenerator",
     "PathHandler",
     "DirectoryCreator", 
-    # "FileRenderer",
+    "FileRenderer",
     # "GitManager",
     # "VenvManager",
     # "CommandExecutor",
