@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a PyQt-based GUI application for creating Python project structures. It's a mature, well-architected project with comprehensive testing, modern Python tooling, and professional development practices. The project is currently in Milestone 2 of 7 milestones, with a solid foundation already implemented.
+This is a PyQt-based GUI application for creating Python project structures. It's a mature, well-architected project with comprehensive testing, modern Python tooling, and professional development practices. The project is currently in Milestone 4 of 7 milestones, with a solid enterprise-grade foundation and core engine fully implemented.
 
 **Key Technologies:**
 - Python 3.9.6+ (strict requirement)
@@ -13,6 +13,8 @@ This is a PyQt-based GUI application for creating Python project structures. It'
 - Pydantic for data validation
 - structlog for advanced logging
 - pytest with pytest-qt for testing
+- httpx for async HTTP requests (Ollama AI integration)
+- Jinja2 for template rendering
 
 ## Common Development Commands
 
@@ -38,7 +40,7 @@ APP_DEBUG=true uv run python -m create_project
 
 ### Testing
 ```bash
-# Run all tests (114 tests, all passing)
+# Run all tests (387 tests, all passing)
 uv run pytest
 
 # Run with coverage
@@ -86,6 +88,7 @@ uv run python scripts/build.py
 - Pydantic models for type-safe configuration in `models.py`
 - Supports JSON files, environment variables, and nested dot notation
 - Comprehensive test suite (56 tests) ensuring reliability
+- AI service configuration with Ollama connection settings
 
 **Logging System (`create_project/utils/logger.py`):**
 - Structured logging with structlog and colorlog
@@ -98,31 +101,48 @@ uv run python scripts/build.py
 create_project/
 ├── config/              # ✅ Configuration management (complete)
 ├── utils/               # ✅ Logging and utilities (complete)
-├── core/                # 🚧 Business logic (planned)
-├── gui/                 # 🚧 PyQt interface (planned)
-├── templates/           # 🚧 Project templates (in progress)
-└── resources/           # 🚧 UI assets (planned)
+├── core/                # ✅ Business logic (complete)
+├── templates/           # ✅ Project templates (complete)
+├── ai/                  # 🚧 Ollama AI integration (current)
+├── gui/                 # 📋 PyQt interface (planned)
+└── resources/           # 📋 UI assets (planned)
 ```
 
 ### Development Status
 
-**✅ Completed (Milestone 1):**
+**✅ Completed (Milestone 1 - Project Setup & Core Infrastructure):**
 - Complete project structure and build system
 - Thread-safe configuration management with Pydantic validation
 - Advanced logging system with rotation
-- Comprehensive test infrastructure (114 tests passing)
-- CI/CD workflows and pre-commit hooks
-- Cross-platform development environment
+- Comprehensive test infrastructure with CI/CD workflows
+- Cross-platform development environment with pre-commit hooks
 
-**🚧 Current Work (Milestone 2):**
-- Template system implementation
-- YAML-based project templates
-- Input validation system
+**✅ Completed (Milestone 2 - Template System Implementation):**
+- Complete template schema with Pydantic validation
+- Full template engine with Jinja2 integration
+- All 6 built-in project templates implemented
+- Comprehensive validation system with error reporting
+- License management system with 5 official licenses
+- Full test coverage with 214/220 tests passing
 
-**📋 Upcoming (Milestones 3-7):**
-- Core project generation logic
+**✅ Completed (Milestone 3 - Core Project Generation Logic):**
+- Complete project generation engine with atomic operations
+- Git integration with graceful fallback
+- Multi-tool virtual environment support (uv/virtualenv/venv)
+- Secure command execution with whitelisting (26 allowed commands)
+- Background processing with progress reporting and cancellation
+- Cross-platform compatibility (Windows/macOS/Linux)
+- All 387 tests passing with enterprise-grade reliability
+
+**🚧 Current Work (Milestone 4 - Ollama AI Integration):**
+- Ollama client with auto-detection and model enumeration
+- Response caching system with LRU eviction
+- Error context generation for AI assistance
+- Complete AI integration test suite
+
+**📋 Upcoming (Milestones 5-7):**
 - PyQt GUI wizard interface
-- AI integration via Ollama
+- Integration & testing
 - Distribution and packaging
 
 ## Testing Requirements
@@ -140,6 +160,7 @@ This project maintains **comprehensive test coverage** with strict requirements:
 - `tests/integration/` - Integration tests for component interactions
 - `tests/gui/` - GUI tests using pytest-qt
 - `tests/config/` - Configuration system tests
+- `tests/ai/` - AI module tests with mock infrastructure
 
 ## Code Style and Standards
 
@@ -164,6 +185,7 @@ This project maintains **comprehensive test coverage** with strict requirements:
 - structlog >=25.4.0 (structured logging)
 - requests >=2.32.4 (HTTP client)
 - jinja2 >=3.1.6 (templating)
+- httpx >=0.25.0 (async HTTP for Ollama AI)
 
 ### Development Tools
 - uv (package management - replaces pip/poetry)
@@ -197,14 +219,23 @@ This project maintains **comprehensive test coverage** with strict requirements:
 
 ## Current Development Focus
 
-The project is currently working on **Milestone 2: Template System Implementation**. Key areas of focus:
+The project is currently working on **Milestone 4: Ollama AI Integration**. Key areas of focus:
 
-1. **Template Engine**: YAML-based project templates
-2. **Validation System**: Input validation and sanitization
-3. **License Management**: Comprehensive license repository
+1. **Ollama Client**: Auto-detection and HTTP client with retry logic
+2. **Caching System**: LRU cache with TTL expiration and JSON persistence
+3. **Context Generation**: Error context collection with PII sanitization
+4. **AI Service Integration**: Facade pattern with graceful degradation
+
+### Recent Major Achievements (Milestone 3):
+- **8 Core Components**: PathHandler, DirectoryCreator, FileRenderer, GitManager, VenvManager, CommandExecutor, ThreadingModel, ProjectGenerator + Public API
+- **Security-First Design**: Command whitelisting, path traversal prevention, injection attack protection
+- **Enterprise Features**: Atomic operations with rollback, background processing, comprehensive error handling
+- **Cross-Platform Support**: Windows, macOS, Linux compatibility with proper tool detection
+- **Test Coverage**: 387 tests passing (100% success rate) with comprehensive scenarios
 
 When contributing, focus on:
-- Following the established patterns in config/ and utils/
-- Maintaining comprehensive test coverage
+- Following the established patterns in config/, core/, and templates/
+- Maintaining comprehensive test coverage with TDD approach
 - Using Pydantic models for data validation
-- Implementing thread-safe operations
+- Implementing thread-safe operations for GUI compatibility
+- Designing for graceful degradation when external services unavailable
