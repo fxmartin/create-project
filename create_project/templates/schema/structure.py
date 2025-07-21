@@ -6,7 +6,7 @@ import re
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class ItemType(str, Enum):
@@ -46,7 +46,8 @@ class ConditionalExpression(BaseModel):
         None, description="Variables used in the expression (for dependency tracking)"
     )
 
-    @validator("expression")
+    @field_validator("expression")
+    @classmethod
     def validate_expression(cls, v):
         """Basic validation of Jinja2 expression syntax."""
         if not v or not v.strip():
@@ -112,7 +113,8 @@ class FileItem(BaseModel):
         default=False, description="Preserve original line endings"
     )
 
-    @validator("name")
+    @field_validator("name")
+    @classmethod
     def validate_name(cls, v):
         """Validate file name."""
         if not v or not v.strip():
@@ -155,7 +157,8 @@ class FileItem(BaseModel):
 
         return v.strip()
 
-    @validator("template_file", "source_file")
+    @field_validator("template_file", "source_file")
+    @classmethod
     def validate_file_paths(cls, v):
         """Validate template and source file paths."""
         if v is None:
@@ -174,7 +177,8 @@ class FileItem(BaseModel):
 
         return v
 
-    @validator("permissions")
+    @field_validator("permissions")
+    @classmethod
     def validate_permissions(cls, v):
         """Validate file permissions."""
         if isinstance(v, str):
@@ -248,7 +252,8 @@ class DirectoryItem(BaseModel):
         default=True, description="Create directory even if it contains no files"
     )
 
-    @validator("name")
+    @field_validator("name")
+    @classmethod
     def validate_name(cls, v):
         """Validate directory name."""
         if not v or not v.strip():
@@ -463,7 +468,8 @@ class TemplateFile(BaseModel):
         description="Variables used in this template (for dependency tracking)",
     )
 
-    @validator("name")
+    @field_validator("name")
+    @classmethod
     def validate_name(cls, v):
         """Validate template file name."""
         if not v or not v.strip():

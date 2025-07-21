@@ -4,7 +4,7 @@
 from enum import Enum
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class ActionType(str, Enum):
@@ -70,32 +70,39 @@ class TemplateAction(BaseModel):
         default_factory=list, description="Additional arguments for the action"
     )
 
-    @validator("command")
-    def validate_command(cls, v, values):
-        """Validate command based on action type."""
+    @field_validator("command")
+    @classmethod
+    def validate_command(cls, v):
+        """Validate command is not empty."""
         if not v or not v.strip():
             raise ValueError("Command cannot be empty")
+        return v.strip()
 
-        action_type = values.get("type")
+    @model_validator(mode='after')
+    def validate_command_type_consistency(self):
+        """Validate command based on action type."""
+        command = self.command
+        action_type = self.type
 
         if action_type == ActionType.PYTHON:
             # Python code should be valid
-            if not v.strip().startswith(("import ", "from ", "print(", "subprocess.")):
+            if not command.strip().startswith(("import ", "from ", "print(", "subprocess.")):
                 # Basic validation - should look like Python code
                 pass
         elif action_type == ActionType.GIT:
             # Git commands should start with git
-            if not v.strip().startswith("git "):
+            if not command.strip().startswith("git "):
                 raise ValueError("Git action command must start with 'git '")
         elif action_type == ActionType.COMMAND:
             # Shell commands - basic security check
             dangerous_commands = ["rm -rf", "del /f", "format", "fdisk", "mkfs"]
-            if any(dangerous in v.lower() for dangerous in dangerous_commands):
+            if any(dangerous in command.lower() for dangerous in dangerous_commands):
                 raise ValueError("Command contains potentially dangerous operations")
 
-        return v.strip()
+        return self
 
-    @validator("working_directory")
+    @field_validator("working_directory")
+    @classmethod
     def validate_working_directory(cls, v):
         """Validate working directory path."""
         if v is None:
@@ -111,7 +118,8 @@ class TemplateAction(BaseModel):
 
         return v.strip()
 
-    @validator("timeout")
+    @field_validator("timeout")
+    @classmethod
     def validate_timeout(cls, v):
         """Validate timeout value."""
         if v is not None and v <= 0:

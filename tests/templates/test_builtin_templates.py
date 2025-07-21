@@ -338,15 +338,19 @@ class TestBuiltinTemplates:
 class TestTemplateIntegration:
     """Test template integration with the template system."""
 
-    @pytest.mark.skip(reason="Requires proper config setup - integration test")
     def test_templates_can_be_loaded_by_loader(self, builtin_templates_dir: Path):
         """Test that templates can be loaded by the template loader."""
+        from unittest.mock import Mock
         from create_project.templates.loader import TemplateLoader
-        from create_project.config import ConfigManager
+        from create_project.config.config_manager import ConfigManager
         
-        # Create config with builtin templates directory
-        config = ConfigManager()
-        config.set_setting("templates.builtin_directory", str(builtin_templates_dir))
+        # Create mock config that returns the builtin templates directory
+        config = Mock(spec=ConfigManager)
+        config.get_setting.side_effect = lambda key, default: {
+            "templates.directories": [str(builtin_templates_dir)],
+            "templates.builtin_directory": str(builtin_templates_dir),
+            "templates.user_directory": str(builtin_templates_dir / "user"),
+        }.get(key, default)
         
         loader = TemplateLoader(config_manager=config)
 

@@ -143,41 +143,62 @@ structure:
             if __name__ == "__main__":
                 main()
       directories:
-        {% for module in modules %}
-        - name: "{{module}}"
+        - name: "core"
           files:
             - name: "__init__.py"
               content: |
-                """{{module}} module for {{project_name}}."""
-            - name: "{{module}}.py"
+                """Core module for {{project_name}}."""
+            - name: "core.py"
               content: |
-                """Core functionality for {{module}} module."""
+                """Core functionality for core module."""
                 
                 def process():
-                    """Process {{module}} functionality."""
+                    """Process core functionality."""
                     pass
-        {% endfor %}
+        - name: "utils"
+          files:
+            - name: "__init__.py"
+              content: |
+                """Utils module for {{project_name}}."""
+            - name: "utils.py"
+              content: |
+                """Core functionality for utils module."""
+                
+                def process():
+                    """Process utils functionality."""
+                    pass
 
     - name: "tests"
       files:
         - name: "__init__.py"
           content: ""
       directories:
-        {% for module in modules %}
-        - name: "{{module}}"
+        - name: "core"
           files:
             - name: "__init__.py"
               content: ""
-            - name: "test_{{module}}.py"
+            - name: "test_core.py"
               content: |
-                """Tests for {{module}} module."""
+                """Tests for core module."""
                 import pytest
-                from {{project_name}}.{{module}} import {{module}}
+                from {{project_name}}.core import core
                 
-                def test_{{module}}_process():
-                    """Test {{module}} processing."""
+                def test_core_process():
+                    """Test core processing."""
                     assert True  # Replace with actual tests
-        {% endfor %}
+        - name: "utils"
+          files:
+            - name: "__init__.py"
+              content: ""
+            - name: "test_utils.py"
+              content: |
+                """Tests for utils module."""
+                import pytest
+                from {{project_name}}.utils import utils
+                
+                def test_utils_process():
+                    """Test utils processing."""
+                    assert True  # Replace with actual tests
 
     - name: "docs"
       condition:
