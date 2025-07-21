@@ -253,18 +253,20 @@ class TemplateValidator:
         # Check conditional references
         for var in template.variables:
             if var.show_if:
-                ref_var = var.show_if.variable
-                if ref_var not in var_names:
-                    raise TemplateValidationError(
-                        f"Variable '{var.name}' references unknown variable '{ref_var}' in show_if"
-                    )
+                for condition in var.show_if:
+                    ref_var = condition.variable
+                    if ref_var not in var_names:
+                        raise TemplateValidationError(
+                            f"Variable '{var.name}' references unknown variable '{ref_var}' in show_if"
+                        )
 
             if var.hide_if:
-                ref_var = var.hide_if.variable
-                if ref_var not in var_names:
-                    raise TemplateValidationError(
-                        f"Variable '{var.name}' references unknown variable '{ref_var}' in hide_if"
-                    )
+                for condition in var.hide_if:
+                    ref_var = condition.variable
+                    if ref_var not in var_names:
+                        raise TemplateValidationError(
+                            f"Variable '{var.name}' references unknown variable '{ref_var}' in hide_if"
+                        )
 
     def validate_directory(
         self, directory: Union[str, Path], recursive: bool = True

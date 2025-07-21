@@ -12,9 +12,15 @@ description = "{{description}}"
 readme = "README.md"
 requires-python = ">={{python_version}}"
 license = {text = "{{license}}"}
+{% if email %}
 authors = [
-    {name = "{{author}}"{% if email %}, email = "{{email}}"{% endif %}}
+    {name = "{{author}}", email = "{{email}}"}
 ]
+{% else %}
+authors = [
+    {name = "{{author}}"}
+]
+{% endif %}
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",

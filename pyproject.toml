@@ -52,6 +52,9 @@ build-backend = "hatchling.build"
 
 [tool.ruff]
 line-length = 88
+exclude = [
+    "create_project/templates/builtin/template_files/**",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "C90", "I", "N", "UP", "B", "A", "S", "FBT", "Q"]
@@ -59,6 +62,7 @@ select = ["E", "F", "W", "C90", "I", "N", "UP", "B", "A", "S", "FBT", "Q"]
 [tool.mypy]
 python_version = "3.9"
 strict = true
+exclude = ["create_project/templates/builtin/template_files/.*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

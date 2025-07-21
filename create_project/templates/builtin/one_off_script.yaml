@@ -151,11 +151,13 @@ hooks:
   post_generation:
     - type: "git"
       command: "init"
+      description: "Initialize Git repository"
       condition:
         expression: "{{ init_git }}"
         variables: ["init_git"]
     - type: "python"
       command: "-m venv venv"
+      description: "Create virtual environment"
       condition:
         expression: "{{ create_venv }}"
         variables: ["create_venv"]

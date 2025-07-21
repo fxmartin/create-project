@@ -4,7 +4,7 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ValidationInfo
 
 from .actions import ActionGroup, TemplateHooks
 from .base_template import BaseTemplate
@@ -32,8 +32,9 @@ class TemplateCompatibility(BaseModel):
         default_factory=list, description="External dependencies required"
     )
 
-    @validator("min_python_version", "max_python_version")
-    def validate_python_version(cls, v):
+    @field_validator("min_python_version", "max_python_version")
+    @classmethod
+    def validate_python_version(cls, v: Optional[str]) -> Optional[str]:
         """Validate Python version format."""
         if v is None:
             return v
@@ -63,8 +64,9 @@ class TemplateUsageStats(BaseModel):
 
     average_rating: Optional[float] = Field(None, description="Average user rating")
 
-    @validator("average_rating")
-    def validate_rating(cls, v):
+    @field_validator("average_rating")
+    @classmethod
+    def validate_rating(cls, v: Optional[float]) -> Optional[float]:
         """Validate rating is between 1 and 5."""
         if v is not None and (v < 1.0 or v > 5.0):
             raise ValueError("Rating must be between 1.0 and 5.0")
@@ -121,8 +123,9 @@ class Template(BaseTemplate):
         default_factory=list, description="IDs of related templates"
     )
 
-    @validator("variables")
-    def validate_variables(cls, v):
+    @field_validator("variables")
+    @classmethod
+    def validate_variables(cls, v: List[TemplateVariable]) -> List[TemplateVariable]:
         """Validate template variables."""
         if not v:
             return v

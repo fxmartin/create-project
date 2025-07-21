@@ -5,7 +5,7 @@ import re
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ValidationInfo
 
 
 class VariableType(str, Enum):
@@ -55,8 +55,9 @@ class ValidationRule(BaseModel):
         None, description="Custom error message for validation failure"
     )
 
-    @validator("rule_type")
-    def validate_rule_type(cls, v):
+    @field_validator("rule_type")
+    @classmethod
+    def validate_rule_type(cls, v: str) -> str:
         """Validate rule type is supported."""
         valid_types = {
             "pattern",
@@ -86,8 +87,9 @@ class ConditionalLogic(BaseModel):
 
     value: Any = Field(..., description="Value to compare against")
 
-    @validator("operator")
-    def validate_operator(cls, v):
+    @field_validator("operator")
+    @classmethod
+    def validate_operator(cls, v: str) -> str:
         """Validate operator is supported."""
         valid_operators = {
             "==",
@@ -163,11 +165,12 @@ class TemplateVariable(BaseModel):
         description="Template filters to apply (snake_case, kebab_case, etc.)",
     )
 
-    @validator("choices")
-    def validate_choices(cls, v, values):
+    @field_validator("choices")
+    @classmethod
+    def validate_choices(cls, v: Optional[List[str]], info: ValidationInfo) -> Optional[List[str]]:
         """Validate choices are provided for choice/multichoice variables."""
-        if "type" in values:
-            var_type = values["type"]
+        if info.data and "type" in info.data:
+            var_type = info.data["type"]
             if var_type in [VariableType.CHOICE, VariableType.MULTICHOICE]:
                 if not v or len(v) == 0:
                     raise ValueError(
@@ -179,16 +182,17 @@ class TemplateVariable(BaseModel):
                     )
         return v
 
-    @validator("default")
-    def validate_default_value(cls, v, values):
+    @field_validator("default")
+    @classmethod
+    def validate_default_value(cls, v: Any, info: ValidationInfo) -> Any:
         """Validate default value matches variable type."""
         if v is None:
             return v
 
-        if "type" not in values:
+        if not info.data or "type" not in info.data:
             return v
 
-        var_type = values["type"]
+        var_type = info.data["type"]
 
         # Type-specific validation
         if var_type == VariableType.BOOLEAN:
@@ -229,8 +233,9 @@ class TemplateVariable(BaseModel):
 
         return v
 
-    @validator("filters")
-    def validate_filters(cls, v):
+    @field_validator("filters")
+    @classmethod
+    def validate_filters(cls, v: List[str]) -> List[str]:
         """Validate template filters are supported."""
         supported_filters = {
             "snake_case",

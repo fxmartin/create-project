@@ -504,16 +504,19 @@ hooks:
   post_generation:
     - type: "git"
       command: "init"
+      description: "Initialize Git repository"
       condition:
         expression: "{{ init_git | default(true) }}"
         variables: ["init_git"]
     - type: "python"
       command: "-m venv venv"
+      description: "Create virtual environment"
       condition:
         expression: "{{ create_venv | default(true) }}"
         variables: ["create_venv"]
     - type: "command"
       command: "source venv/bin/activate && pip install -e ."
+      description: "Install library in development mode"
       condition:
         expression: "{{ create_venv }}"
         variables: ["create_venv"]
