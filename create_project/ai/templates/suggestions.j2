@@ -1,0 +1,43 @@
+{# ABOUTME: Jinja2 template for AI project suggestions #}
+{# ABOUTME: Generates creative suggestions for project structure and best practices #}
+You are a helpful Python project assistant providing creative and practical suggestions.
+
+## Context
+{% if user_goal %}
+- **User's Goal**: {{ user_goal }}
+{% endif %}
+- **Project Type**: {{ project_type | default("Python project") }}
+{% if available_templates %}
+- **Available Templates**: {{ available_templates | join(", ") }}
+{% endif %}
+{% if context %}
+### Additional Context
+{% for key, value in context.items() %}
+- **{{ key | title | replace("_", " ") }}**: {{ value }}
+{% endfor %}
+{% endif %}
+
+## Your Task
+Based on the context above, suggest {{ num_suggestions | default(3) }} different approaches for this project. Consider:
+
+1. **Project Structure**: Different organizational patterns that might fit
+2. **Tools & Libraries**: Useful dependencies and development tools to include
+3. **Best Practices**: Industry standards and patterns for this type of project
+4. **Scalability**: How to structure the project for future growth
+5. **Testing Strategy**: Appropriate testing approaches for the project type
+
+{% if suggestion_type == "template" %}
+Focus specifically on template-related suggestions:
+- Template customization options
+- Variable usage best practices
+- Conditional logic opportunities
+- File structure optimizations
+{% elif suggestion_type == "path" %}
+Focus on path and directory structure:
+- Naming conventions
+- Directory organization
+- Cross-platform considerations
+- Permission requirements
+{% endif %}
+
+Keep suggestions practical and explain why each approach would be beneficial. Each suggestion should be actionable and include specific examples where helpful.

@@ -312,6 +312,22 @@ class ConfigManager:
             "LOG_FILE_ENABLED": ("logging", "file_enabled"),
             "LOG_CONSOLE_ENABLED": ("logging", "console_enabled"),
             "LOG_MAX_FILES": ("logging", "max_files"),
+            # AI configuration environment variables
+            "APP_AI_ENABLED": ("ai", "enabled"),
+            "APP_AI_OLLAMA_URL": ("ai", "ollama_url"),
+            "APP_AI_OLLAMA_TIMEOUT": ("ai", "ollama_timeout"),
+            "APP_AI_CACHE_ENABLED": ("ai", "cache_enabled"),
+            "APP_AI_CACHE_TTL_HOURS": ("ai", "cache_ttl_hours"),
+            "APP_AI_MAX_CACHE_ENTRIES": ("ai", "max_cache_entries"),
+            "APP_AI_PREFERRED_MODELS": ("ai", "preferred_models"),
+            "APP_AI_CONTEXT_COLLECTION_ENABLED": ("ai", "context_collection_enabled"),
+            "APP_AI_MAX_CONTEXT_SIZE_KB": ("ai", "max_context_size_kb"),
+            "APP_AI_ENABLE_AI_ASSISTANCE": ("ai", "enable_ai_assistance"),
+            "APP_AI_RESPONSE_QUALITY_CHECK": ("ai", "response_quality_check"),
+            "APP_AI_MAX_RESPONSE_TOKENS": ("ai", "max_response_tokens"),
+            "APP_AI_TEMPERATURE": ("ai", "temperature"),
+            "APP_AI_TOP_P": ("ai", "top_p"),
+            "APP_AI_STREAM_RESPONSES": ("ai", "stream_responses"),
         }
 
         for env_var, config_path in env_mappings.items():
@@ -346,20 +362,52 @@ class ConfigManager:
                 "enable_cache",
                 "file_enabled",
                 "console_enabled",
+                "enabled",  # AI enabled
+                "cache_enabled",  # AI cache
+                "context_collection_enabled",  # AI context
+                "enable_ai_assistance",  # AI assistance
+                "response_quality_check",  # AI quality check
+                "stream_responses",  # AI streaming
             ]
             for path_part in config_path
         ):
             return value.lower() in ("true", "1", "yes", "on")
 
         # Integer values
-        if any(path_part in ["timeout", "max_files"] for path_part in config_path) or (
-            len(config_path) > 2 and config_path[1] == "window_size"
-        ):
+        if any(
+            path_part in [
+                "timeout", 
+                "max_files",
+                "ollama_timeout",  # AI timeout
+                "cache_ttl_hours",  # AI cache TTL
+                "max_cache_entries",  # AI cache size
+                "max_context_size_kb",  # AI context size
+                "max_response_tokens",  # AI response tokens
+            ] 
+            for path_part in config_path
+        ) or (len(config_path) > 2 and config_path[1] == "window_size"):
             try:
                 return int(value)
             except ValueError:
                 return value  # Return as string if conversion fails
 
+        # Float values
+        if any(
+            path_part in ["temperature", "top_p"]
+            for path_part in config_path
+        ):
+            try:
+                return float(value)
+            except ValueError:
+                return value  # Return as string if conversion fails
+        
+        # List values (comma-separated)
+        if any(
+            path_part in ["preferred_models"]
+            for path_part in config_path
+        ):
+            return [v.strip() for v in value.split(",") if v.strip()]
+        
         # Handle empty string for optional fields
         if not value.strip() and any(
             path_part in ["preferred_model"] for path_part in config_path

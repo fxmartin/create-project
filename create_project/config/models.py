@@ -194,6 +194,86 @@ class LoggingConfig(BaseModel):
     )
 
 
+class AIPromptTemplatesConfig(BaseModel):
+    """AI prompt templates configuration."""
+    
+    custom_path: str = Field(
+        default="~/.project-creator/ai-templates",
+        description="Path to custom AI prompt templates"
+    )
+    
+    @field_validator("custom_path")
+    @classmethod
+    def validate_custom_path(cls, v):
+        """Expand user paths."""
+        return os.path.expanduser(v)
+
+
+class AIConfig(BaseModel):
+    """AI service configuration settings."""
+    
+    enabled: bool = Field(default=True, description="Enable AI features")
+    ollama_url: Union[HttpUrl, str] = Field(
+        default="http://localhost:11434", description="Ollama server URL"
+    )
+    ollama_timeout: int = Field(
+        default=30, ge=1, le=300, description="Ollama request timeout in seconds"
+    )
+    cache_enabled: bool = Field(default=True, description="Enable response caching")
+    cache_ttl_hours: int = Field(
+        default=24, ge=1, le=168, description="Cache TTL in hours"
+    )
+    max_cache_entries: int = Field(
+        default=100, ge=10, le=1000, description="Maximum cache entries"
+    )
+    preferred_models: List[str] = Field(
+        default_factory=lambda: [
+            "codellama:13b",
+            "llama2:13b",
+            "mistral:7b",
+            "codellama:7b",
+            "llama2:7b"
+        ],
+        description="Ordered list of preferred models"
+    )
+    context_collection_enabled: bool = Field(
+        default=True, description="Enable error context collection"
+    )
+    max_context_size_kb: int = Field(
+        default=4, ge=1, le=64, description="Maximum context size in KB"
+    )
+    enable_ai_assistance: bool = Field(
+        default=True, description="Enable AI assistance on errors"
+    )
+    response_quality_check: bool = Field(
+        default=True, description="Enable response quality validation"
+    )
+    max_response_tokens: int = Field(
+        default=1000, ge=100, le=4000, description="Maximum response tokens"
+    )
+    temperature: float = Field(
+        default=0.7, ge=0.0, le=1.0, description="Response generation temperature"
+    )
+    top_p: float = Field(
+        default=0.9, ge=0.0, le=1.0, description="Top-p sampling parameter"
+    )
+    stream_responses: bool = Field(
+        default=False, description="Enable streaming responses"
+    )
+    prompt_templates: AIPromptTemplatesConfig = Field(
+        default_factory=AIPromptTemplatesConfig,
+        description="Prompt template configuration"
+    )
+    
+    @field_validator("ollama_url")
+    @classmethod
+    def validate_ollama_url(cls, v):
+        """Ensure Ollama URL is properly formatted."""
+        if isinstance(v, str) and not v.startswith(("http://", "https://")):
+            raise ValueError("Ollama URL must start with http:// or https://")
+        return str(v)
+
+
 class Config(BaseModel):
     """Root configuration model containing all configuration sections."""
 
@@ -202,6 +282,7 @@ class Config(BaseModel):
     templates: TemplateConfig = Field(default_factory=TemplateConfig)
     ollama: OllamaConfig = Field(default_factory=OllamaConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
+    ai: AIConfig = Field(default_factory=AIConfig)
 
     model_config = {
         "extra": "forbid",  # Forbid extra fields not defined in the model

@@ -9,21 +9,29 @@ of project creation including template processing, directory structure creation,
 file rendering, and error handling with atomic rollback capabilities.
 """
 
-from pathlib import Path
-from typing import Dict, Any, List, Optional, Callable, Union
+import asyncio
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Union
+
 from structlog import get_logger
 
-from .exceptions import ProjectGenerationError, TemplateError, PathError, GitError, VirtualEnvError
-from .path_utils import PathHandler
-from .directory_creator import DirectoryCreator
-from .file_renderer import FileRenderer
-from .git_manager import GitManager, GitConfig
-from .venv_manager import VenvManager
-from .command_executor import CommandExecutor
 from ..config.config_manager import ConfigManager
-from ..templates.schema.template import Template
 from ..templates.loader import TemplateLoader
+from ..templates.schema.template import Template
+from .command_executor import CommandExecutor
+from .directory_creator import DirectoryCreator
+from .exceptions import (
+    GitError,
+    PathError,
+    ProjectGenerationError,
+    TemplateError,
+    VirtualEnvError,
+)
+from .file_renderer import FileRenderer
+from .git_manager import GitConfig, GitManager
+from .path_utils import PathHandler
+from .venv_manager import VenvManager
 
 
 @dataclass
@@ -37,6 +45,7 @@ class ProjectOptions:
         python_version: Specific Python version for virtual environment
         execute_post_commands: Whether to execute post-creation commands
         git_config: Git configuration for repository setup
+        enable_ai_assistance: Whether to enable AI assistance on errors
     """
     create_git_repo: bool = True
     create_venv: bool = True
@@ -44,6 +53,7 @@ class ProjectOptions:
     python_version: Optional[str] = None
     execute_post_commands: bool = True
     git_config: Optional[GitConfig] = None
+    enable_ai_assistance: bool = True
 
 
 @dataclass
@@ -60,6 +70,7 @@ class GenerationResult:
         git_initialized: Whether git repository was initialized
         venv_created: Whether virtual environment was created
         commands_executed: Number of post-creation commands executed
+        ai_suggestions: AI-generated suggestions for fixing errors (if any)
     """
     success: bool
     target_path: Path
@@ -70,6 +81,7 @@ class GenerationResult:
     git_initialized: bool = False
     venv_created: bool = False
     commands_executed: int = 0
+    ai_suggestions: Optional[str] = None
 
 
 class ProjectGenerator:
@@ -84,6 +96,7 @@ class ProjectGenerator:
     - Post-creation command execution
     - Error handling with atomic rollback
     - Progress reporting through callbacks
+    - AI assistance for error resolution
     
     The generator supports both normal and dry-run modes, with comprehensive
     logging and error reporting throughout the process.
@@ -97,11 +110,12 @@ class ProjectGenerator:
         git_manager: Git repository management
         venv_manager: Virtual environment management
         command_executor: Post-creation command execution
+        ai_service: AI service for error assistance (optional)
         generation_errors: Accumulated errors during generation
         rollback_handlers: Cleanup functions for rollback
         logger: Structured logger for operations
     """
-    
+
     def __init__(
         self,
         config_manager: Optional[ConfigManager] = None,
@@ -111,7 +125,8 @@ class ProjectGenerator:
         file_renderer: Optional[FileRenderer] = None,
         git_manager: Optional[GitManager] = None,
         venv_manager: Optional[VenvManager] = None,
-        command_executor: Optional[CommandExecutor] = None
+        command_executor: Optional[CommandExecutor] = None,
+        ai_service: Optional["AIService"] = None  # Forward reference
     ) -> None:
         """Initialize the ProjectGenerator.
         
@@ -124,6 +139,7 @@ class ProjectGenerator:
             git_manager: Optional GitManager (creates new if None)
             venv_manager: Optional VenvManager (creates new if None)
             command_executor: Optional CommandExecutor (creates new if None)
+            ai_service: Optional AI service for error assistance
         """
         self.config_manager = config_manager or ConfigManager()
         self.template_loader = template_loader or TemplateLoader()
@@ -134,19 +150,50 @@ class ProjectGenerator:
         self.git_manager = git_manager or GitManager()
         self.venv_manager = venv_manager or VenvManager()
         self.command_executor = command_executor or CommandExecutor()
-        
+        self.ai_service = ai_service
+
         self.generation_errors: List[str] = []
         self.rollback_handlers: List[Callable[[], None]] = []
         self.logger = get_logger(__name__)
-        
+
+        # Initialize AI service if not provided and enabled in config
+        if self.ai_service is None:
+            try:
+                from ..ai.ai_service import AIService, AIServiceConfig
+                ai_config = AIServiceConfig(
+                    enabled=self.config_manager.get_setting("ai.enabled", True),
+                    ollama_url=self.config_manager.get_setting("ai.ollama_url", "http://localhost:11434"),
+                    ollama_timeout=self.config_manager.get_setting("ai.ollama_timeout", 30),
+                    cache_enabled=self.config_manager.get_setting("ai.cache_enabled", True),
+                    cache_ttl_hours=self.config_manager.get_setting("ai.cache_ttl_hours", 24),
+                    max_cache_entries=self.config_manager.get_setting("ai.max_cache_entries", 100),
+                    preferred_models=self.config_manager.get_setting("ai.preferred_models"),
+                    context_collection_enabled=self.config_manager.get_setting("ai.context_collection_enabled", True),
+                    max_context_size_kb=self.config_manager.get_setting("ai.max_context_size_kb", 4)
+                )
+                if ai_config.enabled:
+                    self.ai_service = AIService(
+                        config_manager=self.config_manager,
+                        ai_config=ai_config
+                    )
+                    self.logger.info("AI service initialized for error assistance")
+            except ImportError:
+                self.logger.warning("AI service not available - error assistance disabled")
+            except Exception as e:
+                self.logger.warning(
+                    "Failed to initialize AI service",
+                    error=str(e)
+                )
+
         self.logger.info(
             "ProjectGenerator initialized",
             has_config_manager=self.config_manager is not None,
             has_template_loader=self.template_loader is not None,
             git_available=self.git_manager._git_available,
-            venv_tools=len([t for t, p in self.venv_manager.available_tools.items() if p])
+            venv_tools=len([t for t, p in self.venv_manager.available_tools.items() if p]),
+            ai_service_available=self.ai_service is not None
         )
-    
+
     def generate_project(
         self,
         template: Template,
@@ -177,21 +224,21 @@ class ProjectGenerator:
         """
         import time
         start_time = time.time()
-        
+
         # Set default options if not provided
         options = options or ProjectOptions()
-        
+
         # Reset state for new generation
         self.generation_errors.clear()
         self.rollback_handlers.clear()
-        
+
         target_path = self.path_handler.normalize_path(target_path)
-        
+
         # Initialize result tracking
         git_initialized = False
         venv_created = False
         commands_executed = 0
-        
+
         self.logger.info(
             "Starting project generation",
             template_name=template.name,
@@ -201,56 +248,56 @@ class ProjectGenerator:
             create_venv=options.create_venv,
             execute_post_commands=options.execute_post_commands
         )
-        
+
         try:
             # Progress reporting helper
             def report_progress(message: str) -> None:
                 if progress_callback:
                     progress_callback(message)
                 self.logger.debug("Generation progress", message=message)
-            
+
             report_progress("Validating template and target path...")
             self._validate_target_path(target_path)
-            
+
             report_progress("Preparing template variables...")
             prepared_variables = self._prepare_template_variables(template, variables)
-            
+
             if not dry_run:
                 report_progress("Creating directory structure...")
                 self._create_directories(template, target_path, report_progress)
-                
+
                 report_progress("Rendering template files...")
                 self._render_files(template, prepared_variables, target_path, report_progress)
-                
+
                 # Post-creation steps
                 if options.create_git_repo:
                     report_progress("Initializing git repository...")
                     git_initialized = self._initialize_git_repository(target_path, options.git_config, report_progress)
-                
+
                 if options.create_venv:
                     report_progress("Creating virtual environment...")
                     venv_created = self._create_virtual_environment(target_path, options, report_progress)
-                
-                if options.execute_post_commands and hasattr(template, 'hooks') and hasattr(template.hooks, 'post_generation'):
+
+                if options.execute_post_commands and hasattr(template, "hooks") and hasattr(template.hooks, "post_generation"):
                     report_progress("Executing post-creation commands...")
                     commands_executed = self._execute_post_commands(template, target_path, report_progress)
-                
+
                 # Create initial git commit if git was initialized
                 if git_initialized:
                     report_progress("Creating initial git commit...")
                     self._create_initial_commit(target_path, options.git_config)
             else:
                 self.logger.info("Dry-run mode: Skipping actual file creation and post-creation steps")
-            
+
             report_progress("Project generation completed successfully")
-            
+
             # Collect files created (for reporting)
             files_created = []
-            if hasattr(self.file_renderer, 'rendered_files'):
+            if hasattr(self.file_renderer, "rendered_files"):
                 files_created = [str(f) for f in self.file_renderer.rendered_files]
-            
+
             duration = time.time() - start_time
-            
+
             result = GenerationResult(
                 success=True,
                 target_path=target_path,
@@ -262,7 +309,7 @@ class ProjectGenerator:
                 venv_created=venv_created,
                 commands_executed=commands_executed
             )
-            
+
             self.logger.info(
                 "Project generation completed successfully",
                 template_name=template.name,
@@ -270,9 +317,9 @@ class ProjectGenerator:
                 files_created=len(files_created),
                 duration=duration
             )
-            
+
             return result
-            
+
         except (TemplateError, PathError, ProjectGenerationError) as e:
             # Expected errors - execute rollback and return result
             self.logger.error(
@@ -281,12 +328,30 @@ class ProjectGenerator:
                 template_name=template.name,
                 target_path=str(target_path)
             )
-            
+
             if not dry_run:
                 self._execute_rollback()
-            
+
             duration = time.time() - start_time
-            
+
+            # Get AI assistance if enabled
+            ai_suggestions = None
+            if options.enable_ai_assistance:
+                partial_results = {
+                    "git_initialized": git_initialized,
+                    "venv_created": venv_created,
+                    "commands_executed": commands_executed,
+                    "files_created": len(files_created) if "files_created" in locals() else 0
+                }
+                ai_suggestions = self._get_ai_assistance(
+                    error=e,
+                    template=template,
+                    variables=variables,
+                    target_path=target_path,
+                    options=options,
+                    partial_results=partial_results
+                )
+
             return GenerationResult(
                 success=False,
                 target_path=target_path,
@@ -296,9 +361,10 @@ class ProjectGenerator:
                 duration=duration,
                 git_initialized=git_initialized,
                 venv_created=venv_created,
-                commands_executed=commands_executed
+                commands_executed=commands_executed,
+                ai_suggestions=ai_suggestions
             )
-            
+
         except Exception as e:
             # Unexpected errors - execute rollback and re-raise
             self.logger.error(
@@ -307,10 +373,10 @@ class ProjectGenerator:
                 template_name=template.name,
                 target_path=str(target_path)
             )
-            
+
             if not dry_run:
                 self._execute_rollback()
-            
+
             raise ProjectGenerationError(
                 f"Unexpected error during project generation: {e}",
                 details={
@@ -320,7 +386,7 @@ class ProjectGenerator:
                 },
                 original_error=e
             ) from e
-    
+
     def _validate_target_path(self, target_path: Path) -> None:
         """Validate target path for project creation.
         
@@ -341,18 +407,18 @@ class ProjectGenerator:
                     raise ProjectGenerationError(
                         f"Target directory '{target_path}' already exists and is not empty"
                     )
-            
+
             # Try to create parent directories if needed
             target_path.parent.mkdir(parents=True, exist_ok=True)
-            
+
             # Test write permissions by attempting to create the directory
             if not target_path.exists():
                 target_path.mkdir(exist_ok=True)
                 # Remove it since we're just testing
                 target_path.rmdir()
-            
+
             self.logger.debug("Target path validation successful", target_path=str(target_path))
-            
+
         except PermissionError as e:
             raise ProjectGenerationError(
                 f"Permission denied when creating project at '{target_path}': {e}"
@@ -365,10 +431,10 @@ class ProjectGenerator:
             raise ProjectGenerationError(
                 f"Path validation failed for '{target_path}': {e}"
             ) from e
-    
+
     def _prepare_template_variables(
-        self, 
-        template: Template, 
+        self,
+        template: Template,
         variables: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Prepare and validate template variables.
@@ -386,41 +452,41 @@ class ProjectGenerator:
         try:
             # Start with input variables
             prepared_vars = variables.copy()
-            
+
             # Add system variables
             import datetime
             prepared_vars.update({
-                'current_year': datetime.datetime.now().year,
-                'current_date': datetime.datetime.now().strftime('%Y-%m-%d'),
-                'generator_name': 'create-project',
-                'generator_version': '1.0.0'
+                "current_year": datetime.datetime.now().year,
+                "current_date": datetime.datetime.now().strftime("%Y-%m-%d"),
+                "generator_name": "create-project",
+                "generator_version": "1.0.0"
             })
-            
+
             # Validate required variables
-            if hasattr(template, 'variables'):
+            if hasattr(template, "variables"):
                 for var_def in template.variables:
                     if var_def.required and var_def.name not in prepared_vars:
                         raise ProjectGenerationError(
                             f"Required variable '{var_def.name}' is missing"
                         )
-                    
+
                     # Apply defaults if not provided
-                    if var_def.name not in prepared_vars and hasattr(var_def, 'default'):
+                    if var_def.name not in prepared_vars and hasattr(var_def, "default"):
                         prepared_vars[var_def.name] = var_def.default
-            
+
             self.logger.debug(
                 "Template variables prepared",
                 variables_count=len(prepared_vars),
                 has_required_vars=True
             )
-            
+
             return prepared_vars
-            
+
         except Exception as e:
             raise ProjectGenerationError(
                 f"Failed to prepare template variables: {e}"
             ) from e
-    
+
     def _create_directories(
         self,
         template: Template,
@@ -437,14 +503,14 @@ class ProjectGenerator:
         try:
             if progress_callback:
                 progress_callback("Creating directory structure...")
-            
+
             # Initialize DirectoryCreator for this project if not provided
             if self.directory_creator is None:
                 self.directory_creator = DirectoryCreator(base_path=target_path)
-            
+
             # Extract directory structure from template
             structure = {}
-            if hasattr(template, 'structure') and hasattr(template.structure, 'directories'):
+            if hasattr(template, "structure") and hasattr(template.structure, "directories"):
                 for directory in template.structure.directories:
                     # Convert flat directory list to nested structure
                     parts = Path(directory).parts
@@ -453,28 +519,28 @@ class ProjectGenerator:
                         if part not in current:
                             current[part] = {}
                         current = current[part]
-            
+
             # Create directories using DirectoryCreator
             self.directory_creator.create_structure(
                 structure=structure,
                 progress_callback=progress_callback
             )
-            
+
             # Add rollback handler
             self._add_rollback_handler(
                 lambda: self.directory_creator.rollback()
             )
-            
+
             self.logger.debug(
                 "Directory structure created",
                 target_path=str(target_path),
-                directories_created=len(self.directory_creator.created_directories)
+                directories_created=len(self.directory_creator.created_dirs)
             )
-            
+
         except Exception as e:
             self.generation_errors.append(f"Directory creation failed: {e}")
             raise TemplateError(f"Failed to create directory structure: {e}") from e
-    
+
     def _render_files(
         self,
         template: Template,
@@ -493,23 +559,24 @@ class ProjectGenerator:
         try:
             if progress_callback:
                 progress_callback("Rendering template files...")
-            
+
             # Get template files structure
             file_structure = {}
-            if hasattr(template, 'structure') and hasattr(template.structure, 'files'):
+            if hasattr(template, "structure") and hasattr(template.structure, "files"):
                 file_structure = template.structure.files
-            
+
             if not file_structure:
                 self.logger.info("No files to render in template")
                 return
-            
+
             # Determine template base path
             # Built-in templates are in templates/builtin/template_files/{template_name}/
             from pathlib import Path
+
             import create_project
             package_root = Path(create_project.__file__).parent
             template_base_path = package_root / "templates" / "builtin" / "template_files"
-            
+
             # Render files using FileRenderer
             self.file_renderer.render_files_from_structure(
                 base_template_path=template_base_path,
@@ -518,22 +585,89 @@ class ProjectGenerator:
                 variables=variables,
                 progress_callback=progress_callback
             )
-            
+
             # Add rollback handler
             self._add_rollback_handler(
                 lambda: self.file_renderer.rollback_rendered_files()
             )
-            
+
             self.logger.debug(
                 "Files rendered successfully",
                 target_path=str(target_path),
                 files_rendered=len(self.file_renderer.rendered_files)
             )
-            
+
         except Exception as e:
             self.generation_errors.append(f"File rendering failed: {e}")
             raise TemplateError(f"Failed to render template files: {e}") from e
-    
+
+    def _get_ai_assistance(
+        self,
+        error: Exception,
+        template: Template,
+        variables: Dict[str, Any],
+        target_path: Path,
+        options: ProjectOptions,
+        partial_results: Optional[Dict[str, Any]] = None
+    ) -> Optional[str]:
+        """Get AI assistance for generation errors.
+        
+        Args:
+            error: The error that occurred
+            template: Template being processed
+            variables: Template variables used
+            target_path: Target path for project
+            options: Generation options
+            partial_results: Any partial results before failure
+            
+        Returns:
+            AI-generated help text or None if unavailable
+        """
+        if not options.enable_ai_assistance or self.ai_service is None:
+            return None
+
+        try:
+            # Run async method in sync context
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+            try:
+                ai_help = loop.run_until_complete(
+                    self.ai_service.generate_help_response(
+                        error=error,
+                        template=template,
+                        project_variables=variables,
+                        target_path=target_path,
+                        options={
+                            "create_git_repo": options.create_git_repo,
+                            "create_venv": options.create_venv,
+                            "venv_name": options.venv_name,
+                            "python_version": options.python_version
+                        },
+                        attempted_operations=self.generation_errors,
+                        partial_results=partial_results
+                    )
+                )
+
+                self.logger.info(
+                    "AI assistance generated",
+                    error_type=type(error).__name__,
+                    help_length=len(ai_help) if ai_help else 0
+                )
+
+                return ai_help
+
+            finally:
+                loop.close()
+
+        except Exception as e:
+            self.logger.warning(
+                "Failed to get AI assistance",
+                error=str(e),
+                original_error=type(error).__name__
+            )
+            return None
+
     def _add_rollback_handler(self, handler: Callable[[], None]) -> None:
         """Add a rollback handler.
         
@@ -542,18 +676,18 @@ class ProjectGenerator:
         """
         self.rollback_handlers.append(handler)
         self.logger.debug("Rollback handler added", handlers_count=len(self.rollback_handlers))
-    
+
     def _execute_rollback(self) -> None:
         """Execute all rollback handlers in reverse order."""
         if not self.rollback_handlers:
             self.logger.info("No rollback handlers to execute")
             return
-        
+
         self.logger.info(
             "Executing rollback",
             handlers_count=len(self.rollback_handlers)
         )
-        
+
         # Execute handlers in reverse order (LIFO)
         for handler in reversed(self.rollback_handlers):
             try:
@@ -566,10 +700,10 @@ class ProjectGenerator:
                     "Rollback handler failed",
                     error=str(e)
                 )
-        
+
         self.rollback_handlers.clear()
         self.logger.info("Rollback execution completed")
-    
+
     def _initialize_git_repository(
         self,
         target_path: Path,
@@ -588,14 +722,14 @@ class ProjectGenerator:
         """
         try:
             self.git_manager.init_repository(target_path, git_config)
-            
+
             self.logger.info(
                 "Git repository initialized",
                 target_path=str(target_path)
             )
-            
+
             return True
-            
+
         except GitError as e:
             # Git errors are not fatal - log and continue
             error_msg = f"Git initialization failed: {e}"
@@ -605,9 +739,9 @@ class ProjectGenerator:
                 target_path=str(target_path),
                 error=str(e)
             )
-            
+
             return False
-        
+
         except Exception as e:
             # Unexpected errors - log but don't fail generation
             error_msg = f"Unexpected git error: {e}"
@@ -617,9 +751,9 @@ class ProjectGenerator:
                 target_path=str(target_path),
                 error=str(e)
             )
-            
+
             return False
-    
+
     def _create_virtual_environment(
         self,
         target_path: Path,
@@ -639,19 +773,19 @@ class ProjectGenerator:
         try:
             # Look for requirements file
             requirements_file = None
-            for req_name in ['requirements.txt', 'pyproject.toml', 'Pipfile']:
+            for req_name in ["requirements.txt", "pyproject.toml", "Pipfile"]:
                 req_path = target_path / req_name
                 if req_path.exists():
                     requirements_file = req_path
                     break
-            
+
             result = self.venv_manager.create_venv(
                 project_path=target_path,
                 venv_name=options.venv_name,
                 python_version=options.python_version,
                 requirements_file=requirements_file
             )
-            
+
             if result["success"]:
                 self.logger.info(
                     "Virtual environment created",
@@ -660,7 +794,7 @@ class ProjectGenerator:
                     tool=result.get("tool"),
                     requirements_file=str(requirements_file) if requirements_file else None
                 )
-                
+
                 return True
             else:
                 error_msg = f"Virtual environment creation failed: {result.get('error', 'Unknown error')}"
@@ -668,11 +802,11 @@ class ProjectGenerator:
                 self.logger.warning(
                     "Virtual environment creation failed",
                     target_path=str(target_path),
-                    error=result.get('error')
+                    error=result.get("error")
                 )
-                
+
                 return False
-                
+
         except VirtualEnvError as e:
             # VEnv errors are not fatal - log and continue
             error_msg = f"Virtual environment creation failed: {e}"
@@ -682,9 +816,9 @@ class ProjectGenerator:
                 target_path=str(target_path),
                 error=str(e)
             )
-            
+
             return False
-        
+
         except Exception as e:
             # Unexpected errors - log but don't fail generation
             error_msg = f"Unexpected virtual environment error: {e}"
@@ -694,9 +828,9 @@ class ProjectGenerator:
                 target_path=str(target_path),
                 error=str(e)
             )
-            
+
             return False
-    
+
     def _execute_post_commands(
         self,
         template: Template,
@@ -714,33 +848,33 @@ class ProjectGenerator:
             Number of commands executed successfully
         """
         commands_executed = 0
-        
+
         try:
-            if not hasattr(template, 'hooks') or not hasattr(template.hooks, 'post_generation'):
+            if not hasattr(template, "hooks") or not hasattr(template.hooks, "post_generation"):
                 self.logger.debug("No post-generation commands in template")
                 return 0
-            
+
             post_commands = template.hooks.post_generation
-            if not post_commands or not hasattr(post_commands, 'commands'):
+            if not post_commands or not hasattr(post_commands, "commands"):
                 self.logger.debug("No post-generation commands to execute")
                 return 0
-            
-            commands = post_commands.commands if hasattr(post_commands, 'commands') else []
-            
+
+            commands = post_commands.commands if hasattr(post_commands, "commands") else []
+
             if not commands:
                 self.logger.debug("Empty post-generation commands list")
                 return 0
-            
+
             self.logger.info(
                 "Executing post-creation commands",
                 target_path=str(target_path),
                 command_count=len(commands)
             )
-            
+
             def command_progress(message: str, current: int, total: int) -> None:
                 if progress_callback:
                     progress_callback(f"Command {current + 1}/{total}: {message}")
-            
+
             results = self.command_executor.execute_commands(
                 commands=commands,
                 cwd=target_path,
@@ -748,10 +882,10 @@ class ProjectGenerator:
                 progress_callback=command_progress,
                 stop_on_failure=False  # Continue with remaining commands even if one fails
             )
-            
+
             # Count successful commands
             commands_executed = sum(1 for result in results if result.success)
-            
+
             # Log failures
             failed_commands = [result for result in results if not result.success]
             if failed_commands:
@@ -764,7 +898,7 @@ class ProjectGenerator:
                         error=failed.stderr,
                         returncode=failed.returncode
                     )
-            
+
             self.logger.info(
                 "Post-creation commands completed",
                 target_path=str(target_path),
@@ -772,9 +906,9 @@ class ProjectGenerator:
                 total_commands=len(commands),
                 failed_commands=len(failed_commands)
             )
-            
+
             return commands_executed
-            
+
         except Exception as e:
             # Command execution errors are not fatal - log and continue
             error_msg = f"Post-creation command execution failed: {e}"
@@ -784,9 +918,9 @@ class ProjectGenerator:
                 target_path=str(target_path),
                 error=str(e)
             )
-            
+
             return commands_executed
-    
+
     def _create_initial_commit(
         self,
         target_path: Path,
@@ -802,19 +936,19 @@ class ProjectGenerator:
             commit_message = "Initial commit"
             if git_config and git_config.initial_commit_message:
                 commit_message = git_config.initial_commit_message
-            
+
             self.git_manager.create_initial_commit(
                 target_path,
                 message=commit_message,
                 git_config=git_config
             )
-            
+
             self.logger.info(
                 "Initial git commit created",
                 target_path=str(target_path),
                 message=commit_message
             )
-            
+
         except GitError as e:
             # Git commit errors are not fatal - log and continue
             error_msg = f"Initial git commit failed: {e}"
@@ -824,7 +958,7 @@ class ProjectGenerator:
                 target_path=str(target_path),
                 error=str(e)
             )
-        
+
         except Exception as e:
             # Unexpected errors - log but don't fail generation
             error_msg = f"Unexpected git commit error: {e}"
