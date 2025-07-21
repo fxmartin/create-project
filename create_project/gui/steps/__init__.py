@@ -14,8 +14,9 @@ This module contains individual wizard steps that guide users through:
 
 from typing import TYPE_CHECKING
 
+from .project_type import ProjectTypeStep
+
 if TYPE_CHECKING:
-    from .project_type import ProjectTypeStep
     from .basic_info import BasicInfoStep
     from .location import LocationStep
     from .options import OptionsStep

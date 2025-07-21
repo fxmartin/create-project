@@ -29,6 +29,7 @@ from create_project.core.project_generator import ProjectOptions
 from create_project.ai.ai_service import AIService
 from create_project.utils.logger import get_logger
 from .base_step import WizardStep
+from ..steps.project_type import ProjectTypeStep
 
 logger = get_logger(__name__)
 
@@ -213,6 +214,11 @@ class ProjectWizard(QWizard):
         
         logger.info("Project wizard initialized")
     
+    @property
+    def data(self) -> WizardData:
+        """Access wizard data for child pages."""
+        return self.wizard_data
+    
     def _setup_wizard(self) -> None:
         """Configure wizard appearance and behavior."""
         self.setWindowTitle("Create Python Project")
@@ -233,13 +239,14 @@ class ProjectWizard(QWizard):
     
     def _add_pages(self) -> None:
         """Add wizard pages."""
-        # Note: These imports will be available once the step modules are created
-        # For now, we'll add placeholder pages
         logger.info("Adding wizard pages")
         
-        # Placeholder pages - will be replaced with actual implementations
+        # Add actual step implementations
+        # Project Type Selection (implemented)
+        self.addPage(ProjectTypeStep(self))
+        
+        # Placeholder pages for remaining steps
         for i, (title, subtitle) in enumerate([
-            ("Select Project Type", "Choose a template for your new project"),
             ("Basic Information", "Enter project details"),
             ("Select Location", "Choose where to create your project"),
             ("Configure Options", "Customize project settings"),
