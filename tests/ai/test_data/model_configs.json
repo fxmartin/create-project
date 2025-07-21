@@ -1,0 +1,87 @@
+{
+  "valid_models": [
+    {
+      "name": "llama3.2:latest",
+      "aliases": ["llama3.2", "llama-3.2"],
+      "capabilities": ["general", "code", "chat"],
+      "context_length": 128000,
+      "parameter_size": "3.2B",
+      "quantization": "Q4_K_M",
+      "family": "llama"
+    },
+    {
+      "name": "codellama:7b",
+      "aliases": ["code-llama-7b", "codellama"],
+      "capabilities": ["code", "technical"],
+      "context_length": 16384,
+      "parameter_size": "7B",
+      "quantization": "Q4_0",
+      "family": "llama"
+    },
+    {
+      "name": "mistral:7b-instruct",
+      "aliases": ["mistral-7b", "mistral-instruct"],
+      "capabilities": ["general", "instruct", "chat"],
+      "context_length": 32768,
+      "parameter_size": "7B",
+      "quantization": "Q5_K_M",
+      "family": "mistral"
+    },
+    {
+      "name": "deepseek-coder:6.7b",
+      "aliases": ["deepseek", "deepseek-6.7b"],
+      "capabilities": ["code", "technical", "completion"],
+      "context_length": 16384,
+      "parameter_size": "6.7B",
+      "quantization": "Q4_K_M",
+      "family": "deepseek"
+    },
+    {
+      "name": "phi3:mini",
+      "aliases": ["phi-3", "phi3-mini"],
+      "capabilities": ["general", "efficient"],
+      "context_length": 4096,
+      "parameter_size": "3.8B",
+      "quantization": "Q4_K_M",
+      "family": "phi"
+    }
+  ],
+  "invalid_models": [
+    {
+      "name": "gpt-4",
+      "reason": "Not an Ollama model"
+    },
+    {
+      "name": "claude-3",
+      "reason": "Not an Ollama model"
+    },
+    {
+      "name": "",
+      "reason": "Empty model name"
+    },
+    {
+      "name": "llama3.2:nonexistent",
+      "reason": "Invalid tag"
+    }
+  ],
+  "model_selection_scenarios": [
+    {
+      "requested_capability": "code",
+      "available_models": ["llama3.2:latest", "codellama:7b", "mistral:7b-instruct"],
+      "expected_selection": "codellama:7b",
+      "reason": "Specialized code model preferred"
+    },
+    {
+      "requested_capability": "general",
+      "available_models": ["phi3:mini", "mistral:7b-instruct"],
+      "expected_selection": "mistral:7b-instruct",
+      "reason": "Larger model with better capabilities"
+    },
+    {
+      "requested_capability": "any",
+      "available_models": ["llama3.2:latest"],
+      "expected_selection": "llama3.2:latest",
+      "reason": "Only available model"
+    }
+  ]
+}
