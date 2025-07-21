@@ -17,7 +17,8 @@
       "Bash(mv:*)",
       "Bash(for f in /Users/user/dev/create-project/create_project/templates/builtin/template_files/cli_single/*.py)",
       "Bash(do mv \"$f\" \"$f.j2\")",
-      "Bash(for f in /Users/user/dev/create-project/create_project/templates/builtin/template_files/script/*.py)"
+      "Bash(for f in /Users/user/dev/create-project/create_project/templates/builtin/template_files/script/*.py)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }
