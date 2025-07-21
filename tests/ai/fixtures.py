@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from create_project.ai.exceptions import (
-    AIServiceError,
+    AIError,
     CacheError,
     ModelNotAvailableError,
     OllamaNotFoundError,
@@ -279,7 +279,7 @@ class ErrorScenarios:
             ("Model unavailable", ModelNotAvailableError("llama3.2:latest", "Model not found")),
             ("Response timeout", ResponseTimeoutError("Response generation timed out", 30)),
             ("Cache error", CacheError("Failed to load cache", FileNotFoundError())),
-            ("Generic AI error", AIServiceError("AI service initialization failed"))
+            ("Generic AI error", AIError("AI service initialization failed"))
         ]
     
     @staticmethod

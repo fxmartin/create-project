@@ -534,7 +534,7 @@ class ProjectGenerator:
             self.logger.debug(
                 "Directory structure created",
                 target_path=str(target_path),
-                directories_created=len(self.directory_creator.created_directories)
+                directories_created=len(self.directory_creator.created_dirs)
             )
 
         except Exception as e:

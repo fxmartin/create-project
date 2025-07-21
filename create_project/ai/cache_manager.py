@@ -1,6 +1,76 @@
 # ABOUTME: LRU cache system for AI responses with TTL expiration and JSON persistence
 # ABOUTME: Thread-safe operations with configurable size limits and automatic cleanup
 
+"""LRU cache management system for AI response caching.
+
+This module provides a sophisticated caching system for AI responses with
+Least Recently Used (LRU) eviction, Time To Live (TTL) expiration, and
+persistent storage capabilities. It's designed for high-performance caching
+of AI model responses to reduce latency and API calls.
+
+Key Features:
+    - LRU (Least Recently Used) eviction policy for memory efficiency
+    - TTL expiration with configurable per-entry lifetimes
+    - Thread-safe operations using RLock for concurrent access
+    - JSON file persistence with atomic write operations
+    - Automatic cache key generation from request parameters
+    - Comprehensive statistics tracking (hits, misses, evictions)
+    - Auto-persistence with configurable intervals
+    - Cache file rotation to prevent unbounded growth
+    - Expired entry cleanup and size estimation
+
+Main Classes:
+    - CacheEntry: Individual cache entry with metadata and access tracking
+    - CacheStats: Statistics tracking for cache performance monitoring
+    - ResponseCacheManager: Main cache manager with full lifecycle support
+
+Usage Example:
+    ```python
+    from create_project.ai.cache_manager import ResponseCacheManager
+    from datetime import timedelta
+    
+    # Initialize cache manager
+    cache = ResponseCacheManager(
+        max_size=100,  # Maximum 100 entries
+        default_ttl_hours=24,  # 24 hour TTL
+        auto_persist=True,  # Auto-save to disk
+        persist_interval=300  # Save every 5 minutes
+    )
+    
+    # Generate cache key from parameters
+    key = cache.generate_key(
+        model="llama2:7b",
+        prompt="Explain Python decorators",
+        temperature=0.7
+    )
+    
+    # Check cache
+    cached_response = cache.get(key)
+    if cached_response is None:
+        # Generate response (expensive operation)
+        response = generate_ai_response(...)
+        
+        # Store in cache with custom TTL
+        cache.put(key, response, ttl=timedelta(hours=12))
+    
+    # Get cache statistics
+    stats = cache.get_stats()
+    print(f"Cache hit rate: {stats.hit_rate:.1f}%")
+    print(f"Cache fill rate: {stats.fill_rate:.1f}%")
+    
+    # Cleanup expired entries
+    expired_count = cache.cleanup_expired()
+    print(f"Removed {expired_count} expired entries")
+    
+    # Persist cache to disk
+    cache.persist()
+    ```
+
+The cache manager automatically handles file persistence, creating cache files
+in the user's cache directory (platform-specific) and supports cache file
+rotation to prevent unlimited growth.
+"""
+
 import hashlib
 import json
 import threading

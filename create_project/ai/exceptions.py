@@ -1,6 +1,34 @@
 # ABOUTME: AI-specific exceptions for Ollama integration and caching errors
 # ABOUTME: Hierarchical exception system inheriting from base project exceptions
 
+"""Exception hierarchy for AI module operations.
+
+This module defines specific exceptions for AI-related errors that can occur
+during Ollama integration and AI assistance operations. All exceptions inherit
+from the base ProjectGenerationError to maintain consistency with the project's
+error handling architecture.
+
+Exception Hierarchy:
+    ProjectGenerationError (base)
+    ├── AIError
+    │   ├── OllamaNotFoundError - Ollama binary/service not available
+    │   ├── ModelNotAvailableError - Requested model not found
+    │   ├── ResponseGenerationError - AI response generation failed
+    │   │   └── ResponseTimeoutError - AI response timed out
+    │   └── CacheError - Cache operation failed
+    └── AIAssistanceError - AI help generation failed
+
+Example:
+    try:
+        response = await ai_service.get_help(error_context)
+    except OllamaNotFoundError:
+        # Fall back to static help
+        return get_static_help()
+    except ResponseTimeoutError:
+        # Try with shorter timeout or simpler prompt
+        return await ai_service.get_quick_help(error_context)
+"""
+
 from typing import Optional
 
 from create_project.core.exceptions import ProjectGenerationError

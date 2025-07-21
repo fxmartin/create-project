@@ -80,6 +80,11 @@ class Template(BaseTemplate):
     variables: List[TemplateVariable] = Field(
         default_factory=list, description="Template variables for user input"
     )
+    
+    @property
+    def name(self) -> str:
+        """Get template name from metadata."""
+        return self.metadata.name
 
     # Project structure
     structure: ProjectStructure = Field(

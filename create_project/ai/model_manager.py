@@ -1,6 +1,60 @@
 # ABOUTME: Model discovery and management for Ollama with caching and validation
 # ABOUTME: Queries available models, manages metadata, and provides filtering capabilities
 
+"""Model discovery and management for Ollama AI models.
+
+This module provides a comprehensive model management system for discovering,
+caching, and validating Ollama models. It automatically identifies model
+families, capabilities, and specifications from model names.
+
+Key Features:
+    - Auto-discovery of available Ollama models with caching
+    - Model capability detection (text generation, code, chat, embedding, vision)
+    - Model family identification with predefined capability mappings
+    - Thread-safe caching with TTL expiration (10 minutes default)
+    - Model filtering by capability, family, or specific attributes
+    - Automatic parsing of model specifications (parameter size, quantization)
+    - Best model selection based on capability requirements
+
+Main Classes:
+    - ModelCapability: Enum defining model capabilities (text, code, chat, etc.)
+    - ModelInfo: Data class containing comprehensive model information
+    - ModelManager: Main manager class for model operations
+
+Usage Example:
+    ```python
+    from create_project.ai.model_manager import ModelManager, ModelCapability
+    
+    # Initialize manager
+    manager = ModelManager()
+    
+    # Get all available models
+    models = manager.get_models()
+    for model in models:
+        print(f"{model.name} - {model.family} ({model.parameter_size})")
+    
+    # Find models by capability
+    code_models = manager.get_models_by_capability(ModelCapability.CODE_GENERATION)
+    
+    # Get best model for a specific task
+    best_model = manager.get_best_model_for_capability(
+        ModelCapability.TEXT_GENERATION,
+        prefer_smaller=True  # For faster inference
+    )
+    
+    # Validate a specific model exists
+    try:
+        model_info = manager.validate_model_availability("llama2:7b")
+        print(f"Model {model_info.name} is available")
+    except ModelNotAvailableError as e:
+        print(f"Model not found: {e}")
+    ```
+
+The module maintains a comprehensive mapping of model families to their typical
+capabilities, making it easy to find appropriate models for specific tasks
+without needing to know exact model names.
+"""
+
 import threading
 from dataclasses import dataclass
 from datetime import datetime, timedelta

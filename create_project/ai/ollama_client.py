@@ -1,6 +1,89 @@
 # ABOUTME: HTTP client for Ollama API with async/sync support and retry logic
 # ABOUTME: Singleton pattern with connection pooling and comprehensive error handling
 
+"""HTTP client for Ollama API communication.
+
+This module provides a robust HTTP client for interacting with the Ollama API,
+supporting both synchronous and asynchronous operations. It implements a
+singleton pattern for efficient resource management and includes sophisticated
+retry logic with exponential backoff.
+
+Key Features:
+    - Singleton pattern ensuring single client instance
+    - Both sync and async API support with httpx
+    - Connection pooling for efficient HTTP communication
+    - Exponential backoff retry with configurable parameters
+    - Automatic retry on connection errors and timeouts
+    - Structured response objects with error handling
+    - Support for all Ollama API endpoints
+    - Graceful cleanup and resource management
+    - Request/response timing and performance metrics
+
+Main Classes:
+    - RequestMethod: Enum for HTTP methods
+    - RetryConfig: Configuration for retry behavior
+    - OllamaResponse: Standardized API response wrapper
+    - OllamaClient: Main client class (singleton)
+
+Usage Example:
+    ```python
+    from create_project.ai.ollama_client import OllamaClient, RetryConfig
+    
+    # Get singleton instance
+    client = OllamaClient(
+        base_url="http://localhost:11434",
+        timeout=30.0,
+        retry_config=RetryConfig(
+            max_attempts=3,
+            base_delay=1.0,
+            exponential_base=2.0
+        )
+    )
+    
+    # Synchronous API calls
+    # List available models
+    response = client.get_models()
+    if response.success:
+        models = response.data.get("models", [])
+        for model in models:
+            print(f"Model: {model['name']}")
+    
+    # Generate completion
+    response = client.generate_completion(
+        model="llama2:7b",
+        prompt="Explain Python decorators",
+        temperature=0.7,
+        max_tokens=500
+    )
+    if response.success:
+        print(response.content)
+    
+    # Asynchronous API calls
+    import asyncio
+    
+    async def async_example():
+        # Chat completion
+        messages = [
+            {"role": "user", "content": "What is recursion?"}
+        ]
+        response = await client.chat_completion_async(
+            model="llama2:7b",
+            messages=messages
+        )
+        if response.success:
+            print(response.content)
+        
+        # Cleanup
+        await client.close_async()
+    
+    asyncio.run(async_example())
+    ```
+
+The client automatically handles connection errors, timeouts, and server
+errors with configurable retry logic. It maintains persistent HTTP connections
+for improved performance across multiple requests.
+"""
+
 import asyncio
 import json
 import time

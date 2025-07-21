@@ -1,6 +1,36 @@
 # ABOUTME: Ollama installation detection with cross-platform support and caching
 # ABOUTME: Auto-detects Ollama binary, checks service status, and provides version information
 
+"""Ollama installation detection and health checking.
+
+This module provides cross-platform detection of Ollama installations, including
+binary location, version information, and service health status. It implements
+thread-safe caching to minimize repeated detection overhead.
+
+Key Features:
+    - Automatic detection of Ollama binary in system PATH
+    - Platform-specific search in common installation directories
+    - Version parsing from Ollama CLI output
+    - HTTP health check for service availability
+    - Thread-safe caching with configurable TTL
+    - Graceful handling of missing installations
+
+Classes:
+    OllamaStatus: Data class containing detection results
+    OllamaDetector: Main detector with caching and health checks
+
+Example:
+    detector = OllamaDetector()
+    status = detector.detect()
+    
+    if status.is_installed:
+        print(f"Ollama {status.version} found at {status.binary_path}")
+        if status.is_running:
+            print("Service is running and healthy")
+    else:
+        print("Ollama not found - please install from https://ollama.ai")
+"""
+
 import shutil
 import subprocess
 import threading

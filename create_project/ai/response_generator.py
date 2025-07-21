@@ -1,6 +1,82 @@
 # ABOUTME: AI response generator for creating contextual help and suggestions
 # ABOUTME: Handles prompt templating, response streaming, and quality validation
 
+"""AI response generation system for intelligent project creation assistance.
+
+This module provides the core response generation functionality for the AI
+assistant, supporting both synchronous and streaming responses. It handles
+prompt rendering, model selection, quality validation, and graceful fallback
+when AI services are unavailable.
+
+Key Features:
+    - Multiple prompt types (error help, suggestions, explanations)
+    - Automatic model selection based on capabilities
+    - Response quality validation with configurable thresholds
+    - Streaming support for real-time response display
+    - Fallback responses when AI is unavailable
+    - Timeout handling to prevent blocking
+    - Configurable generation parameters (temperature, tokens, etc.)
+    - Automatic retry with streaming if direct generation fails
+
+Main Classes:
+    - ResponseQuality: Configuration for response quality validation
+    - GenerationConfig: Parameters for AI response generation
+    - ResponseGenerator: Main generator class for AI responses
+
+Usage Example:
+    ```python
+    from create_project.ai import ResponseGenerator, GenerationConfig
+    from create_project.ai.types import PromptType
+    import asyncio
+    
+    # Initialize generator
+    generator = ResponseGenerator()
+    
+    # Generate error help
+    async def get_error_help():
+        config = GenerationConfig(
+            model_preference="llama2:7b",
+            temperature=0.5,  # Lower for more focused responses
+            max_tokens=500,
+            quality_check=True
+        )
+        
+        context = {
+            "error_message": "Permission denied: cannot create directory",
+            "error_type": "PermissionError",
+            "operation": "Creating project structure"
+        }
+        
+        response = await generator.generate_response(
+            PromptType.ERROR_HELP,
+            context,
+            config
+        )
+        print(response)
+    
+    # Stream suggestions for better UX
+    async def stream_suggestions():
+        context = {
+            "project_type": "web_app",
+            "technologies": ["FastAPI", "PostgreSQL", "Redis"]
+        }
+        
+        async for chunk in generator.stream_response(
+            PromptType.SUGGESTIONS,
+            context
+        ):
+            print(chunk, end='', flush=True)
+    
+    # Run examples
+    asyncio.run(get_error_help())
+    asyncio.run(stream_suggestions())
+    ```
+
+The generator automatically handles model availability checks, falls back to
+pre-configured responses when AI is unavailable, and validates response
+quality to ensure helpful and actionable advice.
+"""
+
 import asyncio
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
