@@ -23,7 +23,7 @@ def temp_config_dir(tmp_path: Path) -> Path:
         "app": {
             "name": "test-app",
             "version": "1.0.0",
-            "data_dir": str(tmp_path / "data")
+            "data_dir": str(tmp_path / "data"),
         },
         "templates": {
             "builtin_path": str(tmp_path / "templates"),
@@ -36,8 +36,8 @@ def temp_config_dir(tmp_path: Path) -> Path:
             "allowed_file_extensions": [".yaml", ".yml"],
             "enable_security_checks": True,
             "max_action_timeout_seconds": 300,
-            "variable_name_pattern": r"^[a-zA-Z][a-zA-Z0-9_]*$"
-        }
+            "variable_name_pattern": r"^[a-zA-Z][a-zA-Z0-9_]*$",
+        },
     }
 
     settings_file = config_dir / "settings.json"
@@ -76,14 +76,18 @@ class TestTemplateSchemaIntegration:
         assert enable_validation is True
 
         # Test list settings
-        allowed_extensions = config_manager.get_setting("templates.allowed_file_extensions")
+        allowed_extensions = config_manager.get_setting(
+            "templates.allowed_file_extensions"
+        )
         assert allowed_extensions == [".yaml", ".yml"]
 
         # Test integer settings
         timeout = config_manager.get_setting("templates.max_action_timeout_seconds")
         assert timeout == 300
 
-    def test_template_paths_configuration(self, config_manager: ConfigManager, tmp_path: Path):
+    def test_template_paths_configuration(
+        self, config_manager: ConfigManager, tmp_path: Path
+    ):
         """Test that template paths are correctly configured."""
         config = config_manager.get_config()
 
@@ -127,7 +131,9 @@ class TestTemplateSchemaIntegration:
         assert config.templates.variable_name_pattern == r"^[a-zA-Z][a-zA-Z0-9_]*$"
         assert config.templates.max_variables_per_template > 0
 
-    def test_config_persistence(self, config_manager: ConfigManager, temp_config_dir: Path):
+    def test_config_persistence(
+        self, config_manager: ConfigManager, temp_config_dir: Path
+    ):
         """Test that configuration changes are persisted."""
         # Update a setting
         config_manager.set_setting("templates.strict_mode", False)
@@ -152,6 +158,7 @@ class TestTemplateSchemaIntegration:
 
         # Test that validator uses the regex pattern from config
         import re
+
         pattern = validator.variable_name_pattern
         assert isinstance(pattern, re.Pattern)
 

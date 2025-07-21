@@ -26,33 +26,39 @@ class ProjectRenderer:
 
     def __init__(self, template_engine: TemplateEngine):
         """Initialize the project renderer.
-        
+
         Args:
             template_engine: Template engine instance
         """
         self.engine = template_engine
         self.logger = get_logger(__name__)
 
-    def render_project(self, template: Template, variables: Dict[str, Any],
-                      output_path: Union[str, Path],
-                      overwrite: bool = False) -> Dict[str, Any]:
+    def render_project(
+        self,
+        template: Template,
+        variables: Dict[str, Any],
+        output_path: Union[str, Path],
+        overwrite: bool = False,
+    ) -> Dict[str, Any]:
         """Render a complete project from template.
-        
+
         Args:
             template: Template to render
             variables: Resolved template variables
             output_path: Output directory path
             overwrite: Whether to overwrite existing files
-            
+
         Returns:
             Dictionary with rendering results and statistics
-            
+
         Raises:
             RenderingError: If rendering fails
         """
         output_path = Path(output_path)
 
-        self.logger.info(f"Rendering project '{template.metadata.name}' to: {output_path}")
+        self.logger.info(
+            f"Rendering project '{template.metadata.name}' to: {output_path}"
+        )
 
         # Validate output path
         if output_path.exists() and not overwrite:
@@ -68,7 +74,7 @@ class ProjectRenderer:
             "directories_created": 0,
             "files_skipped": 0,
             "files_overwritten": 0,
-            "errors": []
+            "errors": [],
         }
 
         try:
@@ -78,16 +84,12 @@ class ProjectRenderer:
                 variables,
                 output_path,
                 overwrite,
-                stats
+                stats,
             )
 
             # Copy and render template files
             self._render_template_files(
-                template,
-                variables,
-                output_path,
-                overwrite,
-                stats
+                template, variables, output_path, overwrite, stats
             )
 
             self.logger.info(
@@ -104,10 +106,16 @@ class ProjectRenderer:
             stats["errors"].append(error_msg)
             raise RenderingError(error_msg)
 
-    def _render_directory(self, directory: DirectoryItem, variables: Dict[str, Any],
-                         parent_path: Path, overwrite: bool, stats: Dict[str, Any]) -> None:
+    def _render_directory(
+        self,
+        directory: DirectoryItem,
+        variables: Dict[str, Any],
+        parent_path: Path,
+        overwrite: bool,
+        stats: Dict[str, Any],
+    ) -> None:
         """Render a directory and its contents.
-        
+
         Args:
             directory: Directory definition
             variables: Template variables
@@ -116,7 +124,9 @@ class ProjectRenderer:
             stats: Statistics tracking dictionary
         """
         # Evaluate directory condition
-        if directory.condition and not self._evaluate_condition(directory.condition, variables):
+        if directory.condition and not self._evaluate_condition(
+            directory.condition, variables
+        ):
             self.logger.debug(f"Directory '{directory.name}' skipped due to condition")
             return
 
@@ -138,10 +148,16 @@ class ProjectRenderer:
         for sub_directory in directory.directories:
             self._render_directory(sub_directory, variables, dir_path, overwrite, stats)
 
-    def _render_file(self, file_item: FileItem, variables: Dict[str, Any],
-                    parent_path: Path, overwrite: bool, stats: Dict[str, Any]) -> None:
+    def _render_file(
+        self,
+        file_item: FileItem,
+        variables: Dict[str, Any],
+        parent_path: Path,
+        overwrite: bool,
+        stats: Dict[str, Any],
+    ) -> None:
         """Render a file from template.
-        
+
         Args:
             file_item: File definition
             variables: Template variables
@@ -150,7 +166,9 @@ class ProjectRenderer:
             stats: Statistics tracking dictionary
         """
         # Evaluate file condition
-        if file_item.condition and not self._evaluate_condition(file_item.condition, variables):
+        if file_item.condition and not self._evaluate_condition(
+            file_item.condition, variables
+        ):
             self.logger.debug(f"File '{file_item.name}' skipped due to condition")
             stats["files_skipped"] += 1
             return
@@ -170,17 +188,24 @@ class ProjectRenderer:
             content = ""
             if file_item.content:
                 # Inline content
-                content = self.engine.render_template_string(file_item.content, variables)
+                content = self.engine.render_template_string(
+                    file_item.content, variables
+                )
             elif file_item.template_file:
                 # External template file
                 try:
-                    template = self.engine.jinja_env.get_template(file_item.template_file)
+                    template = self.engine.jinja_env.get_template(
+                        file_item.template_file
+                    )
                     content = template.render(**variables)
                 except jinja2.TemplateNotFound:
-                    raise RenderingError(f"Template file not found: {file_item.template_file}")
+                    raise RenderingError(
+                        f"Template file not found: {file_item.template_file}"
+                    )
             elif file_item.binary_content:
                 # Binary content (base64 encoded)
                 import base64
+
                 content = base64.b64decode(file_item.binary_content)
 
             # Track if file exists before writing
@@ -211,10 +236,16 @@ class ProjectRenderer:
             stats["errors"].append(error_msg)
             raise RenderingError(error_msg)
 
-    def _render_template_files(self, template: Template, variables: Dict[str, Any],
-                              output_path: Path, overwrite: bool, stats: Dict[str, Any]) -> None:
+    def _render_template_files(
+        self,
+        template: Template,
+        variables: Dict[str, Any],
+        output_path: Path,
+        overwrite: bool,
+        stats: Dict[str, Any],
+    ) -> None:
         """Render standalone template files.
-        
+
         Args:
             template: Template object
             variables: Template variables
@@ -242,7 +273,9 @@ class ProjectRenderer:
 
                 # Check if file exists
                 if output_file_path.exists() and not overwrite:
-                    self.logger.warning(f"Template file exists, skipping: {output_file_path}")
+                    self.logger.warning(
+                        f"Template file exists, skipping: {output_file_path}"
+                    )
                     stats["files_skipped"] += 1
                     continue
 
@@ -258,23 +291,28 @@ class ProjectRenderer:
                 self.logger.debug(f"Rendered template file: {output_file_path}")
 
             except Exception as e:
-                error_msg = f"Failed to render template file '{template_file.name}': {e}"
+                error_msg = (
+                    f"Failed to render template file '{template_file.name}': {e}"
+                )
                 self.logger.error(error_msg)
                 stats["errors"].append(error_msg)
 
-    def _evaluate_condition(self, condition: Union[str, "ConditionalExpression"], variables: Dict[str, Any]) -> bool:
+    def _evaluate_condition(
+        self, condition: Union[str, "ConditionalExpression"], variables: Dict[str, Any]
+    ) -> bool:
         """Evaluate a Jinja2 condition expression.
-        
+
         Args:
             condition: Jinja2 condition string or ConditionalExpression object
             variables: Template variables
-            
+
         Returns:
             True if condition evaluates to truthy, False otherwise
         """
         try:
             # Handle ConditionalExpression objects
             from .schema.structure import ConditionalExpression
+
             if isinstance(condition, ConditionalExpression):
                 condition = condition.expression
 
@@ -303,7 +341,7 @@ class ProjectRenderer:
 
     def _set_file_permissions(self, file_path: Path, permissions: str) -> None:
         """Set file permissions using octal notation.
-        
+
         Args:
             file_path: Path to the file
             permissions: Octal permission string (e.g., "755")
@@ -322,23 +360,25 @@ class FileRenderer:
 
     def __init__(self, template_engine: TemplateEngine):
         """Initialize the file renderer.
-        
+
         Args:
             template_engine: Template engine instance
         """
         self.engine = template_engine
         self.logger = get_logger(__name__)
 
-    def render_file_content(self, template_content: str, variables: Dict[str, Any]) -> str:
+    def render_file_content(
+        self, template_content: str, variables: Dict[str, Any]
+    ) -> str:
         """Render file content from template string.
-        
+
         Args:
             template_content: Template content string
             variables: Template variables
-            
+
         Returns:
             Rendered content
-            
+
         Raises:
             RenderingError: If rendering fails
         """
@@ -346,30 +386,31 @@ class FileRenderer:
 
     def render_file_name(self, template_name: str, variables: Dict[str, Any]) -> str:
         """Render file name from template.
-        
+
         Args:
             template_name: Template name string
             variables: Template variables
-            
+
         Returns:
             Rendered file name
-            
+
         Raises:
             RenderingError: If rendering fails
         """
         return self.engine.render_template_string(template_name, variables)
 
-    def render_file_from_template(self, template_file_path: str,
-                                 variables: Dict[str, Any]) -> str:
+    def render_file_from_template(
+        self, template_file_path: str, variables: Dict[str, Any]
+    ) -> str:
         """Render file content from external template file.
-        
+
         Args:
             template_file_path: Path to template file
             variables: Template variables
-            
+
         Returns:
             Rendered content
-            
+
         Raises:
             RenderingError: If rendering fails
         """
@@ -387,40 +428,48 @@ class DirectoryRenderer:
 
     def __init__(self, template_engine: TemplateEngine):
         """Initialize the directory renderer.
-        
+
         Args:
             template_engine: Template engine instance
         """
         self.engine = template_engine
         self.logger = get_logger(__name__)
 
-    def create_directory_structure(self, structure: DirectoryItem,
-                                  base_path: Path, variables: Dict[str, Any]) -> List[Path]:
+    def create_directory_structure(
+        self, structure: DirectoryItem, base_path: Path, variables: Dict[str, Any]
+    ) -> List[Path]:
         """Create directory structure from template.
-        
+
         Args:
             structure: Directory structure definition
             base_path: Base path for creation
             variables: Template variables
-            
+
         Returns:
             List of created directory paths
-            
+
         Raises:
             RenderingError: If directory creation fails
         """
         created_dirs = []
 
         try:
-            self._create_directory_recursive(structure, base_path, variables, created_dirs)
+            self._create_directory_recursive(
+                structure, base_path, variables, created_dirs
+            )
             return created_dirs
         except Exception as e:
             raise RenderingError(f"Directory creation failed: {e}")
 
-    def _create_directory_recursive(self, directory: DirectoryItem, parent_path: Path,
-                                   variables: Dict[str, Any], created_dirs: List[Path]) -> None:
+    def _create_directory_recursive(
+        self,
+        directory: DirectoryItem,
+        parent_path: Path,
+        variables: Dict[str, Any],
+        created_dirs: List[Path],
+    ) -> None:
         """Recursively create directory structure.
-        
+
         Args:
             directory: Directory definition
             parent_path: Parent directory path
@@ -439,4 +488,6 @@ class DirectoryRenderer:
 
         # Create subdirectories
         for sub_directory in directory.directories:
-            self._create_directory_recursive(sub_directory, dir_path, variables, created_dirs)
+            self._create_directory_recursive(
+                sub_directory, dir_path, variables, created_dirs
+            )

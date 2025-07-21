@@ -28,7 +28,7 @@ class TestTemplateEngineIntegration:
             "templates.builtin_directory": "tests/fixtures/builtin",
             "templates.user_directory": "tests/fixtures/user",
             "templates.cache_enabled": True,
-            "templates.cache_ttl": 3600
+            "templates.cache_ttl": 3600,
         }.get(key, default)
 
     def test_complete_template_workflow(self):
@@ -43,7 +43,7 @@ class TestTemplateEngineIntegration:
                     "description": "Flask web application template",
                     "version": "1.0.0",
                     "category": "flask",
-                    "author": "Test Author"
+                    "author": "Test Author",
                 },
                 "variables": [
                     {
@@ -56,16 +56,16 @@ class TestTemplateEngineIntegration:
                             {
                                 "rule_type": "pattern",
                                 "value": "^[a-zA-Z][a-zA-Z0-9_-]*$",
-                                "message": "Project name must start with a letter and contain only letters, numbers, hyphens, and underscores"
+                                "message": "Project name must start with a letter and contain only letters, numbers, hyphens, and underscores",
                             }
-                        ]
+                        ],
                     },
                     {
                         "name": "include_tests",
                         "type": "boolean",
                         "description": "Include test files",
                         "required": False,
-                        "default": True
+                        "default": True,
                     },
                     {
                         "name": "database_type",
@@ -76,9 +76,9 @@ class TestTemplateEngineIntegration:
                         "choices": [
                             {"value": "sqlite", "label": "SQLite"},
                             {"value": "postgresql", "label": "PostgreSQL"},
-                            {"value": "mysql", "label": "MySQL"}
-                        ]
-                    }
+                            {"value": "mysql", "label": "MySQL"},
+                        ],
+                    },
                 ],
                 "structure": {
                     "root_directory": {
@@ -86,49 +86,43 @@ class TestTemplateEngineIntegration:
                         "files": [
                             {
                                 "name": "app.py",
-                                "content": "from flask import Flask\n\napp = Flask('{{ project_name }}')\n\nif __name__ == '__main__':\n    app.run(debug=True)\n"
+                                "content": "from flask import Flask\n\napp = Flask('{{ project_name }}')\n\nif __name__ == '__main__':\n    app.run(debug=True)\n",
                             },
                             {
                                 "name": "requirements.txt",
-                                "content": "Flask>=2.0.0\n{% if database_type == 'postgresql' %}psycopg2>=2.8.0\n{% elif database_type == 'mysql' %}PyMySQL>=1.0.0\n{% endif %}"
+                                "content": "Flask>=2.0.0\n{% if database_type == 'postgresql' %}psycopg2>=2.8.0\n{% elif database_type == 'mysql' %}PyMySQL>=1.0.0\n{% endif %}",
                             },
                             {
                                 "name": "README.md",
-                                "content": "# {{ project_name | title }}\n\nA Flask web application using {{ database_type }} database.\n"
-                            }
+                                "content": "# {{ project_name | title }}\n\nA Flask web application using {{ database_type }} database.\n",
+                            },
                         ],
                         "directories": [
                             {
                                 "name": "tests",
-                                "condition": {
-                                    "expression": "include_tests"
-                                },
+                                "condition": {"expression": "include_tests"},
                                 "files": [
                                     {
                                         "name": "test_app.py",
-                                        "content": "import pytest\nfrom app import app\n\ndef test_app_creation():\n    assert app is not None\n"
+                                        "content": "import pytest\nfrom app import app\n\ndef test_app_creation():\n    assert app is not None\n",
                                     }
                                 ],
-                                "directories": []
+                                "directories": [],
                             },
-                            {
-                                "name": "static",
-                                "files": [],
-                                "directories": []
-                            },
+                            {"name": "static", "files": [], "directories": []},
                             {
                                 "name": "templates",
                                 "files": [
                                     {
                                         "name": "base.html",
-                                        "content": "<!DOCTYPE html>\n<html>\n<head>\n    <title>{{ project_name | title }}</title>\n</head>\n<body>\n    <h1>Welcome to {{ project_name | title }}</h1>\n</body>\n</html>\n"
+                                        "content": "<!DOCTYPE html>\n<html>\n<head>\n    <title>{{ project_name | title }}</title>\n</head>\n<body>\n    <h1>Welcome to {{ project_name | title }}</h1>\n</body>\n</html>\n",
                                     }
                                 ],
-                                "directories": []
-                            }
-                        ]
+                                "directories": [],
+                            },
+                        ],
                     }
-                }
+                },
             }
 
             # Save template to file
@@ -149,7 +143,7 @@ class TestTemplateEngineIntegration:
             user_values = {
                 "project_name": "my-flask-app",
                 "include_tests": True,
-                "database_type": "postgresql"
+                "database_type": "postgresql",
             }
 
             resolved_vars = engine.resolve_variables(template, user_values)
@@ -222,7 +216,7 @@ class TestTemplateEngineIntegration:
                     "description": "Template with conditional content",
                     "version": "1.0.0",
                     "category": "custom",
-                    "author": "Test Author"
+                    "author": "Test Author",
                 },
                 "variables": [
                     {
@@ -230,35 +224,30 @@ class TestTemplateEngineIntegration:
                         "type": "boolean",
                         "description": "Include optional feature",
                         "required": False,
-                        "default": False
+                        "default": False,
                     }
                 ],
                 "structure": {
                     "root_directory": {
                         "name": "test-project",
                         "files": [
-                            {
-                                "name": "main.py",
-                                "content": "print('Hello World')\n"
-                            }
+                            {"name": "main.py", "content": "print('Hello World')\n"}
                         ],
                         "directories": [
                             {
                                 "name": "feature",
-                                "condition": {
-                                    "expression": "include_feature"
-                                },
+                                "condition": {"expression": "include_feature"},
                                 "files": [
                                     {
                                         "name": "feature.py",
-                                        "content": "# Optional feature\n"
+                                        "content": "# Optional feature\n",
                                     }
                                 ],
-                                "directories": []
+                                "directories": [],
                             }
-                        ]
+                        ],
                     }
-                }
+                },
             }
 
             # Save template
@@ -320,7 +309,7 @@ class TestTemplateEngineIntegration:
             self.config_manager.get_setting.side_effect = lambda key, default: {
                 "templates.directories": [str(temp_path)],
                 "templates.builtin_directory": str(builtin_dir),
-                "templates.user_directory": str(user_dir)
+                "templates.user_directory": str(user_dir),
             }.get(key, default)
 
             # Create test templates
@@ -330,16 +319,16 @@ class TestTemplateEngineIntegration:
                     "description": "Built-in template",
                     "version": "1.0.0",
                     "category": "library",
-                    "author": "System"
+                    "author": "System",
                 },
                 "variables": [],
                 "structure": {
                     "root_directory": {
                         "name": "builtin-project",
                         "files": [],
-                        "directories": []
+                        "directories": [],
                     }
-                }
+                },
             }
 
             user_template = {
@@ -348,16 +337,16 @@ class TestTemplateEngineIntegration:
                     "description": "User template",
                     "version": "1.0.0",
                     "category": "custom",
-                    "author": "User"
+                    "author": "User",
                 },
                 "variables": [],
                 "structure": {
                     "root_directory": {
                         "name": "user-project",
                         "files": [],
-                        "directories": []
+                        "directories": [],
                     }
-                }
+                },
             }
 
             # Save templates
@@ -405,7 +394,7 @@ class TestTemplateEngineIntegration:
             invalid_template = {
                 "metadata": {
                     "name": "",  # Invalid empty name
-                    "description": "Invalid template"
+                    "description": "Invalid template",
                 }
             }
 
@@ -436,7 +425,7 @@ class TestTemplateEngineIntegration:
                     "description": "Template with complex conditions",
                     "version": "1.0.0",
                     "category": "custom",
-                    "author": "Test Author"
+                    "author": "Test Author",
                 },
                 "variables": [
                     {
@@ -448,8 +437,8 @@ class TestTemplateEngineIntegration:
                         "choices": [
                             {"value": "web", "label": "Web Application"},
                             {"value": "cli", "label": "CLI Tool"},
-                            {"value": "library", "label": "Library"}
-                        ]
+                            {"value": "library", "label": "Library"},
+                        ],
                     },
                     {
                         "name": "web_framework",
@@ -460,15 +449,15 @@ class TestTemplateEngineIntegration:
                         "choices": [
                             {"value": "flask", "label": "Flask"},
                             {"value": "django", "label": "Django"},
-                            {"value": "fastapi", "label": "FastAPI"}
+                            {"value": "fastapi", "label": "FastAPI"},
                         ],
                         "show_if": [
                             {
                                 "variable": "project_type",
                                 "operator": "==",
-                                "value": "web"
+                                "value": "web",
                             }
-                        ]
+                        ],
                     },
                     {
                         "name": "cli_tool",
@@ -479,18 +468,18 @@ class TestTemplateEngineIntegration:
                             {
                                 "variable": "project_type",
                                 "operator": "==",
-                                "value": "cli"
+                                "value": "cli",
                             }
-                        ]
-                    }
+                        ],
+                    },
                 ],
                 "structure": {
                     "root_directory": {
                         "name": "test-project",
                         "files": [],
-                        "directories": []
+                        "directories": [],
                     }
-                }
+                },
             }
 
             template_path = temp_path / "complex.yaml"

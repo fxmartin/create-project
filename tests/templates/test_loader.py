@@ -24,7 +24,7 @@ class TestTemplateLoader:
         self.config_manager.get_setting.side_effect = lambda key, default: {
             "templates.directories": ["tests/fixtures/templates"],
             "templates.builtin_directory": "tests/fixtures/builtin",
-            "templates.user_directory": "tests/fixtures/user"
+            "templates.user_directory": "tests/fixtures/user",
         }.get(key, default)
         self.loader = TemplateLoader(self.config_manager)
 
@@ -125,7 +125,7 @@ class TestTemplateLoader:
                 "description": "Test template",
                 "version": "1.0.0",
                 "category": "test",
-                "author": "Test Author"
+                "author": "Test Author",
             }
         }
 
@@ -149,10 +149,7 @@ class TestTemplateLoader:
 
     def test_load_template_metadata_no_metadata(self):
         """Test template metadata loading with no metadata section."""
-        template_data = {
-            "variables": [],
-            "structure": {}
-        }
+        template_data = {"variables": [], "structure": {}}
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             yaml.dump(template_data, f)
@@ -201,7 +198,7 @@ class TestTemplateLoader:
                 "metadata": {
                     "name": "template1",
                     "description": "First template",
-                    "category": "web"
+                    "category": "web",
                 }
             }
             template1_path = temp_path / "template1.yaml"
@@ -212,7 +209,7 @@ class TestTemplateLoader:
                 "metadata": {
                     "name": "template2",
                     "description": "Second template",
-                    "category": "cli"
+                    "category": "cli",
                 }
             }
             template2_path = temp_path / "template2.yaml"
@@ -239,7 +236,7 @@ class TestTemplateLoader:
                 "metadata": {
                     "name": "web-template",
                     "description": "Web template",
-                    "category": "web"
+                    "category": "web",
                 }
             }
             template1_path = temp_path / "template1.yaml"
@@ -250,7 +247,7 @@ class TestTemplateLoader:
                 "metadata": {
                     "name": "cli-template",
                     "description": "CLI template",
-                    "category": "cli"
+                    "category": "cli",
                 }
             }
             template2_path = temp_path / "template2.yaml"
@@ -276,7 +273,7 @@ class TestTemplateLoader:
             template_data = {
                 "metadata": {
                     "name": "target-template",
-                    "description": "Target template"
+                    "description": "Target template",
                 }
             }
             template_path = temp_path / "template.yaml"
@@ -307,16 +304,16 @@ class TestTemplateLoader:
                 "description": "Valid template",
                 "version": "1.0.0",
                 "category": "custom",
-                "author": "Test Author"
+                "author": "Test Author",
             },
             "variables": [],
             "structure": {
                 "root_directory": {
                     "name": "test-project",
                     "files": [],
-                    "directories": []
+                    "directories": [],
                 }
-            }
+            },
         }
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
@@ -365,7 +362,7 @@ class TestTemplateLoader:
                     "metadata": {
                         "name": f"template{i}",
                         "description": f"Template {i}",
-                        "category": category
+                        "category": category,
                     }
                 }
                 template_path = temp_path / f"template{i}.yaml"
@@ -389,7 +386,7 @@ class TestTemplateLoader:
             template_data = {
                 "metadata": {
                     "name": "builtin-template",
-                    "description": "Builtin template"
+                    "description": "Builtin template",
                 }
             }
             template_path = builtin_dir / "builtin.yaml"
@@ -413,10 +410,7 @@ class TestTemplateLoader:
 
             # Create user template
             template_data = {
-                "metadata": {
-                    "name": "user-template",
-                    "description": "User template"
-                }
+                "metadata": {"name": "user-template", "description": "User template"}
             }
             template_path = user_dir / "user.yaml"
             with open(template_path, "w") as f:

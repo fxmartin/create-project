@@ -26,7 +26,7 @@ class TemplateLoader:
 
     def __init__(self, config_manager: Optional[ConfigManager] = None):
         """Initialize the template loader.
-        
+
         Args:
             config_manager: Configuration manager instance
         """
@@ -34,19 +34,29 @@ class TemplateLoader:
         self.logger = get_logger(__name__)
 
         # Get template configuration
-        self.template_directories = self.config_manager.get_setting("templates.directories", ["templates"])
-        self.builtin_templates_dir = self.config_manager.get_setting("templates.builtin_directory", "templates/builtin")
-        self.user_templates_dir = self.config_manager.get_setting("templates.user_directory", "templates/user")
+        self.template_directories = self.config_manager.get_setting(
+            "templates.directories", ["templates"]
+        )
+        self.builtin_templates_dir = self.config_manager.get_setting(
+            "templates.builtin_directory", "templates/builtin"
+        )
+        self.user_templates_dir = self.config_manager.get_setting(
+            "templates.user_directory", "templates/user"
+        )
 
-        self.logger.info(f"Template loader initialized with directories: {self.template_directories}")
+        self.logger.info(
+            f"Template loader initialized with directories: {self.template_directories}"
+        )
 
-    def discover_templates(self, include_builtin: bool = True, include_user: bool = True) -> List[Path]:
+    def discover_templates(
+        self, include_builtin: bool = True, include_user: bool = True
+    ) -> List[Path]:
         """Discover all available template files.
-        
+
         Args:
             include_builtin: Include built-in templates
             include_user: Include user templates
-            
+
         Returns:
             List of template file paths
         """
@@ -79,10 +89,10 @@ class TemplateLoader:
 
     def _find_yaml_files(self, directory: Path) -> List[Path]:
         """Find YAML files in a directory recursively.
-        
+
         Args:
             directory: Directory to search
-            
+
         Returns:
             List of YAML file paths
         """
@@ -94,7 +104,9 @@ class TemplateLoader:
                 if file_path.is_file() and file_path.suffix.lower() in yaml_extensions:
                     yaml_files.append(file_path)
         except PermissionError as e:
-            self.logger.warning(f"Permission denied accessing directory {directory}: {e}")
+            self.logger.warning(
+                f"Permission denied accessing directory {directory}: {e}"
+            )
         except Exception as e:
             self.logger.error(f"Error searching directory {directory}: {e}")
 
@@ -102,13 +114,13 @@ class TemplateLoader:
 
     def load_template_metadata(self, template_path: Union[str, Path]) -> Dict[str, any]:
         """Load template metadata without full validation.
-        
+
         Args:
             template_path: Path to the template file
-            
+
         Returns:
             Template metadata dictionary
-            
+
         Raises:
             TemplateLoadError: If metadata loading fails
         """
@@ -124,7 +136,9 @@ class TemplateLoader:
             # Extract metadata
             metadata = template_data.get("metadata", {})
             if not metadata:
-                raise TemplateLoadError(f"No metadata found in template: {template_path}")
+                raise TemplateLoadError(
+                    f"No metadata found in template: {template_path}"
+                )
 
             # Add file information
             metadata["file_path"] = str(template_path)
@@ -140,10 +154,10 @@ class TemplateLoader:
 
     def list_templates(self, category: Optional[str] = None) -> List[Dict[str, any]]:
         """List available templates with metadata.
-        
+
         Args:
             category: Filter by template category
-            
+
         Returns:
             List of template metadata dictionaries
         """
@@ -167,16 +181,18 @@ class TemplateLoader:
         # Sort by name
         templates.sort(key=lambda t: t.get("name", ""))
 
-        self.logger.info(f"Listed {len(templates)} templates" +
-                        (f" in category '{category}'" if category else ""))
+        self.logger.info(
+            f"Listed {len(templates)} templates"
+            + (f" in category '{category}'" if category else "")
+        )
         return templates
 
     def find_template_by_name(self, name: str) -> Optional[Path]:
         """Find a template by name.
-        
+
         Args:
             name: Template name to search for
-            
+
         Returns:
             Path to template file if found, None otherwise
         """
@@ -196,10 +212,10 @@ class TemplateLoader:
 
     def validate_template_file(self, template_path: Union[str, Path]) -> List[str]:
         """Validate a template file without loading it into memory.
-        
+
         Args:
             template_path: Path to the template file
-            
+
         Returns:
             List of validation errors (empty if valid)
         """
@@ -241,7 +257,7 @@ class TemplateLoader:
 
     def get_template_categories(self) -> List[str]:
         """Get all available template categories.
-        
+
         Returns:
             List of unique template categories
         """
@@ -261,7 +277,7 @@ class TemplateLoader:
 
     def get_builtin_templates(self) -> List[Dict[str, any]]:
         """Get list of built-in templates.
-        
+
         Returns:
             List of built-in template metadata
         """
@@ -283,7 +299,7 @@ class TemplateLoader:
 
     def get_user_templates(self) -> List[Dict[str, any]]:
         """Get list of user templates.
-        
+
         Returns:
             List of user template metadata
         """

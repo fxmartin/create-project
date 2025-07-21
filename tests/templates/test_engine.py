@@ -30,7 +30,7 @@ class TestTemplateEngine:
         self.config_manager.get_setting.side_effect = lambda key, default: {
             "templates.directories": ["tests/fixtures/templates"],
             "templates.builtin_directory": "tests/fixtures/builtin",
-            "templates.user_directory": "tests/fixtures/user"
+            "templates.user_directory": "tests/fixtures/user",
         }.get(key, default)
         self.engine = TemplateEngine(self.config_manager)
 
@@ -52,19 +52,27 @@ class TestTemplateEngine:
     def test_custom_filters(self):
         """Test custom Jinja2 filters."""
         # Test slugify filter
-        result = self.engine.render_template_string("{{ 'Hello World!' | slugify }}", {})
+        result = self.engine.render_template_string(
+            "{{ 'Hello World!' | slugify }}", {}
+        )
         assert result == "hello-world"
 
         # Test snake_case filter
-        result = self.engine.render_template_string("{{ 'HelloWorld' | snake_case }}", {})
+        result = self.engine.render_template_string(
+            "{{ 'HelloWorld' | snake_case }}", {}
+        )
         assert result == "hello_world"
 
         # Test pascal_case filter
-        result = self.engine.render_template_string("{{ 'hello_world' | pascal_case }}", {})
+        result = self.engine.render_template_string(
+            "{{ 'hello_world' | pascal_case }}", {}
+        )
         assert result == "HelloWorld"
 
         # Test camel_case filter
-        result = self.engine.render_template_string("{{ 'hello_world' | camel_case }}", {})
+        result = self.engine.render_template_string(
+            "{{ 'hello_world' | camel_case }}", {}
+        )
         assert result == "helloWorld"
 
     def test_load_template_success(self):
@@ -76,16 +84,16 @@ class TestTemplateEngine:
                 "description": "Test template",
                 "version": "1.0.0",
                 "category": "custom",
-                "author": "Test Author"
+                "author": "Test Author",
             },
             "variables": [],
             "structure": {
                 "root_directory": {
                     "name": "test-project",
                     "files": [],
-                    "directories": []
+                    "directories": [],
                 }
-            }
+            },
         }
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
@@ -124,7 +132,7 @@ class TestTemplateEngine:
                 "name": "",  # Invalid empty name
                 "description": "Test template",
                 "version": "1.0.0",
-                "category": "custom"
+                "category": "custom",
             }
         }
 
@@ -146,16 +154,16 @@ class TestTemplateEngine:
                 "description": "Test template",
                 "version": "1.0.0",
                 "category": "custom",
-                "author": "Test Author"
+                "author": "Test Author",
             },
             "variables": [],
             "structure": {
                 "root_directory": {
                     "name": "test-project",
                     "files": [],
-                    "directories": []
+                    "directories": [],
                 }
-            }
+            },
         }
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
@@ -227,7 +235,10 @@ class TestTemplateEngine:
         template.metadata = Mock()
         template.metadata.name = "test-template"
 
-        with pytest.raises(VariableResolutionError, match="Required variable 'required_var' not provided"):
+        with pytest.raises(
+            VariableResolutionError,
+            match="Required variable 'required_var' not provided",
+        ):
             self.engine.resolve_variables(template, {})
 
     def test_resolve_variables_validation_error(self):
@@ -248,14 +259,20 @@ class TestTemplateEngine:
 
         user_values = {"invalid_var": "bad_value"}
 
-        with pytest.raises(VariableResolutionError, match="Variable 'invalid_var': Value is invalid"):
+        with pytest.raises(
+            VariableResolutionError, match="Variable 'invalid_var': Value is invalid"
+        ):
             self.engine.resolve_variables(template, user_values)
 
     def test_evaluate_variable_condition_show_if(self):
         """Test variable condition evaluation with show_if."""
         variable = Mock()
         variable.name = "conditional_var"
-        variable.show_if = {"variable": "enable_feature", "operator": "equals", "value": True}
+        variable.show_if = {
+            "variable": "enable_feature",
+            "operator": "equals",
+            "value": True,
+        }
         variable.hide_if = None
 
         # Test condition true
@@ -273,7 +290,11 @@ class TestTemplateEngine:
         variable = Mock()
         variable.name = "conditional_var"
         variable.show_if = None
-        variable.hide_if = {"variable": "disable_feature", "operator": "equals", "value": True}
+        variable.hide_if = {
+            "variable": "disable_feature",
+            "operator": "equals",
+            "value": True,
+        }
 
         # Test condition true (should hide)
         resolved_values = {"disable_feature": True}
@@ -339,16 +360,16 @@ class TestTemplateEngine:
                 "description": "Test template",
                 "version": "1.0.0",
                 "category": "custom",
-                "author": "Test Author"
+                "author": "Test Author",
             },
             "variables": [],
             "structure": {
                 "root_directory": {
                     "name": "test-project",
                     "files": [],
-                    "directories": []
+                    "directories": [],
                 }
-            }
+            },
         }
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:

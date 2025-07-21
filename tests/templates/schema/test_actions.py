@@ -24,7 +24,7 @@ class TestTemplateAction:
             name="install",
             type=ActionType.COMMAND,
             command="npm install",
-            description="Install npm dependencies"
+            description="Install npm dependencies",
         )
         assert action.name == "install"
         assert action.type == ActionType.COMMAND
@@ -45,7 +45,7 @@ class TestTemplateAction:
             required=False,
             timeout=120,
             environment={"NODE_ENV": "development"},
-            arguments=["--verbose", "--color"]
+            arguments=["--verbose", "--color"],
         )
         assert action.working_directory == "src"
         assert action.platforms == [Platform.UNIX]
@@ -62,7 +62,7 @@ class TestTemplateAction:
                 name="empty",
                 type=ActionType.COMMAND,
                 command="",
-                description="Empty command"
+                description="Empty command",
             )
         assert "Command cannot be empty" in str(exc_info.value)
 
@@ -72,7 +72,7 @@ class TestTemplateAction:
             "rm -rf /",
             "del /f /s /q C:\\*",
             "format C:",
-            "fdisk /dev/sda"
+            "fdisk /dev/sda",
         ]
 
         for cmd in dangerous_commands:
@@ -81,7 +81,7 @@ class TestTemplateAction:
                     name="dangerous",
                     type=ActionType.COMMAND,
                     command=cmd,
-                    description="Dangerous command"
+                    description="Dangerous command",
                 )
             assert "dangerous" in str(exc_info.value).lower()
 
@@ -92,7 +92,7 @@ class TestTemplateAction:
             name="git_init",
             type=ActionType.GIT,
             command="git init",
-            description="Initialize git repo"
+            description="Initialize git repo",
         )
         assert action.command == "git init"
 
@@ -102,7 +102,7 @@ class TestTemplateAction:
                 name="bad_git",
                 type=ActionType.GIT,
                 command="initialize repo",
-                description="Bad git command"
+                description="Bad git command",
             )
         assert "must start with 'git '" in str(exc_info.value)
 
@@ -114,7 +114,7 @@ class TestTemplateAction:
             type=ActionType.COMMAND,
             command="echo test",
             description="Test",
-            working_directory="src/components"
+            working_directory="src/components",
         )
         assert action.working_directory == "src/components"
 
@@ -125,7 +125,7 @@ class TestTemplateAction:
                 type=ActionType.COMMAND,
                 command="echo test",
                 description="Test",
-                working_directory="/absolute/path"
+                working_directory="/absolute/path",
             )
 
         # Path traversal should fail
@@ -135,7 +135,7 @@ class TestTemplateAction:
                 type=ActionType.COMMAND,
                 command="echo test",
                 description="Test",
-                working_directory="../../../etc"
+                working_directory="../../../etc",
             )
 
     def test_timeout_validation(self):
@@ -146,7 +146,7 @@ class TestTemplateAction:
             type=ActionType.COMMAND,
             command="npm test",
             description="Run tests",
-            timeout=300
+            timeout=300,
         )
         assert action.timeout == 300
 
@@ -157,7 +157,7 @@ class TestTemplateAction:
                 type=ActionType.COMMAND,
                 command="npm test",
                 description="Run tests",
-                timeout=-1
+                timeout=-1,
             )
 
     def test_platform_support(self):
@@ -168,7 +168,7 @@ class TestTemplateAction:
             type=ActionType.COMMAND,
             command="chmod +x script.sh",
             description="Make executable",
-            platforms=[Platform.UNIX]
+            platforms=[Platform.UNIX],
         )
 
         assert action.is_supported_on_platform("darwin") is True  # macOS
@@ -181,7 +181,7 @@ class TestTemplateAction:
             type=ActionType.COMMAND,
             command="dir",
             description="List directory",
-            platforms=[Platform.WINDOWS]
+            platforms=[Platform.WINDOWS],
         )
 
         assert action.is_supported_on_platform("win32") is True
@@ -195,7 +195,7 @@ class TestTemplateAction:
             name="safe",
             type=ActionType.COMMAND,
             command="npm install",
-            description="Install dependencies"
+            description="Install dependencies",
         )
         assert action.get_safe_command() == "npm install"
 
@@ -204,7 +204,7 @@ class TestTemplateAction:
             name="test",
             type=ActionType.COMMAND,
             command="echo test",  # Safe base command
-            description="Test"
+            description="Test",
         )
         # Manually set a dangerous command to test get_safe_command
         action.command = "rm -rf /"
@@ -224,14 +224,14 @@ class TestActionGroup:
                 name="install",
                 type=ActionType.COMMAND,
                 command="npm install",
-                description="Install dependencies"
+                description="Install dependencies",
             ),
             TemplateAction(
                 name="build",
                 type=ActionType.COMMAND,
                 command="npm run build",
-                description="Build project"
-            )
+                description="Build project",
+            ),
         ]
 
         group = ActionGroup(
@@ -240,7 +240,7 @@ class TestActionGroup:
             actions=actions,
             condition="use_npm == true",
             parallel=False,
-            continue_on_error=True
+            continue_on_error=True,
         )
 
         assert group.name == "Setup project"
@@ -256,21 +256,17 @@ class TestActionGroup:
                 name="install",
                 type=ActionType.COMMAND,
                 command="npm install",
-                description="Install npm"
+                description="Install npm",
             ),
             TemplateAction(
                 name="install",  # Duplicate name
                 type=ActionType.COMMAND,
                 command="pip install -r requirements.txt",
-                description="Install pip"
-            )
+                description="Install pip",
+            ),
         ]
 
-        group = ActionGroup(
-            name="Setup",
-            description="Setup actions",
-            actions=actions
-        )
+        group = ActionGroup(name="Setup", description="Setup actions", actions=actions)
 
         errors = group.validate_actions()
         assert len(errors) == 1
@@ -297,27 +293,27 @@ class TestTemplateHooks:
             name="validate",
             type=ActionType.PYTHON,
             command="print('Validating environment')",
-            description="Validate environment"
+            description="Validate environment",
         )
 
         post_gen_action = TemplateAction(
             name="install",
             type=ActionType.COMMAND,
             command="npm install",
-            description="Install dependencies"
+            description="Install dependencies",
         )
 
         error_action = TemplateAction(
             name="cleanup_error",
             type=ActionType.DELETE,
             command="temp/",
-            description="Remove temp files on error"
+            description="Remove temp files on error",
         )
 
         hooks = TemplateHooks(
             pre_generate=[pre_gen_action],
             post_generate=[post_gen_action],
-            on_error=[error_action]
+            on_error=[error_action],
         )
 
         assert len(hooks.pre_generate) == 1
@@ -337,20 +333,17 @@ class TestTemplateHooks:
             name="setup",
             type=ActionType.COMMAND,
             command="echo 'pre'",
-            description="Pre setup"
+            description="Pre setup",
         )
 
         action2 = TemplateAction(
             name="setup",  # Same name in different hook
             type=ActionType.COMMAND,
             command="echo 'post'",
-            description="Post setup"
+            description="Post setup",
         )
 
-        hooks = TemplateHooks(
-            pre_generate=[action1],
-            post_generate=[action2]
-        )
+        hooks = TemplateHooks(pre_generate=[action1], post_generate=[action2])
 
         errors = hooks.validate_hooks()
         assert len(errors) == 1
@@ -365,7 +358,7 @@ class TestTemplateHooks:
                     name="pre_gen",
                     type=ActionType.COMMAND,
                     command="echo 'Starting'",
-                    description="Pre-generate"
+                    description="Pre-generate",
                 )
             ],
             post_generate=[
@@ -373,7 +366,7 @@ class TestTemplateHooks:
                     name="post_gen",
                     type=ActionType.COMMAND,
                     command="echo 'Done'",
-                    description="Post-generate"
+                    description="Post-generate",
                 )
             ],
             pre_file=[
@@ -381,7 +374,7 @@ class TestTemplateHooks:
                     name="pre_file",
                     type=ActionType.PYTHON,
                     command="print('Creating file')",
-                    description="Pre-file"
+                    description="Pre-file",
                 )
             ],
             post_file=[
@@ -389,7 +382,7 @@ class TestTemplateHooks:
                     name="post_file",
                     type=ActionType.PYTHON,
                     command="print('File created')",
-                    description="Post-file"
+                    description="Post-file",
                 )
             ],
             on_error=[
@@ -397,7 +390,7 @@ class TestTemplateHooks:
                     name="error_handler",
                     type=ActionType.PYTHON,
                     command="print('Error occurred')",
-                    description="Error handler"
+                    description="Error handler",
                 )
             ],
             cleanup=[
@@ -405,9 +398,9 @@ class TestTemplateHooks:
                     name="cleanup",
                     type=ActionType.DELETE,
                     command="temp/",
-                    description="Cleanup temp files"
+                    description="Cleanup temp files",
                 )
-            ]
+            ],
         )
 
         assert len(hooks.pre_generate) == 1

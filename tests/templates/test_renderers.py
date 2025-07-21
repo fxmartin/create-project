@@ -25,7 +25,9 @@ class TestProjectRenderer:
     def setup_method(self):
         """Set up test fixtures."""
         self.engine = Mock(spec=TemplateEngine)
-        self.engine.render_template_string = Mock(side_effect=lambda s, v: s.format(**v))
+        self.engine.render_template_string = Mock(
+            side_effect=lambda s, v: s.format(**v)
+        )
         self.engine.jinja_env = Mock()
 
         self.renderer = ProjectRenderer(self.engine)
@@ -77,7 +79,9 @@ class TestProjectRenderer:
             variables = {}
 
             with pytest.raises(RenderingError, match="Output directory is not empty"):
-                self.renderer.render_project(template, variables, output_path, overwrite=False)
+                self.renderer.render_project(
+                    template, variables, output_path, overwrite=False
+                )
 
     def test_render_project_with_overwrite(self):
         """Test project rendering with overwrite enabled."""
@@ -100,7 +104,9 @@ class TestProjectRenderer:
             variables = {"project_name": "test-project"}
 
             # Should not raise exception with overwrite=True
-            stats = self.renderer.render_project(template, variables, output_path, overwrite=True)
+            stats = self.renderer.render_project(
+                template, variables, output_path, overwrite=True
+            )
 
             assert "files_created" in stats
 
@@ -116,12 +122,19 @@ class TestProjectRenderer:
             directory.directories = []
 
             variables = {"include_feature": True}
-            stats = {"directories_created": 0, "files_created": 0, "files_skipped": 0, "errors": []}
+            stats = {
+                "directories_created": 0,
+                "files_created": 0,
+                "files_skipped": 0,
+                "errors": [],
+            }
 
             # Mock condition evaluation to return True
             self.renderer._evaluate_condition = Mock(return_value=True)
 
-            self.renderer._render_directory(directory, variables, parent_path, False, stats)
+            self.renderer._render_directory(
+                directory, variables, parent_path, False, stats
+            )
 
             created_dir = parent_path / "test-dir"
             assert created_dir.exists()
@@ -139,12 +152,19 @@ class TestProjectRenderer:
             directory.directories = []
 
             variables = {"include_feature": False}
-            stats = {"directories_created": 0, "files_created": 0, "files_skipped": 0, "errors": []}
+            stats = {
+                "directories_created": 0,
+                "files_created": 0,
+                "files_skipped": 0,
+                "errors": [],
+            }
 
             # Mock condition evaluation to return False
             self.renderer._evaluate_condition = Mock(return_value=False)
 
-            self.renderer._render_directory(directory, variables, parent_path, False, stats)
+            self.renderer._render_directory(
+                directory, variables, parent_path, False, stats
+            )
 
             created_dir = parent_path / "test-dir"
             assert not created_dir.exists()
@@ -164,7 +184,12 @@ class TestProjectRenderer:
             file_item.permissions = None
 
             variables = {"project_name": "TestProject"}
-            stats = {"files_created": 0, "files_skipped": 0, "files_overwritten": 0, "errors": []}
+            stats = {
+                "files_created": 0,
+                "files_skipped": 0,
+                "files_overwritten": 0,
+                "errors": [],
+            }
 
             self.renderer._render_file(file_item, variables, parent_path, False, stats)
 
@@ -187,7 +212,12 @@ class TestProjectRenderer:
             file_item.permissions = None
 
             variables = {"name": "World"}
-            stats = {"files_created": 0, "files_skipped": 0, "files_overwritten": 0, "errors": []}
+            stats = {
+                "files_created": 0,
+                "files_skipped": 0,
+                "files_overwritten": 0,
+                "errors": [],
+            }
 
             # Mock template loading and rendering
             mock_template = Mock()
@@ -217,7 +247,12 @@ class TestProjectRenderer:
             file_item.permissions = None
 
             variables = {}
-            stats = {"files_created": 0, "files_skipped": 0, "files_overwritten": 0, "errors": []}
+            stats = {
+                "files_created": 0,
+                "files_skipped": 0,
+                "files_overwritten": 0,
+                "errors": [],
+            }
 
             self.renderer._render_file(file_item, variables, parent_path, False, stats)
 
@@ -240,7 +275,12 @@ class TestProjectRenderer:
             file_item.permissions = None
 
             variables = {"include_file": False}
-            stats = {"files_created": 0, "files_skipped": 0, "files_overwritten": 0, "errors": []}
+            stats = {
+                "files_created": 0,
+                "files_skipped": 0,
+                "files_overwritten": 0,
+                "errors": [],
+            }
 
             # Mock condition evaluation to return False
             self.renderer._evaluate_condition = Mock(return_value=False)
@@ -285,7 +325,9 @@ class TestFileRenderer:
     def setup_method(self):
         """Set up test fixtures."""
         self.engine = Mock(spec=TemplateEngine)
-        self.engine.render_template_string = Mock(side_effect=lambda s, v: s.format(**v))
+        self.engine.render_template_string = Mock(
+            side_effect=lambda s, v: s.format(**v)
+        )
 
         self.renderer = FileRenderer(self.engine)
 
@@ -297,7 +339,9 @@ class TestFileRenderer:
         result = self.renderer.render_file_content(template_content, variables)
 
         assert result == "Hello World!"
-        self.engine.render_template_string.assert_called_once_with(template_content, variables)
+        self.engine.render_template_string.assert_called_once_with(
+            template_content, variables
+        )
 
     def test_render_file_name(self):
         """Test rendering file name from template."""
@@ -307,7 +351,9 @@ class TestFileRenderer:
         result = self.renderer.render_file_name(template_name, variables)
 
         assert result == "myproject.txt"
-        self.engine.render_template_string.assert_called_once_with(template_name, variables)
+        self.engine.render_template_string.assert_called_once_with(
+            template_name, variables
+        )
 
     def test_render_file_from_template_success(self):
         """Test rendering file from external template file."""
@@ -335,7 +381,9 @@ class TestFileRenderer:
 
         # Mock template not found error
         self.engine.jinja_env = Mock()
-        self.engine.jinja_env.get_template.side_effect = jinja2.TemplateNotFound("template not found")
+        self.engine.jinja_env.get_template.side_effect = jinja2.TemplateNotFound(
+            "template not found"
+        )
 
         with pytest.raises(RenderingError, match="Template file not found"):
             self.renderer.render_file_from_template(template_file_path, variables)
@@ -347,7 +395,9 @@ class TestDirectoryRenderer:
     def setup_method(self):
         """Set up test fixtures."""
         self.engine = Mock(spec=TemplateEngine)
-        self.engine.render_template_string = Mock(side_effect=lambda s, v: s.format(**v))
+        self.engine.render_template_string = Mock(
+            side_effect=lambda s, v: s.format(**v)
+        )
 
         self.renderer = DirectoryRenderer(self.engine)
 
@@ -362,7 +412,9 @@ class TestDirectoryRenderer:
 
             variables = {"name": "test"}
 
-            created_dirs = self.renderer.create_directory_structure(structure, base_path, variables)
+            created_dirs = self.renderer.create_directory_structure(
+                structure, base_path, variables
+            )
 
             expected_dir = base_path / "project-test"
             assert expected_dir.exists()
@@ -384,7 +436,9 @@ class TestDirectoryRenderer:
 
             variables = {"name": "test"}
 
-            created_dirs = self.renderer.create_directory_structure(main_dir, base_path, variables)
+            created_dirs = self.renderer.create_directory_structure(
+                main_dir, base_path, variables
+            )
 
             expected_main_dir = base_path / "project-test"
             expected_sub_dir = expected_main_dir / "src"
@@ -409,7 +463,9 @@ class TestDirectoryRenderer:
 
             variables = {}
 
-            created_dirs = self.renderer.create_directory_structure(structure, base_path, variables)
+            created_dirs = self.renderer.create_directory_structure(
+                structure, base_path, variables
+            )
 
             # Directory should still exist, but not be in created_dirs list
             assert existing_dir.exists()

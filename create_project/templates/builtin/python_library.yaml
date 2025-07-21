@@ -83,7 +83,7 @@ variables:
 
 structure:
   root_directory:
-      name: "{{project_name}}"
+    name: "{{project_name}}"
     files:
     - name: "pyproject.toml"
       template_file: "common/pyproject.toml"

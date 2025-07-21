@@ -53,7 +53,7 @@ class TemplateEngine:
 
     def __init__(self, config_manager: Optional[ConfigManager] = None):
         """Initialize the template engine.
-        
+
         Args:
             config_manager: Configuration manager instance
         """
@@ -72,7 +72,9 @@ class TemplateEngine:
     def _setup_jinja_environment(self) -> None:
         """Set up Jinja2 environment with custom configuration."""
         # Get template directories from config
-        template_dirs = self.config_manager.get_setting("templates.directories", ["templates"])
+        template_dirs = self.config_manager.get_setting(
+            "templates.directories", ["templates"]
+        )
 
         # Create Jinja2 environment
         self.jinja_env = Environment(
@@ -86,7 +88,9 @@ class TemplateEngine:
         # Add custom filters
         self._register_custom_filters()
 
-        self.logger.debug(f"Jinja2 environment configured with directories: {template_dirs}")
+        self.logger.debug(
+            f"Jinja2 environment configured with directories: {template_dirs}"
+        )
 
     def _register_custom_filters(self) -> None:
         """Register custom Jinja2 filters for template processing."""
@@ -94,12 +98,14 @@ class TemplateEngine:
         def slugify(value: str) -> str:
             """Convert string to slug format."""
             import re
+
             value = re.sub(r"[^\w\s-]", "", str(value)).strip().lower()
             return re.sub(r"[\s_-]+", "-", value)
 
         def snake_case(value: str) -> str:
             """Convert string to snake_case."""
             import re
+
             value = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", str(value))
             value = re.sub(r"([a-z\d])([A-Z])", r"\1_\2", value)
             return value.lower()
@@ -114,24 +120,26 @@ class TemplateEngine:
             return pascal[0].lower() + pascal[1:] if pascal else ""
 
         # Register filters
-        self.jinja_env.filters.update({
-            "slugify": slugify,
-            "snake_case": snake_case,
-            "pascal_case": pascal_case,
-            "camel_case": camel_case,
-        })
+        self.jinja_env.filters.update(
+            {
+                "slugify": slugify,
+                "snake_case": snake_case,
+                "pascal_case": pascal_case,
+                "camel_case": camel_case,
+            }
+        )
 
         self.logger.debug("Custom Jinja2 filters registered")
 
     def load_template(self, template_path: Union[str, Path]) -> Template:
         """Load a template from YAML file.
-        
+
         Args:
             template_path: Path to the template YAML file
-            
+
         Returns:
             Parsed Template object
-            
+
         Raises:
             TemplateLoadError: If template loading or validation fails
         """
@@ -163,7 +171,9 @@ class TemplateEngine:
             # Validate template completeness
             validation_errors = template.validate_template_complete()
             if validation_errors:
-                error_msg = f"Template validation failed: {'; '.join(validation_errors)}"
+                error_msg = (
+                    f"Template validation failed: {'; '.join(validation_errors)}"
+                )
                 raise TemplateLoadError(error_msg)
 
             # Cache the template
@@ -176,20 +186,26 @@ class TemplateEngine:
         except yaml.YAMLError as e:
             raise TemplateLoadError(f"YAML parsing error in {template_path}: {e}")
         except ValidationError as e:
-            raise TemplateLoadError(f"Template validation error in {template_path}: {e}")
+            raise TemplateLoadError(
+                f"Template validation error in {template_path}: {e}"
+            )
         except Exception as e:
-            raise TemplateLoadError(f"Unexpected error loading template {template_path}: {e}")
+            raise TemplateLoadError(
+                f"Unexpected error loading template {template_path}: {e}"
+            )
 
-    def resolve_variables(self, template: Template, user_values: Dict[str, Any]) -> Dict[str, Any]:
+    def resolve_variables(
+        self, template: Template, user_values: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Resolve template variables with user-provided values.
-        
+
         Args:
             template: Template object with variable definitions
             user_values: User-provided variable values
-            
+
         Returns:
             Resolved variable values
-            
+
         Raises:
             VariableResolutionError: If variable resolution fails
         """
@@ -216,12 +232,19 @@ class TemplateEngine:
                 if value is not None:
                     validation_errors = variable.validate_value(value)
                     if validation_errors:
-                        errors.extend([f"Variable '{variable.name}': {err}" for err in validation_errors])
+                        errors.extend(
+                            [
+                                f"Variable '{variable.name}': {err}"
+                                for err in validation_errors
+                            ]
+                        )
                         continue
 
                 # Check conditional logic
                 if not self._evaluate_variable_condition(variable, resolved_values):
-                    self.logger.debug(f"Variable '{variable.name}' skipped due to condition")
+                    self.logger.debug(
+                        f"Variable '{variable.name}' skipped due to condition"
+                    )
                     continue
 
                 resolved_values[variable.name] = value
@@ -231,18 +254,22 @@ class TemplateEngine:
                 errors.append(f"Error resolving variable '{variable.name}': {e}")
 
         if errors:
-            raise VariableResolutionError(f"Variable resolution failed: {'; '.join(errors)}")
+            raise VariableResolutionError(
+                f"Variable resolution failed: {'; '.join(errors)}"
+            )
 
         self.logger.info(f"Resolved {len(resolved_values)} variables")
         return resolved_values
 
-    def _evaluate_variable_condition(self, variable: TemplateVariable, resolved_values: Dict[str, Any]) -> bool:
+    def _evaluate_variable_condition(
+        self, variable: TemplateVariable, resolved_values: Dict[str, Any]
+    ) -> bool:
         """Evaluate if a variable should be included based on conditions.
-        
+
         Args:
             variable: Template variable to evaluate
             resolved_values: Already resolved variable values
-            
+
         Returns:
             True if variable should be included, False otherwise
         """
@@ -267,16 +294,20 @@ class TemplateEngine:
             return True
 
         except Exception as e:
-            self.logger.warning(f"Error evaluating condition for variable '{variable.name}': {e}")
+            self.logger.warning(
+                f"Error evaluating condition for variable '{variable.name}': {e}"
+            )
             return True  # Default to including the variable
 
-    def _evaluate_condition(self, condition: Dict[str, Any], values: Dict[str, Any]) -> bool:
+    def _evaluate_condition(
+        self, condition: Dict[str, Any], values: Dict[str, Any]
+    ) -> bool:
         """Evaluate a condition expression.
-        
+
         Args:
             condition: Condition dictionary with variable, operator, value
             values: Variable values to evaluate against
-            
+
         Returns:
             Result of condition evaluation
         """
@@ -294,9 +325,17 @@ class TemplateEngine:
         elif operator == "not_equals":
             return actual_value != expected_value
         elif operator == "in":
-            return actual_value in expected_value if isinstance(expected_value, list) else False
+            return (
+                actual_value in expected_value
+                if isinstance(expected_value, list)
+                else False
+            )
         elif operator == "not_in":
-            return actual_value not in expected_value if isinstance(expected_value, list) else True
+            return (
+                actual_value not in expected_value
+                if isinstance(expected_value, list)
+                else True
+            )
         elif operator == "contains":
             return expected_value in str(actual_value)
         elif operator == "not_contains":
@@ -305,16 +344,18 @@ class TemplateEngine:
             self.logger.warning(f"Unknown operator: {operator}")
             return True
 
-    def render_template_string(self, template_string: str, variables: Dict[str, Any]) -> str:
+    def render_template_string(
+        self, template_string: str, variables: Dict[str, Any]
+    ) -> str:
         """Render a template string with variables.
-        
+
         Args:
             template_string: Jinja2 template string
             variables: Variables for template rendering
-            
+
         Returns:
             Rendered string
-            
+
         Raises:
             RenderingError: If rendering fails
         """
@@ -328,10 +369,10 @@ class TemplateEngine:
 
     def get_template_variables(self, template_string: str) -> Set[str]:
         """Extract variable names from a template string.
-        
+
         Args:
             template_string: Jinja2 template string
-            
+
         Returns:
             Set of variable names used in the template
         """
@@ -350,12 +391,12 @@ class TemplateEngine:
 
     def get_cache_stats(self) -> Dict[str, Any]:
         """Get template cache statistics.
-        
+
         Returns:
             Dictionary with cache statistics
         """
         with self._cache_lock:
             return {
                 "cached_templates": len(self._template_cache),
-                "template_paths": list(self._template_cache.keys())
+                "template_paths": list(self._template_cache.keys()),
             }

@@ -112,9 +112,7 @@ class TemplateConfig(BaseModel):
     enable_validation: bool = Field(
         default=True, description="Enable template validation"
     )
-    strict_mode: bool = Field(
-        default=True, description="Use strict validation mode"
-    )
+    strict_mode: bool = Field(default=True, description="Use strict validation mode")
     allow_custom_variables: bool = Field(
         default=False, description="Allow custom variable types"
     )
@@ -152,6 +150,7 @@ class TemplateConfig(BaseModel):
     def validate_regex_pattern(cls, v):
         """Validate the regex pattern is valid."""
         import re
+
         try:
             re.compile(v)
         except re.error as e:

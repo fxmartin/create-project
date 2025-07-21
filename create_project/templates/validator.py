@@ -36,7 +36,7 @@ class TemplateValidator:
     def __init__(self, config: Optional[Any] = None):
         """
         Initialize the validator with configuration.
-        
+
         Args:
             config: Optional configuration override (Config object or dict)
         """
@@ -52,20 +52,22 @@ class TemplateValidator:
             self.template_config = config.get("templates", {})
 
         # Compile regex patterns
-        self.variable_name_pattern = re.compile(self.template_config.variable_name_pattern)
+        self.variable_name_pattern = re.compile(
+            self.template_config.variable_name_pattern
+        )
 
         logger.debug("Initialized TemplateValidator", config=self.template_config)
 
     def validate_template_file(self, file_path: Union[str, Path]) -> Template:
         """
         Validate a template file and return the validated Template object.
-        
+
         Args:
             file_path: Path to the template file
-            
+
         Returns:
             Validated Template object
-            
+
         Raises:
             TemplateValidationError: If validation fails
             FileNotFoundError: If template file doesn't exist
@@ -111,20 +113,18 @@ class TemplateValidator:
             raise
 
     def validate_template_data(
-        self,
-        data: Dict[str, Any],
-        source_path: Optional[str] = None
+        self, data: Dict[str, Any], source_path: Optional[str] = None
     ) -> Template:
         """
         Validate template data and return the validated Template object.
-        
+
         Args:
             data: Template data dictionary
             source_path: Optional source file path for error reporting
-            
+
         Returns:
             Validated Template object
-            
+
         Raises:
             TemplateValidationError: If validation fails
         """
@@ -141,7 +141,7 @@ class TemplateValidator:
                 f"Successfully validated template: {template.metadata.name}",
                 version=template.metadata.version,
                 variables=len(template.variables),
-                source=source_path
+                source=source_path,
             )
 
             return template
@@ -149,30 +149,29 @@ class TemplateValidator:
         except ValidationError as e:
             errors = []
             for error in e.errors():
-                errors.append({
-                    "field": ".".join(str(x) for x in error["loc"]),
-                    "message": error["msg"],
-                    "type": error["type"]
-                })
+                errors.append(
+                    {
+                        "field": ".".join(str(x) for x in error["loc"]),
+                        "message": error["msg"],
+                        "type": error["type"],
+                    }
+                )
 
             logger.error(
-                "Template validation failed",
-                errors=errors,
-                source=source_path
+                "Template validation failed", errors=errors, source=source_path
             )
 
             raise TemplateValidationError(
-                f"Template validation failed with {len(errors)} errors",
-                errors=errors
+                f"Template validation failed with {len(errors)} errors", errors=errors
             )
 
     def _validate_variables(self, template: Template) -> None:
         """
         Validate template variables against configuration rules.
-        
+
         Args:
             template: Template to validate
-            
+
         Raises:
             TemplateValidationError: If validation fails
         """
@@ -202,10 +201,10 @@ class TemplateValidator:
     def _validate_security(self, template: Template) -> None:
         """
         Validate security aspects of the template.
-        
+
         Args:
             template: Template to validate
-            
+
         Raises:
             TemplateValidationError: If security validation fails
         """
@@ -228,7 +227,11 @@ class TemplateValidator:
                         if action.type == "command":
                             # Check if command is whitelisted
                             cmd_parts = action.command.split()
-                            if cmd_parts and cmd_parts[0] not in self.template_config.command_whitelist:
+                            if (
+                                cmd_parts
+                                and cmd_parts[0]
+                                not in self.template_config.command_whitelist
+                            ):
                                 raise TemplateValidationError(
                                     f"Command '{cmd_parts[0]}' not in whitelist. "
                                     f"Allowed commands: {', '.join(self.template_config.command_whitelist)}"
@@ -237,10 +240,10 @@ class TemplateValidator:
     def _validate_references(self, template: Template) -> None:
         """
         Validate that all variable references in the template are valid.
-        
+
         Args:
             template: Template to validate
-            
+
         Raises:
             TemplateValidationError: If reference validation fails
         """
@@ -264,17 +267,15 @@ class TemplateValidator:
                     )
 
     def validate_directory(
-        self,
-        directory: Union[str, Path],
-        recursive: bool = True
+        self, directory: Union[str, Path], recursive: bool = True
     ) -> Tuple[List[Template], List[Dict[str, Any]]]:
         """
         Validate all templates in a directory.
-        
+
         Args:
             directory: Directory to scan for templates
             recursive: Whether to scan subdirectories
-            
+
         Returns:
             Tuple of (valid_templates, errors)
         """
@@ -294,36 +295,37 @@ class TemplateValidator:
                         template = self.validate_template_file(file_path)
                         valid_templates.append(template)
                     except Exception as e:
-                        errors.append({
-                            "file": str(file_path),
-                            "error": str(e),
-                            "type": type(e).__name__
-                        })
+                        errors.append(
+                            {
+                                "file": str(file_path),
+                                "error": str(e),
+                                "type": type(e).__name__,
+                            }
+                        )
 
         logger.info(
             f"Validated directory: {directory}",
             valid_count=len(valid_templates),
             error_count=len(errors),
-            recursive=recursive
+            recursive=recursive,
         )
 
         return valid_templates, errors
 
 
 def validate_template(
-    template_path: Union[str, Path],
-    config: Optional[Dict[str, Any]] = None
+    template_path: Union[str, Path], config: Optional[Dict[str, Any]] = None
 ) -> Template:
     """
     Convenience function to validate a single template file.
-    
+
     Args:
         template_path: Path to template file
         config: Optional configuration override
-        
+
     Returns:
         Validated Template object
-        
+
     Raises:
         TemplateValidationError: If validation fails
     """
