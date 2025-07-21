@@ -367,10 +367,17 @@ class FileRenderer:
             if b'\x00' in chunk:
                 return True
                 
+            # Check for common binary file signatures
+            if chunk.startswith(b'\x89PNG') or chunk.startswith(b'GIF8') or chunk.startswith(b'\xff\xd8\xff'):
+                return True
+                
             # Use chardet to detect if it's text
             try:
-                chardet.detect(chunk)
-                return False  # Can be decoded as text
+                result = chardet.detect(chunk)
+                if result and result.get('confidence', 0) > 0.7:
+                    return False  # High confidence text detection
+                else:
+                    return True  # Low confidence or failed detection, assume binary
             except:
                 return True  # Cannot be decoded, likely binary
                 
