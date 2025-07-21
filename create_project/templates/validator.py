@@ -33,15 +33,23 @@ class TemplateValidationError(Exception):
 class TemplateValidator:
     """Validates templates against the schema with configuration integration."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: Optional[Any] = None):
         """
         Initialize the validator with configuration.
         
         Args:
-            config: Optional configuration override
+            config: Optional configuration override (Config object or dict)
         """
-        self.config = config or get_config()
-        self.template_config = self.config.templates
+        if config is None:
+            config = get_config()
+        self.config = config
+
+        # Handle both Config objects and dicts
+        if hasattr(config, "templates"):
+            self.template_config = config.templates
+        else:
+            # For dict-based config
+            self.template_config = config.get("templates", {})
 
         # Compile regex patterns
         self.variable_name_pattern = re.compile(self.template_config.variable_name_pattern)

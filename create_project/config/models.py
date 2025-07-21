@@ -107,6 +107,33 @@ class TemplateConfig(BaseModel):
     max_variables_per_template: int = Field(
         default=50, ge=1, le=200, description="Maximum variables per template"
     )
+    
+    # Additional Template Settings from integration tests
+    enable_validation: bool = Field(
+        default=True, description="Enable template validation"
+    )
+    strict_mode: bool = Field(
+        default=True, description="Use strict validation mode"
+    )
+    allow_custom_variables: bool = Field(
+        default=False, description="Allow custom variable types"
+    )
+    require_descriptions: bool = Field(
+        default=True, description="Require descriptions for all variables"
+    )
+    max_file_size_mb: int = Field(
+        default=10, ge=1, le=100, description="Maximum file size in MB"
+    )
+    allowed_file_extensions: List[str] = Field(
+        default_factory=lambda: [".yaml", ".yml"],
+        description="Allowed template file extensions",
+    )
+    enable_security_checks: bool = Field(
+        default=True, description="Enable security validation checks"
+    )
+    max_action_timeout_seconds: int = Field(
+        default=300, ge=1, le=3600, description="Maximum action execution timeout"
+    )
 
     @field_validator("builtin_path", "custom_path")
     @classmethod
