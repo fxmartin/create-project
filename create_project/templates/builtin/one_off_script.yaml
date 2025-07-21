@@ -1,37 +1,43 @@
 # ABOUTME: Built-in template for one-off Python scripts
 # ABOUTME: Simple single-file scripts for automation, data processing, and utilities
 
-schema_version: "1.0.0"
-
 metadata:
   name: "One-off Script"
   description: "Simple Python script for personal use or basic distribution"
   version: "1.0.0"
-  category: "Script"
+  category: "script"
   tags: ["script", "automation", "utility", "simple"]
   author: "Create Project Team"
   created: "2025-07-21T16:43:00Z"
   template_id: "builtin_one_off_script"
+
+configuration:
+  schema_version: "1.0.0"
 
 variables:
   - name: "project_name"
     type: "string"
     description: "Name of the script project"
     required: true
-    validation:
-      pattern: "^[a-zA-Z][a-zA-Z0-9_-]*$"
-      min_length: 2
-      max_length: 50
-      message: "Project name must start with a letter and contain only letters, numbers, underscores, and hyphens"
+    validation_rules:
+      - rule_type: "pattern"
+        value: "^[a-zA-Z][a-zA-Z0-9_-]*$"
+        message: "Project name must start with a letter and contain only letters, numbers, underscores, and hyphens"
+      - rule_type: "min_length"
+        value: 2
+      - rule_type: "max_length"
+        value: 50
 
   - name: "author"
     type: "string"
     description: "Script author name"
     required: true
     default: "Your Name"
-    validation:
-      min_length: 2
-      max_length: 100
+    validation_rules:
+      - rule_type: "min_length"
+        value: 2
+      - rule_type: "max_length"
+        value: 100
 
   - name: "email"
     type: "email"
@@ -43,23 +49,34 @@ variables:
     description: "Brief description of what the script does"
     required: true
     default: "A simple Python script"
-    validation:
-      min_length: 10
-      max_length: 200
+    validation_rules:
+      - rule_type: "min_length"
+        value: 10
+      - rule_type: "max_length"
+        value: 200
 
   - name: "license"
     type: "choice"
     description: "License for the script"
     required: true
     default: "MIT"
-    choices: ["MIT", "Apache-2.0", "GPL-3.0", "BSD-3-Clause", "Unlicense"]
+    choices:
+      - value: "MIT"
+      - value: "Apache-2.0"
+      - value: "GPL-3.0"
+      - value: "BSD-3-Clause"
+      - value: "Unlicense"
 
   - name: "python_version"
     type: "choice"
     description: "Minimum Python version required"
     required: true
     default: "3.9.6"
-    choices: ["3.9.6", "3.10.0", "3.11.0", "3.12.0"]
+    choices:
+      - value: "3.9.6"
+      - value: "3.10.0"
+      - value: "3.11.0"
+      - value: "3.12.0"
 
   - name: "include_tests"
     type: "boolean"
@@ -90,13 +107,13 @@ structure:
     name: "{{project_name}}"
     files:
       - name: "{{project_name}}.py"
-        template_file: "script/main_script.py"
+        template_file: "script/main_script.py.j2"
 
       - name: "README.md"
-        template_file: "common/readme.md"
+        template_file: "common/readme.md.j2"
 
       - name: ".gitignore"
-        template_file: "common/gitignore.txt"
+        template_file: "common/gitignore.txt.j2"
 
       - name: "LICENSE"
         content: "{{ license_text }}"
@@ -108,26 +125,40 @@ structure:
           # requests>=2.25.0
 
       - name: "test_{{project_name}}.py"
-        template_file: "script/test_script.py"
-        condition: "{{ include_tests }}"
+        template_file: "script/test_script.py.j2"
+        condition:
+          expression: "{{ include_tests }}"
+          variables: ["include_tests"]
 
     directories: []
 
 template_files:
   files:
-    - name: "script/main_script.py"
-    - name: "script/test_script.py"
-    - name: "common/readme.md"
-    - name: "common/gitignore.txt"
+    - name: "script/main_script.py.j2"
+      content: ""
+      description: "Main script template"
+    - name: "script/test_script.py.j2"
+      content: ""
+      description: "Test script template"
+    - name: "common/readme.md.j2"
+      content: ""
+      description: "README template"
+    - name: "common/gitignore.txt.j2"
+      content: ""
+      description: "Gitignore template"
 
 hooks:
   post_generation:
     - type: "git"
       command: "init"
-      condition: "{{ init_git }}"
+      condition:
+        expression: "{{ init_git }}"
+        variables: ["init_git"]
     - type: "python"
       command: "-m venv venv"
-      condition: "{{ create_venv }}"
+      condition:
+        expression: "{{ create_venv }}"
+        variables: ["create_venv"]
 
 compatibility:
   min_python_version: "{{python_version}}"

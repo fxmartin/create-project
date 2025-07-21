@@ -13,6 +13,18 @@ from create_project.templates.validator import TemplateValidator
 class TestBuiltinTemplates:
     """Test all built-in templates for validity and completeness."""
 
+    def _load_template_yaml(self, template_path: Path) -> Dict[str, Any]:
+        """Load template YAML with Jinja2 syntax handling."""
+        import re
+        
+        with open(template_path, "r") as f:
+            content = f.read()
+            # Replace Jinja2 syntax with placeholders for YAML parsing
+            test_content = re.sub(r'\{\{python_version\}\}', '3.9.6', content)  # Replace python_version with valid value  
+            test_content = re.sub(r'\{\{[^}]+\}\}', 'PLACEHOLDER', test_content)
+            test_content = re.sub(r'\{\%[^%]+\%\}', '', test_content)
+            return yaml.safe_load(test_content)
+
     @pytest.fixture
     def builtin_templates_dir(self) -> Path:
         """Get the builtin templates directory."""
@@ -53,18 +65,17 @@ class TestBuiltinTemplates:
         )
 
     def test_templates_are_valid_yaml(self, template_files: Dict[str, Path]):
-        """Test that all template files are valid YAML."""
+        """Test that all template files are valid YAML structure."""
         for template_name, template_path in template_files.items():
-            with open(template_path, "r") as f:
-                try:
-                    yaml.safe_load(f)
-                except yaml.YAMLError as e:
-                    pytest.fail(f"Template {template_name} has invalid YAML: {e}")
+            try:
+                self._load_template_yaml(template_path)
+            except yaml.YAMLError as e:
+                pytest.fail(f"Template {template_name} has invalid YAML structure: {e}")
 
     def test_templates_have_required_fields(self, template_files: Dict[str, Path]):
         """Test that all templates have required schema fields."""
         required_fields = {
-            "schema_version",
+            "configuration",
             "metadata",
             "variables",
             "structure",
@@ -74,8 +85,7 @@ class TestBuiltinTemplates:
         }
 
         for template_name, template_path in template_files.items():
-            with open(template_path, "r") as f:
-                template_data = yaml.safe_load(f)
+            template_data = self._load_template_yaml(template_path)
 
             template_fields = set(template_data.keys())
             missing_fields = required_fields - template_fields
@@ -86,8 +96,7 @@ class TestBuiltinTemplates:
     def test_templates_validate_with_pydantic(self, template_files: Dict[str, Path]):
         """Test that all templates can be validated with Pydantic models."""
         for template_name, template_path in template_files.items():
-            with open(template_path, "r") as f:
-                template_data = yaml.safe_load(f)
+            template_data = self._load_template_yaml(template_path)
 
             try:
                 template = Template(**template_data)
@@ -110,8 +119,7 @@ class TestBuiltinTemplates:
     def test_template_metadata_completeness(self, template_files: Dict[str, Path]):
         """Test that template metadata is complete and valid."""
         for template_name, template_path in template_files.items():
-            with open(template_path, "r") as f:
-                template_data = yaml.safe_load(f)
+            template_data = self._load_template_yaml(template_path)
 
             metadata = template_data["metadata"]
 
@@ -140,8 +148,7 @@ class TestBuiltinTemplates:
     ):
         """Test that all template variables have required fields."""
         for template_name, template_path in template_files.items():
-            with open(template_path, "r") as f:
-                template_data = yaml.safe_load(f)
+            template_data = self._load_template_yaml(template_path)
 
             variables = template_data["variables"]
 
@@ -155,19 +162,25 @@ class TestBuiltinTemplates:
     def test_template_structure_validity(self, template_files: Dict[str, Path]):
         """Test that template structures are valid."""
         for template_name, template_path in template_files.items():
-            with open(template_path, "r") as f:
-                template_data = yaml.safe_load(f)
+            template_data = self._load_template_yaml(template_path)
 
             structure = template_data["structure"]
 
-            # Check that structure has name
-            assert "name" in structure, (
-                f"Template {template_name} structure missing name"
+            # Check that structure has root_directory
+            assert "root_directory" in structure, (
+                f"Template {template_name} structure missing root_directory"
+            )
+            
+            root_dir = structure["root_directory"]
+            
+            # Check that root_directory has name
+            assert "name" in root_dir, (
+                f"Template {template_name} structure root_directory missing name"
             )
 
-            # Check that structure has files or directories
-            has_files = "files" in structure and structure["files"]
-            has_dirs = "directories" in structure and structure["directories"]
+            # Check that root_directory has files or directories
+            has_files = "files" in root_dir and root_dir["files"]
+            has_dirs = "directories" in root_dir and root_dir["directories"]
             assert has_files or has_dirs, (
                 f"Template {template_name} structure has no files or directories"
             )
@@ -175,8 +188,7 @@ class TestBuiltinTemplates:
     def test_template_compatibility_requirements(self, template_files: Dict[str, Path]):
         """Test that compatibility requirements are properly defined."""
         for template_name, template_path in template_files.items():
-            with open(template_path, "r") as f:
-                template_data = yaml.safe_load(f)
+            template_data = self._load_template_yaml(template_path)
 
             compatibility = template_data["compatibility"]
 
@@ -219,8 +231,7 @@ class TestBuiltinTemplates:
         template_path = builtin_templates_dir / f"{template_name}.yaml"
         assert template_path.exists(), f"Template file {template_name}.yaml not found"
 
-        with open(template_path, "r") as f:
-            template_data = yaml.safe_load(f)
+        template_data = self._load_template_yaml(template_path)
 
         # Create Template object
         template = Template(**template_data)
@@ -234,8 +245,7 @@ class TestBuiltinTemplates:
     def test_template_variable_defaults(self, template_files: Dict[str, Path]):
         """Test that template variables have sensible defaults."""
         for template_name, template_path in template_files.items():
-            with open(template_path, "r") as f:
-                template_data = yaml.safe_load(f)
+            template_data = self._load_template_yaml(template_path)
 
             variables = template_data["variables"]
 
@@ -252,8 +262,7 @@ class TestBuiltinTemplates:
     def test_template_hooks_are_valid(self, template_files: Dict[str, Path]):
         """Test that template hooks are properly defined."""
         for template_name, template_path in template_files.items():
-            with open(template_path, "r") as f:
-                template_data = yaml.safe_load(f)
+            template_data = self._load_template_yaml(template_path)
 
             hooks = template_data["hooks"]
 
@@ -279,8 +288,7 @@ class TestBuiltinTemplates:
         template_files_dir = builtin_templates_dir / "template_files"
 
         for template_name, template_path in template_files.items():
-            with open(template_path, "r") as f:
-                template_data = yaml.safe_load(f)
+            template_data = self._load_template_yaml(template_path)
 
             # Check template_files section
             template_file_refs = template_data.get("template_files", {}).get(
@@ -299,8 +307,7 @@ class TestBuiltinTemplates:
         valid_licenses = {"MIT", "Apache-2.0", "GPL-3.0", "BSD-3-Clause", "Unlicense"}
 
         for template_name, template_path in template_files.items():
-            with open(template_path, "r") as f:
-                template_data = yaml.safe_load(f)
+            template_data = self._load_template_yaml(template_path)
 
             # Find license variable
             license_var = None

@@ -1,27 +1,31 @@
 # ABOUTME: Built-in template for Flask web applications
 # ABOUTME: Flask-based web applications with microframework structure
 
-schema_version: "1.0.0"
-
 metadata:
   name: "Flask Web Application"
   description: "Flask-based web application with microframework structure"
   version: "1.0.0"
-  category: "Web"
+  category: "flask"
   tags: ["flask", "web", "microframework", "api", "webapp"]
   author: "Create Project Team"
   created: "2025-07-21T16:43:00Z"
   template_id: "builtin_flask_web_app"
+
+configuration:
+  schema_version: "1.0.0"
 
 variables:
   - name: "project_name"
     type: "string"
     description: "Name of the Flask project"
     required: true
-    validation:
-      pattern: "^[a-zA-Z][a-zA-Z0-9_]*$"
-      min_length: 2
-      max_length: 50
+    validation_rules:
+      - rule_type: "pattern"
+        value: "^[a-zA-Z][a-zA-Z0-9_]*$"
+      - rule_type: "min_length"
+        value: 2
+      - rule_type: "max_length"
+        value: 50
 
   - name: "author"
     type: "string"
@@ -45,14 +49,19 @@ variables:
     description: "Flask version to use"
     required: true
     default: "3.0.0"
-    choices: ["2.3.0", "3.0.0"]
+    choices:
+      - value: "2.3.0"
+      - value: "3.0.0"
 
   - name: "database"
     type: "choice"
     description: "Database backend"
     required: true
     default: "sqlite"
-    choices: ["sqlite", "postgresql", "mysql"]
+    choices:
+      - value: "sqlite"
+      - value: "postgresql"
+      - value: "mysql"
 
   - name: "include_auth"
     type: "boolean"
@@ -71,18 +80,21 @@ variables:
     description: "License for the project"
     required: true
     default: "MIT"
-    choices: ["MIT", "Apache-2.0", "GPL-3.0"]
+    choices:
+      - value: "MIT"
+      - value: "Apache-2.0"
+      - value: "GPL-3.0"
 
 structure:
   root_directory:
     name: "{{project_name}}"
     files:
       - name: "pyproject.toml"
-        template_file: "common/pyproject.toml"
+        template_file: "common/pyproject.toml.j2"
       - name: "README.md"
-        template_file: "common/readme.md"
+        template_file: "common/readme.md.j2"
       - name: ".gitignore"
-        template_file: "common/gitignore.txt"
+        template_file: "common/gitignore.txt.j2"
       - name: "LICENSE"
         content: "{{ license_text }}"
       - name: "MANIFEST.in"
@@ -140,262 +152,276 @@ structure:
                   
                   return app
 
-        - name: "db.py"
-          content: |
-            import sqlite3
-            import click
-            from flask import current_app, g
-            from flask.cli import with_appcontext
-            
-            def get_db():
-                if 'db' not in g:
-                    g.db = sqlite3.connect(
-                        current_app.config['DATABASE'],
-                        detect_types=sqlite3.PARSE_DECLTYPES
-                    )
-                    g.db.row_factory = sqlite3.Row
-                return g.db
-            
-            def close_db(e=None):
-                db = g.pop('db', None)
-                if db is not None:
-                    db.close()
-            
-            def init_db():
-                db = get_db()
-                with current_app.open_resource('schema.sql') as f:
-                    db.executescript(f.read().decode('utf8'))
-            
-            @click.command('init-db')
-            @with_appcontext
-            def init_db_command():
-                """Clear the existing data and create new tables."""
-                init_db()
-                click.echo('Initialized the database.')
-            
-            def init_app(app):
-                app.teardown_appcontext(close_db)
-                app.cli.add_command(init_db_command)
+          - name: "db.py"
+            content: |
+              import sqlite3
+              import click
+              from flask import current_app, g
+              from flask.cli import with_appcontext
+              
+              def get_db():
+                  if 'db' not in g:
+                      g.db = sqlite3.connect(
+                          current_app.config['DATABASE'],
+                          detect_types=sqlite3.PARSE_DECLTYPES
+                      )
+                      g.db.row_factory = sqlite3.Row
+                  return g.db
+              
+              def close_db(e=None):
+                  db = g.pop('db', None)
+                  if db is not None:
+                      db.close()
+              
+              def init_db():
+                  db = get_db()
+                  with current_app.open_resource('schema.sql') as f:
+                      db.executescript(f.read().decode('utf8'))
+              
+              @click.command('init-db')
+              @with_appcontext
+              def init_db_command():
+                  """Clear the existing data and create new tables."""
+                  init_db()
+                  click.echo('Initialized the database.')
+              
+              def init_app(app):
+                  app.teardown_appcontext(close_db)
+                  app.cli.add_command(init_db_command)
 
-        - name: "schema.sql"
-          content: |
-            DROP TABLE IF EXISTS user;
-            DROP TABLE IF EXISTS post;
-            
-            CREATE TABLE user (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              username TEXT UNIQUE NOT NULL,
-              password TEXT NOT NULL
-            );
-            
-            CREATE TABLE post (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              author_id INTEGER NOT NULL,
-              created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-              title TEXT NOT NULL,
-              body TEXT NOT NULL,
-              FOREIGN KEY (author_id) REFERENCES user (id)
-            );
+          - name: "schema.sql"
+            content: |
+              DROP TABLE IF EXISTS user;
+              DROP TABLE IF EXISTS post;
+              
+              CREATE TABLE user (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL
+              );
+              
+              CREATE TABLE post (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                author_id INTEGER NOT NULL,
+                created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                title TEXT NOT NULL,
+                body TEXT NOT NULL,
+                FOREIGN KEY (author_id) REFERENCES user (id)
+              );
 
-        - name: "auth.py"
-          condition: "{{ include_auth }}"
-          content: |
-            import functools
-            from flask import (
-                Blueprint, flash, g, redirect, render_template, request, session, url_for
-            )
-            from werkzeug.security import check_password_hash, generate_password_hash
-            from {{project_name}}.db import get_db
-            
-            bp = Blueprint('auth', __name__, url_prefix='/auth')
-            
-            def login_required(view):
-                @functools.wraps(view)
-                def wrapped_view(**kwargs):
-                    if g.user is None:
-                        return redirect(url_for('auth.login'))
-                    return view(**kwargs)
-                return wrapped_view
-            
-            @bp.before_app_request
-            def load_logged_in_user():
-                user_id = session.get('user_id')
-                if user_id is None:
-                    g.user = None
-                else:
-                    g.user = get_db().execute(
-                        'SELECT * FROM user WHERE id = ?', (user_id,)
-                    ).fetchone()
+          - name: "auth.py"
+            condition:
+              expression: "{{ include_auth }}"
+              variables: ["include_auth"]
+            content: |
+              import functools
+              from flask import (
+                  Blueprint, flash, g, redirect, render_template, request, session, url_for
+              )
+              from werkzeug.security import check_password_hash, generate_password_hash
+              from {{project_name}}.db import get_db
+              
+              bp = Blueprint('auth', __name__, url_prefix='/auth')
+              
+              def login_required(view):
+                  @functools.wraps(view)
+                  def wrapped_view(**kwargs):
+                      if g.user is None:
+                          return redirect(url_for('auth.login'))
+                      return view(**kwargs)
+                  return wrapped_view
+              
+              @bp.before_app_request
+              def load_logged_in_user():
+                  user_id = session.get('user_id')
+                  if user_id is None:
+                      g.user = None
+                  else:
+                      g.user = get_db().execute(
+                          'SELECT * FROM user WHERE id = ?', (user_id,)
+                      ).fetchone()
 
-        - name: "blog.py"
-          content: |
-            from flask import (
-                Blueprint, flash, g, redirect, render_template, request, url_for
-            )
-            {% if include_auth %}
-            from {{project_name}}.auth import login_required
-            {% endif %}
-            from {{project_name}}.db import get_db
-            
-            bp = Blueprint('blog', __name__)
-            
-            @bp.route('/')
-            def index():
-                """Show all posts."""
-                db = get_db()
-                posts = db.execute(
-                    'SELECT p.id, title, body, created, author_id, username'
-                    ' FROM post p JOIN user u ON p.author_id = u.id'
-                    ' ORDER BY created DESC'
-                ).fetchall()
-                return render_template('blog/index.html', posts=posts)
+          - name: "blog.py"
+            content: |
+              from flask import (
+                  Blueprint, flash, g, redirect, render_template, request, url_for
+              )
+              {% if include_auth %}
+              from {{project_name}}.auth import login_required
+              {% endif %}
+              from {{project_name}}.db import get_db
+              
+              bp = Blueprint('blog', __name__)
+              
+              @bp.route('/')
+              def index():
+                  """Show all posts."""
+                  db = get_db()
+                  posts = db.execute(
+                      'SELECT p.id, title, body, created, author_id, username'
+                      ' FROM post p JOIN user u ON p.author_id = u.id'
+                      ' ORDER BY created DESC'
+                  ).fetchall()
+                  return render_template('blog/index.html', posts=posts)
 
-        - name: "api.py"
-          condition: "{{ include_api }}"
-          content: |
-            from flask import Blueprint, jsonify, request
-            from {{project_name}}.db import get_db
-            
-            bp = Blueprint('api', __name__, url_prefix='/api')
-            
-            @bp.route('/posts', methods=['GET'])
-            def get_posts():
-                """Get all posts as JSON."""
-                db = get_db()
-                posts = db.execute(
-                    'SELECT p.id, title, body, created, author_id, username'
-                    ' FROM post p JOIN user u ON p.author_id = u.id'
-                    ' ORDER BY created DESC'
-                ).fetchall()
-                return jsonify([dict(post) for post in posts])
+          - name: "api.py"
+            condition:
+              expression: "{{ include_api }}"
+              variables: ["include_api"]
+            content: |
+              from flask import Blueprint, jsonify, request
+              from {{project_name}}.db import get_db
+              
+              bp = Blueprint('api', __name__, url_prefix='/api')
+              
+              @bp.route('/posts', methods=['GET'])
+              def get_posts():
+                  """Get all posts as JSON."""
+                  db = get_db()
+                  posts = db.execute(
+                      'SELECT p.id, title, body, created, author_id, username'
+                      ' FROM post p JOIN user u ON p.author_id = u.id'
+                      ' ORDER BY created DESC'
+                  ).fetchall()
+                  return jsonify([dict(post) for post in posts])
 
-      directories:
-        - name: "templates"
-          files:
-            - name: "base.html"
-              content: |
-                <!doctype html>
-                <title>{% block title %}{% endblock %} - {{project_name}}</title>
-                <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-                <nav>
-                  <h1>{{project_name}}</h1>
-                  <ul>
-                    {% if g.user %}
-                      <li><span>{{ g.user['username'] }}</span>
-                      <li><a href="{{ url_for('auth.logout') }}">Log Out</a>
-                    {% else %}
-                      <li><a href="{{ url_for('auth.register') }}">Register</a>
-                      <li><a href="{{ url_for('auth.login') }}">Log In</a>
-                    {% endif %}
-                  </ul>
-                </nav>
-                <section class="content">
-                  <header>
-                    {% block header %}{% endblock %}
-                  </header>
-                  {% for message in get_flashed_messages() %}
-                    <div class="flash">{{ message }}</div>
-                  {% endfor %}
-                  {% block content %}{% endblock %}
-                </section>
-          directories:
-            - name: "blog"
-              files:
-                - name: "index.html"
-                  content: |
-                    {% extends 'base.html' %}
-                    
-                    {% block header %}
-                      <h1>{% block title %}Posts{% endblock %}</h1>
-                    {% endblock %}
-                    
-                    {% block content %}
-                      {% for post in posts %}
-                        <article class="post">
-                          <header>
-                            <div>
-                              <h1>{{ post['title'] }}</h1>
-                              <div class="about">by {{ post['username'] }} on {{ post['created'].strftime('%Y-%m-%d') }}</div>
-                            </div>
-                          </header>
-                          <p class="body">{{ post['body'] }}</p>
-                        </article>
-                      {% endfor %}
-                    {% endblock %}
+        directories:
+          - name: "templates"
+            files:
+              - name: "base.html"
+                content: |
+                  <!doctype html>
+                  <title>{% block title %}{% endblock %} - {{project_name}}</title>
+                  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+                  <nav>
+                    <h1>{{project_name}}</h1>
+                    <ul>
+                      {% if g.user %}
+                        <li><span>{{ g.user['username'] }}</span>
+                        <li><a href="{{ url_for('auth.logout') }}">Log Out</a>
+                      {% else %}
+                        <li><a href="{{ url_for('auth.register') }}">Register</a>
+                        <li><a href="{{ url_for('auth.login') }}">Log In</a>
+                      {% endif %}
+                    </ul>
+                  </nav>
+                  <section class="content">
+                    <header>
+                      {% block header %}{% endblock %}
+                    </header>
+                    {% for message in get_flashed_messages() %}
+                      <div class="flash">{{ message }}</div>
+                    {% endfor %}
+                    {% block content %}{% endblock %}
+                  </section>
+            directories:
+              - name: "blog"
+                files:
+                  - name: "index.html"
+                    content: |
+                      {% extends 'base.html' %}
+                      
+                      {% block header %}
+                        <h1>{% block title %}Posts{% endblock %}</h1>
+                      {% endblock %}
+                      
+                      {% block content %}
+                        {% for post in posts %}
+                          <article class="post">
+                            <header>
+                              <div>
+                                <h1>{{ post['title'] }}</h1>
+                                <div class="about">by {{ post['username'] }} on {{ post['created'].strftime('%Y-%m-%d') }}</div>
+                              </div>
+                            </header>
+                            <p class="body">{{ post['body'] }}</p>
+                          </article>
+                        {% endfor %}
+                      {% endblock %}
 
-        - name: "static"
-          files:
-            - name: "style.css"
-              content: |
-                html { font-family: sans-serif; background: #eee; padding: 1rem; }
-                body { max-width: 960px; margin: 0 auto; background: white; }
-                h1 { font-family: serif; color: #377ba8; margin: 1rem 0; }
-                a { color: #377ba8; }
-                hr { border: none; border-top: 1px solid lightgray; }
-                nav { background: lightgray; display: flex; align-items: center; padding: 0 0.5rem; }
-                nav h1 { flex: auto; margin: 0; }
-                nav h1 a { text-decoration: none; padding: 0.25rem 0.5rem; }
-                nav ul  { display: flex; list-style: none; margin: 0; padding: 0; }
-                nav ul li a, nav ul li span, header .action { display: block; padding: 0.5rem; }
-                .content { padding: 0 1rem 1rem; }
-                .content > header { border-bottom: 1px solid lightgray; display: flex; align-items: flex-end; }
-                .content > header h1 { flex: auto; margin: 1rem 0 0.25rem 0; }
-                .flash { margin: 1em 0; padding: 1em; background: #cae6f6; border: 1px solid #377ba8; }
-                .post > header { display: flex; align-items: flex-end; font-size: 0.85em; }
-                .post > header > div:first-of-type { flex: auto; }
-                .post > header h1 { font-size: 1.5em; margin-bottom: 0; }
-                .post .about { color: slategray; font-style: italic; }
-                .post .body { white-space: pre-line; }
+          - name: "static"
+            files:
+              - name: "style.css"
+                content: |
+                  html { font-family: sans-serif; background: #eee; padding: 1rem; }
+                  body { max-width: 960px; margin: 0 auto; background: white; }
+                  h1 { font-family: serif; color: #377ba8; margin: 1rem 0; }
+                  a { color: #377ba8; }
+                  hr { border: none; border-top: 1px solid lightgray; }
+                  nav { background: lightgray; display: flex; align-items: center; padding: 0 0.5rem; }
+                  nav h1 { flex: auto; margin: 0; }
+                  nav h1 a { text-decoration: none; padding: 0.25rem 0.5rem; }
+                  nav ul  { display: flex; list-style: none; margin: 0; padding: 0; }
+                  nav ul li a, nav ul li span, header .action { display: block; padding: 0.5rem; }
+                  .content { padding: 0 1rem 1rem; }
+                  .content > header { border-bottom: 1px solid lightgray; display: flex; align-items: flex-end; }
+                  .content > header h1 { flex: auto; margin: 1rem 0 0.25rem 0; }
+                  .flash { margin: 1em 0; padding: 1em; background: #cae6f6; border: 1px solid #377ba8; }
+                  .post > header { display: flex; align-items: flex-end; font-size: 0.85em; }
+                  .post > header > div:first-of-type { flex: auto; }
+                  .post > header h1 { font-size: 1.5em; margin-bottom: 0; }
+                  .post .about { color: slategray; font-style: italic; }
+                  .post .body { white-space: pre-line; }
 
-    - name: "tests"
-      files:
-        - name: "conftest.py"
-          content: |
-            import os
-            import tempfile
-            import pytest
-            from {{project_name}} import create_app
-            from {{project_name}}.db import get_db, init_db
-            
-            @pytest.fixture
-            def app():
-                db_fd, db_path = tempfile.mkstemp()
-                
-                app = create_app({
-                    'TESTING': True,
-                    'DATABASE': db_path,
-                })
-                
-                with app.app_context():
-                    init_db()
-                
-                yield app
-                
-                os.close(db_fd)
-                os.unlink(db_path)
-            
-            @pytest.fixture
-            def client(app):
-                return app.test_client()
-            
-            @pytest.fixture
-            def runner(app):
-                return app.test_cli_runner()
+      - name: "tests"
+        files:
+          - name: "conftest.py"
+            content: |
+              import os
+              import tempfile
+              import pytest
+              from {{project_name}} import create_app
+              from {{project_name}}.db import get_db, init_db
+              
+              @pytest.fixture
+              def app():
+                  db_fd, db_path = tempfile.mkstemp()
+                  
+                  app = create_app({
+                      'TESTING': True,
+                      'DATABASE': db_path,
+                  })
+                  
+                  with app.app_context():
+                      init_db()
+                  
+                  yield app
+                  
+                  os.close(db_fd)
+                  os.unlink(db_path)
+              
+              @pytest.fixture
+              def client(app):
+                  return app.test_client()
+              
+              @pytest.fixture
+              def runner(app):
+                  return app.test_cli_runner()
 
 template_files:
   files:
-    - name: "common/pyproject.toml"
-    - name: "common/readme.md"
-    - name: "common/gitignore.txt"
+    - name: "common/pyproject.toml.j2"
+      content: ""
+      description: "Project configuration template"
+    - name: "common/readme.md.j2"
+      content: ""
+      description: "README template"
+    - name: "common/gitignore.txt.j2"
+      content: ""
+      description: "Gitignore template"
 
 hooks:
   post_generation:
     - type: "git"
       command: "init"
-      condition: "{{ init_git | default(true) }}"
+      condition:
+        expression: "{{ init_git | default(true) }}"
+        variables: ["init_git"]
     - type: "python"
       command: "-m venv venv"
-      condition: "{{ create_venv | default(true) }}"
+      condition:
+        expression: "{{ create_venv | default(true) }}"
+        variables: ["create_venv"]
 
 compatibility:
   min_python_version: "3.9.6"

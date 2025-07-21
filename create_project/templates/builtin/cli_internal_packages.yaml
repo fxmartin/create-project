@@ -1,27 +1,31 @@
 # ABOUTME: Built-in template for complex CLI applications with internal packages
 # ABOUTME: Multi-module CLI applications with sophisticated architecture
 
-schema_version: "1.0.0"
-
 metadata:
   name: "CLI Application with Internal Packages"
   description: "Complex CLI application with multiple internal packages and modules"
   version: "1.0.0"
-  category: "CLI"
+  category: "cli_complex"
   tags: ["cli", "complex", "modular", "packages", "enterprise"]
   author: "Create Project Team"
   created: "2025-07-21T16:43:00Z"
   template_id: "builtin_cli_internal_packages"
+
+configuration:
+  schema_version: "1.0.0"
 
 variables:
   - name: "project_name"
     type: "string"
     description: "Name of the CLI application"
     required: true
-    validation:
-      pattern: "^[a-zA-Z][a-zA-Z0-9_-]*$"
-      min_length: 2
-      max_length: 50
+    validation_rules:
+      - rule_type: "pattern"
+        value: "^[a-zA-Z][a-zA-Z0-9_-]*$"
+      - rule_type: "min_length"
+        value: 2
+      - rule_type: "max_length"
+        value: 50
 
   - name: "author"
     type: "string"
@@ -33,30 +37,39 @@ variables:
     type: "email"
     description: "Author email address"
     required: false
-    default: ""
 
   - name: "description"
     type: "string"
     description: "Brief description of the CLI application"
     required: true
     default: "A complex command-line application"
-    validation:
-      min_length: 10
-      max_length: 200
+    validation_rules:
+      - rule_type: "min_length"
+        value: 10
+      - rule_type: "max_length"
+        value: 200
 
   - name: "license"
     type: "choice"
     description: "License for the application"
     required: true
     default: "MIT"
-    choices: ["MIT", "Apache-2.0", "GPL-3.0", "BSD-3-Clause"]
+    choices:
+      - value: "MIT"
+      - value: "Apache-2.0"
+      - value: "GPL-3.0"
+      - value: "BSD-3-Clause"
 
   - name: "python_version"
     type: "choice"
     description: "Minimum Python version required"
     required: true
     default: "3.9.6"
-    choices: ["3.9.6", "3.10.0", "3.11.0", "3.12.0"]
+    choices:
+      - value: "3.9.6"
+      - value: "3.10.0"
+      - value: "3.11.0"
+      - value: "3.12.0"
 
   - name: "include_docs"
     type: "boolean"
@@ -75,20 +88,22 @@ variables:
     description: "List of internal modules to create"
     required: false
     default: ["core", "utils"]
-    validation:
-      min_items: 1
-      max_items: 10
+    validation_rules:
+      - rule_type: "min_items"
+        value: 1
+      - rule_type: "max_items"
+        value: 10
 
 structure:
   root_directory:
     name: "{{project_name}}"
     files:
     - name: "pyproject.toml"
-      template_file: "common/pyproject.toml"
+      template_file: "common/pyproject.toml.j2"
     - name: "README.md"
-      template_file: "common/readme.md"
+      template_file: "common/readme.md.j2"
     - name: ".gitignore"
-      template_file: "common/gitignore.txt"
+      template_file: "common/gitignore.txt.j2"
     - name: "LICENSE"
       content: "{{ license_text }}"
 
@@ -165,7 +180,9 @@ structure:
         {% endfor %}
 
     - name: "docs"
-      condition: "{{ include_docs }}"
+      condition:
+        expression: "{{ include_docs }}"
+        variables: ["include_docs"]
       files:
         - name: "README.md"
           content: |
@@ -185,25 +202,37 @@ structure:
             ```
 
     - name: "data"
-      condition: "{{ include_data }}"
+      condition:
+        expression: "{{ include_data }}"
+        variables: ["include_data"]
       files:
         - name: ".gitkeep"
           content: ""
 
 template_files:
   files:
-    - name: "common/pyproject.toml"
-    - name: "common/readme.md"
-    - name: "common/gitignore.txt"
+    - name: "common/pyproject.toml.j2"
+      content: ""
+      description: "Project configuration template"
+    - name: "common/readme.md.j2"
+      content: ""
+      description: "README template"
+    - name: "common/gitignore.txt.j2"
+      content: ""
+      description: "Gitignore template"
 
 hooks:
   post_generation:
     - type: "git"
       command: "init"
-      condition: "{{ init_git | default(true) }}"
+      condition:
+        expression: "{{ init_git | default(true) }}"
+        variables: ["init_git"]
     - type: "python"
       command: "-m venv venv"
-      condition: "{{ create_venv | default(true) }}"
+      condition:
+        expression: "{{ create_venv | default(true) }}"
+        variables: ["create_venv"]
 
 compatibility:
   min_python_version: "{{python_version}}"
