@@ -107,7 +107,7 @@ class TemplateConfig(BaseModel):
     max_variables_per_template: int = Field(
         default=50, ge=1, le=200, description="Maximum variables per template"
     )
-    
+
     # Additional Template Settings from integration tests
     enable_validation: bool = Field(
         default=True, description="Enable template validation"
