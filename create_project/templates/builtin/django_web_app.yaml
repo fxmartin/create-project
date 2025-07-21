@@ -1,0 +1,313 @@
+# ABOUTME: Built-in template for Django web applications
+# ABOUTME: Full-featured Django projects with proper structure and configuration
+
+schema_version: "1.0.0"
+
+metadata:
+  name: "Django Web Application"
+  description: "Django-based web application with proper project structure"
+  version: "1.0.0"
+  category: "Web"
+  tags: ["django", "web", "application", "mvc", "database"]
+  author: "Create Project Team"
+  created: "2025-07-21T16:43:00Z"
+  template_id: "builtin_django_web_app"
+
+variables:
+  - name: "project_name"
+    type: "string"
+    description: "Name of the Django project"
+    required: true
+    validation:
+      pattern: "^[a-zA-Z][a-zA-Z0-9_]*$"
+      min_length: 2
+      max_length: 50
+
+  - name: "app_name"
+    type: "string"
+    description: "Name of the initial Django app"
+    required: true
+    default: "core"
+    validation:
+      pattern: "^[a-zA-Z][a-zA-Z0-9_]*$"
+
+  - name: "author"
+    type: "string"
+    description: "Project author name"
+    required: true
+    default: "Your Name"
+
+  - name: "email"
+    type: "email"
+    description: "Author email address"
+    required: false
+
+  - name: "description"
+    type: "string"
+    description: "Brief description of the Django project"
+    required: true
+    default: "A Django web application"
+
+  - name: "django_version"
+    type: "choice"
+    description: "Django version to use"
+    required: true
+    default: "5.0.0"
+    choices: ["4.2.0", "5.0.0", "5.1.0"]
+
+  - name: "database"
+    type: "choice"
+    description: "Database backend"
+    required: true
+    default: "sqlite"
+    choices: ["sqlite", "postgresql", "mysql"]
+
+  - name: "include_admin"
+    type: "boolean"
+    description: "Include Django admin configuration"
+    required: false
+    default: true
+
+  - name: "include_static"
+    type: "boolean"
+    description: "Include static files directory"
+    required: false
+    default: true
+
+  - name: "license"
+    type: "choice"
+    description: "License for the project"
+    required: true
+    default: "MIT"
+    choices: ["MIT", "Apache-2.0", "GPL-3.0"]
+
+structure:
+  root_directory:
+      name: "{{project_name}}"
+    files:
+    - name: "pyproject.toml"
+      template_file: "common/pyproject.toml"
+    - name: "README.md"
+      template_file: "common/readme.md"
+    - name: ".gitignore"
+      template_file: "common/gitignore.txt"
+    - name: "LICENSE"
+      content: "{{ license_text }}"
+    - name: "manage.py"
+      content: |
+        #!/usr/bin/env python
+        """Django's command-line utility for administrative tasks."""
+        import os
+        import sys
+        
+        if __name__ == '__main__':
+            os.environ.setdefault('DJANGO_SETTINGS_MODULE', '{{project_name}}.settings')
+            try:
+                from django.core.management import execute_from_command_line
+            except ImportError as exc:
+                raise ImportError(
+                    "Couldn't import Django. Are you sure it's installed and "
+                    "available on your PYTHONPATH environment variable? Did you "
+                    "forget to activate a virtual environment?"
+                ) from exc
+            execute_from_command_line(sys.argv)
+
+    directories:
+    - name: "{{project_name}}"
+      files:
+        - name: "__init__.py"
+          content: ""
+        - name: "settings.py"
+          content: |
+            """Django settings for {{project_name}} project."""
+            from pathlib import Path
+            
+            BASE_DIR = Path(__file__).resolve().parent.parent
+            
+            SECRET_KEY = 'django-insecure-change-this-in-production'
+            DEBUG = True
+            ALLOWED_HOSTS = []
+            
+            INSTALLED_APPS = [
+                {% if include_admin %}'django.contrib.admin',{% endif %}
+                'django.contrib.auth',
+                'django.contrib.contenttypes',
+                'django.contrib.sessions',
+                'django.contrib.messages',
+                'django.contrib.staticfiles',
+                '{{app_name}}',
+            ]
+            
+            MIDDLEWARE = [
+                'django.middleware.security.SecurityMiddleware',
+                'django.contrib.sessions.middleware.SessionMiddleware',
+                'django.middleware.common.CommonMiddleware',
+                'django.middleware.csrf.CsrfViewMiddleware',
+                'django.contrib.auth.middleware.AuthenticationMiddleware',
+                'django.contrib.messages.middleware.MessageMiddleware',
+                'django.middleware.clickjacking.XFrameOptionsMiddleware',
+            ]
+            
+            ROOT_URLCONF = '{{project_name}}.urls'
+            
+            TEMPLATES = [
+                {
+                    'BACKEND': 'django.template.backends.django.DjangoTemplates',
+                    'DIRS': [BASE_DIR / 'templates'],
+                    'APP_DIRS': True,
+                    'OPTIONS': {
+                        'context_processors': [
+                            'django.template.context_processors.debug',
+                            'django.template.context_processors.request',
+                            'django.contrib.auth.context_processors.auth',
+                            'django.contrib.messages.context_processors.messages',
+                        ],
+                    },
+                },
+            ]
+            
+            WSGI_APPLICATION = '{{project_name}}.wsgi.application'
+            
+            {% if database == "sqlite" %}
+            DATABASES = {
+                'default': {
+                    'ENGINE': 'django.db.backends.sqlite3',
+                    'NAME': BASE_DIR / 'db.sqlite3',
+                }
+            }
+            {% elif database == "postgresql" %}
+            DATABASES = {
+                'default': {
+                    'ENGINE': 'django.db.backends.postgresql',
+                    'NAME': '{{project_name}}_db',
+                    'USER': 'your_db_user',
+                    'PASSWORD': 'your_db_password',
+                    'HOST': 'localhost',
+                    'PORT': '5432',
+                }
+            }
+            {% endif %}
+        - name: "urls.py"
+          content: |
+            """{{project_name}} URL Configuration"""
+            from django.contrib import admin
+            from django.urls import path, include
+            
+            urlpatterns = [
+                {% if include_admin %}path('admin/', admin.site.urls),{% endif %}
+                path('', include('{{app_name}}.urls')),
+            ]
+        - name: "wsgi.py"
+          content: |
+            """WSGI config for {{project_name}} project."""
+            import os
+            from django.core.wsgi import get_wsgi_application
+            
+            os.environ.setdefault('DJANGO_SETTINGS_MODULE', '{{project_name}}.settings')
+            application = get_wsgi_application()
+
+    - name: "{{app_name}}"
+      files:
+        - name: "__init__.py"
+          content: ""
+        - name: "apps.py"
+          content: |
+            from django.apps import AppConfig
+            
+            class {{app_name|title}}Config(AppConfig):
+                default_auto_field = 'django.db.models.BigAutoField'
+                name = '{{app_name}}'
+        - name: "models.py"
+          content: |
+            from django.db import models
+            
+            # Create your models here.
+        - name: "views.py"
+          content: |
+            from django.shortcuts import render
+            from django.http import HttpResponse
+            
+            def index(request):
+                return HttpResponse("Hello, world! This is {{project_name}}.")
+        - name: "urls.py"
+          content: |
+            from django.urls import path
+            from . import views
+            
+            urlpatterns = [
+                path('', views.index, name='index'),
+            ]
+        - name: "admin.py"
+          condition: "{{ include_admin }}"
+          content: |
+            from django.contrib import admin
+            
+            # Register your models here.
+        - name: "tests.py"
+          content: |
+            from django.test import TestCase
+            
+            # Create your tests here.
+      directories:
+        - name: "migrations"
+          files:
+            - name: "__init__.py"
+              content: ""
+
+    - name: "templates"
+      files:
+        - name: "base.html"
+          content: |
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>{{project_name}}</title>
+            </head>
+            <body>
+                <h1>{{project_name}}</h1>
+                {% block content %}{% endblock %}
+            </body>
+            </html>
+
+    - name: "static"
+      condition: "{{ include_static }}"
+      directories:
+        - name: "css"
+          files:
+            - name: "style.css"
+              content: |
+                /* {{project_name}} styles */
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 40px;
+                }
+        - name: "js"
+          files:
+            - name: "main.js"
+              content: |
+                // {{project_name}} JavaScript
+                console.log('{{project_name}} loaded');
+
+template_files:
+  files:
+    - name: "common/pyproject.toml"
+    - name: "common/readme.md"
+    - name: "common/gitignore.txt"
+
+hooks:
+  post_generation:
+    - type: "git"
+      command: "init"
+      condition: "{{ init_git | default(true) }}"
+    - type: "python"
+      command: "-m venv venv"
+      condition: "{{ create_venv | default(true) }}"
+    - type: "command"
+      command: "source venv/bin/activate && pip install Django=={{django_version}}"
+      condition: "{{ create_venv }}"
+      platform: ["macOS", "Linux"]
+
+compatibility:
+  min_python_version: "3.9.6"
+  supported_os: ["macOS", "Linux", "Windows"]
+  dependencies: ["Django>={{django_version}}"]

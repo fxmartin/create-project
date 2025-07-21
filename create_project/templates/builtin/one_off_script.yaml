@@ -1,0 +1,537 @@
+# ABOUTME: Built-in template for one-off Python scripts
+# ABOUTME: Simple single-file scripts for automation, data processing, and utilities
+
+metadata:
+  name: "One-off Script"
+  description: "Simple Python script for personal use or basic distribution"
+  version: "1.0.0"
+  category: "script"
+  tags: ["script", "automation", "utility", "simple"]
+  author: "Create Project Team"
+  author_email: "team@createproject.dev"
+  license: "MIT"
+  created: "2025-07-21T16:43:00Z"
+  template_id: "builtin_one_off_script"
+
+configuration:
+  schema_version: "1.0.0"
+  template_suffix: ".j2"
+
+variables:
+  - name: "project_name"
+    type: "string"
+    description: "Name of the script project"
+    required: true
+    validation_rules:
+      - rule_type: "pattern"
+        value: "^[a-zA-Z][a-zA-Z0-9_-]*$"
+        message: "Project name must start with a letter and contain only letters, numbers, underscores, and hyphens"
+      - rule_type: "min_length"
+        value: 2
+      - rule_type: "max_length"
+        value: 50
+
+  - name: "author"
+    type: "string"
+    description: "Script author name"
+    required: true
+    default: "Your Name"
+    validation_rules:
+      - rule_type: "min_length"
+        value: 2
+      - rule_type: "max_length"
+        value: 100
+
+  - name: "email"
+    type: "email"
+    description: "Author email address"
+    required: false
+
+  - name: "description"
+    type: "string"
+    description: "Brief description of what the script does"
+    required: true
+    default: "A simple Python script"
+    validation_rules:
+      - rule_type: "min_length"
+        value: 10
+      - rule_type: "max_length"
+        value: 200
+
+  - name: "license"
+    type: "choice"
+    description: "License for the script"
+    required: true
+    default: "MIT"
+    choices:
+      - value: "MIT"
+        label: "MIT License"
+        description: "Permissive license with minimal restrictions"
+      - value: "Apache-2.0"
+        label: "Apache 2.0"
+        description: "Permissive license with patent protection"
+      - value: "GPL-3.0"
+        label: "GPL 3.0"
+        description: "Copyleft license requiring source code sharing"
+      - value: "BSD-3-Clause"
+        label: "BSD 3-Clause"
+        description: "Permissive license similar to MIT"
+      - value: "Unlicense"
+        label: "Unlicense"
+        description: "Public domain dedication"
+
+  - name: "python_version"
+    type: "choice"
+    description: "Minimum Python version required"
+    required: true
+    default: "3.9.6"
+    choices:
+      - value: "3.9.6"
+        label: "Python 3.9.6"
+      - value: "3.10.0"
+        label: "Python 3.10.0"
+      - value: "3.11.0"
+        label: "Python 3.11.0"
+      - value: "3.12.0"
+        label: "Python 3.12.0"
+
+  - name: "include_tests"
+    type: "boolean"
+    description: "Include test file for the script"
+    required: false
+    default: true
+
+  - name: "include_verbose"
+    type: "boolean"
+    description: "Include verbose output option in script"
+    required: false
+    default: true
+
+  - name: "init_git"
+    type: "boolean"
+    description: "Initialize git repository"
+    required: false
+    default: true
+
+  - name: "create_venv"
+    type: "boolean"
+    description: "Create virtual environment"
+    required: false
+    default: false
+
+structure:
+  root_directory:
+    name: "{{ project_name }}"
+    files:
+      - name: "{{ project_name }}.py"
+        template_file: "main_script.py.j2"
+        description: "Main script file"
+
+      - name: "README.md"
+        template_file: "readme.md.j2"
+        description: "Project documentation"
+
+      - name: ".gitignore"
+        template_file: "gitignore.j2"
+        description: "Git ignore file"
+
+      - name: "LICENSE"
+        content: "{{ license_text }}"
+        description: "License file"
+
+      - name: "requirements.txt"
+        content: |
+          # Add your dependencies here
+          # Example:
+          # requests>=2.25.0
+        description: "Python dependencies"
+
+      - name: "test_{{ project_name }}.py"
+        template_file: "test_script.py.j2"
+        condition:
+          expression: "{{ include_tests }}"
+          variables: ["include_tests"]
+        description: "Test file for the script"
+
+    directories: []
+
+template_files:
+  files:
+    - name: "main_script.py.j2"
+      content: |
+        #!/usr/bin/env python3
+        """
+        {{ description }}
+
+        Author: {{ author }}{% if email %} <{{ email }}>{% endif %}
+        Created: {{ now().strftime('%Y-%m-%d') }}
+        """
+
+        import argparse
+        import sys
+        from typing import Optional
+
+
+        def main() -> int:
+            """
+            Main entry point for the script.
+            
+            Returns:
+                int: Exit code (0 for success, non-zero for error)
+            """
+            parser = argparse.ArgumentParser(
+                description="{{ description }}",
+                formatter_class=argparse.RawDescriptionHelpFormatter
+            )
+            
+            parser.add_argument(
+                "--version",
+                action="version",
+                version=f"{{ project_name }} 0.1.0"
+            )
+            
+            {% if include_verbose %}
+            parser.add_argument(
+                "-v", "--verbose",
+                action="store_true",
+                help="Enable verbose output"
+            )
+            {% endif %}
+            
+            # Add your command-line arguments here
+            parser.add_argument(
+                "input_file",
+                nargs="?",
+                help="Input file to process (optional)"
+            )
+            
+            args = parser.parse_args()
+            
+            try:
+                # Your script logic goes here
+                {% if include_verbose %}
+                if args.verbose:
+                    print(f"Processing with verbose output...")
+                {% endif %}
+                
+                if args.input_file:
+                    print(f"Processing file: {args.input_file}")
+                    # Add file processing logic here
+                else:
+                    print("{{ project_name }} is running...")
+                    # Add default behavior here
+                
+                return 0
+                
+            except KeyboardInterrupt:
+                print("\nScript interrupted by user", file=sys.stderr)
+                return 1
+            except Exception as e:
+                print(f"Error: {e}", file=sys.stderr)
+                return 1
+
+
+        if __name__ == "__main__":
+            sys.exit(main())
+
+    - name: "test_script.py.j2"
+      content: |
+        """Tests for {{ project_name }} script."""
+        import unittest
+        from unittest.mock import patch
+        import sys
+        import os
+
+        # Add the script directory to the path for importing
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+        import {{ project_name }}
+
+
+        class Test{{ project_name|title }}(unittest.TestCase):
+            """Test cases for {{ project_name }} script."""
+            
+            def test_main_with_no_arguments(self):
+                """Test main function with no arguments."""
+                with patch('sys.argv', ['{{ project_name }}.py']):
+                    result = {{ project_name }}.main()
+                    self.assertEqual(result, 0)
+            
+            {% if include_verbose %}
+            def test_main_with_verbose_flag(self):
+                """Test main function with verbose flag."""
+                with patch('sys.argv', ['{{ project_name }}.py', '--verbose']):
+                    with patch('builtins.print') as mock_print:
+                        result = {{ project_name }}.main()
+                        self.assertEqual(result, 0)
+                        mock_print.assert_called()
+            {% endif %}
+            
+            def test_main_with_input_file(self):
+                """Test main function with input file."""
+                with patch('sys.argv', ['{{ project_name }}.py', 'test_file.txt']):
+                    with patch('builtins.print') as mock_print:
+                        result = {{ project_name }}.main()
+                        self.assertEqual(result, 0)
+                        mock_print.assert_called()
+
+
+        if __name__ == '__main__':
+            unittest.main()
+
+    - name: "readme.md.j2"
+      content: |
+        # {{ project_name }}
+
+        {{ description }}
+
+        ## Installation
+
+        ```bash
+        pip install {{ project_name }}
+        ```
+
+        ## Usage
+
+        Run the script directly:
+
+        ```bash
+        python {{ project_name }}.py
+        ```
+
+        ## Development
+
+        ### Setup
+
+        1. Clone the repository:
+           ```bash
+           git clone <repository-url>
+           cd {{ project_name }}
+           ```
+
+        2. Create a virtual environment:
+           ```bash
+           python -m venv venv
+           source venv/bin/activate  # On Windows: venv\Scripts\activate
+           ```
+
+        3. Install dependencies:
+           ```bash
+           pip install -r requirements.txt
+           ```
+
+        {% if include_tests %}
+        ### Testing
+
+        Run tests with:
+
+        ```bash
+        python -m unittest discover tests
+        ```
+        {% endif %}
+
+        ## Contributing
+
+        1. Fork the repository
+        2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+        3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+        4. Push to the branch (`git push origin feature/amazing-feature`)
+        5. Open a Pull Request
+
+        ## License
+
+        This project is licensed under the {{ license }} License - see the [LICENSE](LICENSE) file for details.
+
+        ## Author
+
+        **{{ author }}**{% if email %} - {{ email }}{% endif %}
+
+        ## Changelog
+
+        ### Version 0.1.0
+        - Initial release
+
+    - name: "gitignore.j2"
+      content: |
+        # Byte-compiled / optimized / DLL files
+        __pycache__/
+        *.py[cod]
+        *$py.class
+
+        # C extensions
+        *.so
+
+        # Distribution / packaging
+        .Python
+        build/
+        develop-eggs/
+        dist/
+        downloads/
+        eggs/
+        .eggs/
+        lib/
+        lib64/
+        parts/
+        sdist/
+        var/
+        wheels/
+        pip-wheel-metadata/
+        share/python-wheels/
+        *.egg-info/
+        .installed.cfg
+        *.egg
+        MANIFEST
+
+        # PyInstaller
+        *.manifest
+        *.spec
+
+        # Installer logs
+        pip-log.txt
+        pip-delete-this-directory.txt
+
+        # Unit test / coverage reports
+        htmlcov/
+        .tox/
+        .nox/
+        .coverage
+        .coverage.*
+        .cache
+        nosetests.xml
+        coverage.xml
+        *.cover
+        *.py,cover
+        .hypothesis/
+        .pytest_cache/
+
+        # Translations
+        *.mo
+        *.pot
+
+        # Django stuff:
+        *.log
+        local_settings.py
+        db.sqlite3
+        db.sqlite3-journal
+
+        # Flask stuff:
+        instance/
+        .webassets-cache
+
+        # Scrapy stuff:
+        .scrapy
+
+        # Sphinx documentation
+        docs/_build/
+
+        # PyBuilder
+        target/
+
+        # Jupyter Notebook
+        .ipynb_checkpoints
+
+        # IPython
+        profile_default/
+        ipython_config.py
+
+        # pyenv
+        .python-version
+
+        # pipenv
+        Pipfile.lock
+
+        # PEP 582
+        __pypackages__/
+
+        # Celery stuff
+        celerybeat-schedule
+        celerybeat.pid
+
+        # SageMath parsed files
+        *.sage.py
+
+        # Environments
+        .env
+        .venv
+        env/
+        venv/
+        ENV/
+        env.bak/
+        venv.bak/
+
+        # Spyder project settings
+        .spyderproject
+        .spyproject
+
+        # Rope project settings
+        .ropeproject
+
+        # mkdocs documentation
+        /site
+
+        # mypy
+        .mypy_cache/
+        .dmypy.json
+        dmypy.json
+
+        # Pyre type checker
+        .pyre/
+
+        # IDE files
+        .vscode/
+        .idea/
+        *.swp
+        *.swo
+        *~
+
+        # macOS
+        .DS_Store
+
+        # Windows
+        Thumbs.db
+        ehthumbs.db
+        Desktop.ini
+
+hooks:
+  pre_generation: []
+  
+  post_generation:
+    - type: "git"
+      command: "init"
+      description: "Initialize git repository"
+      condition: "{{ init_git }}"
+      platform: ["macOS", "Linux", "Windows"]
+
+    - type: "git"
+      command: "add ."
+      description: "Add all files to git"
+      condition: "{{ init_git }}"
+      platform: ["macOS", "Linux", "Windows"]
+
+    - type: "git"
+      command: 'commit -m "Initial commit: {{ project_name }} script"'
+      description: "Create initial commit"
+      condition: "{{ init_git }}"
+      platform: ["macOS", "Linux", "Windows"]
+
+    - type: "python"
+      command: "-m venv venv"
+      description: "Create virtual environment"
+      condition: "{{ create_venv }}"
+      platform: ["macOS", "Linux", "Windows"]
+
+action_groups: []
+
+compatibility:
+  min_python_version: "3.9.6"
+  supported_os: ["macOS", "Linux", "Windows"]
+  dependencies: []
+
+examples:
+  - "Data processing script"
+  - "File organization utility"
+  - "System administration script"
+  - "Quick automation tool"
+
+related_templates:
+  - "cli_single_package"

@@ -1,0 +1,500 @@
+# ABOUTME: Built-in template for Python libraries and packages
+# ABOUTME: Reusable Python libraries for PyPI distribution with comprehensive structure
+
+schema_version: "1.0.0"
+
+metadata:
+  name: "Python Library/Package"
+  description: "Reusable Python library for distribution via PyPI"
+  version: "1.0.0"
+  category: "Library"
+  tags: ["library", "package", "pypi", "distribution", "reusable"]
+  author: "Create Project Team"
+  created: "2025-07-21T16:43:00Z"
+  template_id: "builtin_python_library"
+
+variables:
+  - name: "project_name"
+    type: "string"
+    description: "Name of the Python library"
+    required: true
+    validation:
+      pattern: "^[a-zA-Z][a-zA-Z0-9_]*$"
+      min_length: 2
+      max_length: 50
+
+  - name: "author"
+    type: "string"
+    description: "Library author name"
+    required: true
+    default: "Your Name"
+
+  - name: "email"
+    type: "email"
+    description: "Author email address"
+    required: false
+
+  - name: "description"
+    type: "string"
+    description: "Brief description of the library"
+    required: true
+    default: "A Python library"
+    validation:
+      min_length: 10
+      max_length: 200
+
+  - name: "license"
+    type: "choice"
+    description: "License for the library"
+    required: true
+    default: "MIT"
+    choices: ["MIT", "Apache-2.0", "GPL-3.0", "BSD-3-Clause"]
+
+  - name: "python_version"
+    type: "choice"
+    description: "Minimum Python version required"
+    required: true
+    default: "3.9.6"
+    choices: ["3.9.6", "3.10.0", "3.11.0", "3.12.0"]
+
+  - name: "include_docs"
+    type: "boolean"
+    description: "Include Sphinx documentation"
+    required: false
+    default: true
+
+  - name: "include_examples"
+    type: "boolean"
+    description: "Include examples directory"
+    required: false
+    default: true
+
+  - name: "include_submodules"
+    type: "boolean"
+    description: "Include submodules"
+    required: false
+    default: false
+
+  - name: "pypi_upload"
+    type: "boolean"
+    description: "Prepare for PyPI upload"
+    required: false
+    default: true
+
+structure:
+  root_directory:
+      name: "{{project_name}}"
+    files:
+    - name: "pyproject.toml"
+      template_file: "common/pyproject.toml"
+    - name: "README.md"
+      template_file: "common/readme.md"
+    - name: ".gitignore"
+      template_file: "common/gitignore.txt"
+    - name: "LICENSE"
+      content: "{{ license_text }}"
+    - name: "MANIFEST.in"
+      condition: "{{ pypi_upload }}"
+      content: |
+        include README.md
+        include LICENSE
+        recursive-include {{project_name}} *.py
+        recursive-exclude tests *
+
+    directories:
+    - name: "{{project_name}}"
+      files:
+        - name: "__init__.py"
+          content: |
+            """
+            {{description}}
+            
+            {{project_name}} is a Python library that provides...
+            """
+            
+            __version__ = "0.1.0"
+            __author__ = "{{author}}"
+            {% if email %}__email__ = "{{email}}"{% endif %}
+            
+            # Main exports
+            from .core import main_function
+            from .exceptions import {{project_name|title}}Error
+            
+            __all__ = [
+                "main_function",
+                "{{project_name|title}}Error",
+                "__version__",
+            ]
+
+        - name: "core.py"
+          content: |
+            """
+            Core functionality for {{project_name}}.
+            
+            This module contains the main functionality of the {{project_name}} library.
+            """
+            
+            from typing import Any, Dict, List, Optional
+            from .exceptions import {{project_name|title}}Error
+            
+            
+            def main_function(data: Any, options: Optional[Dict[str, Any]] = None) -> Any:
+                """
+                Main function of the {{project_name}} library.
+                
+                Args:
+                    data: Input data to process
+                    options: Optional configuration dictionary
+                    
+                Returns:
+                    Processed data
+                    
+                Raises:
+                    {{project_name|title}}Error: If processing fails
+                """
+                if options is None:
+                    options = {}
+                
+                try:
+                    # Your core logic here
+                    result = process_data(data, options)
+                    return result
+                except Exception as e:
+                    raise {{project_name|title}}Error(f"Processing failed: {e}") from e
+            
+            
+            def process_data(data: Any, options: Dict[str, Any]) -> Any:
+                """
+                Process the input data according to the given options.
+                
+                Args:
+                    data: Input data
+                    options: Processing options
+                    
+                Returns:
+                    Processed result
+                """
+                # Implement your data processing logic here
+                return data
+
+        - name: "utils.py"
+          content: |
+            """
+            Utility functions for {{project_name}}.
+            
+            This module contains helper functions and utilities used throughout
+            the {{project_name}} library.
+            """
+            
+            from typing import Any, Dict, List, Optional
+            
+            
+            def validate_input(data: Any) -> bool:
+                """
+                Validate input data.
+                
+                Args:
+                    data: Data to validate
+                    
+                Returns:
+                    True if valid, False otherwise
+                """
+                # Implement validation logic
+                return data is not None
+            
+            
+            def format_output(data: Any, format_type: str = "default") -> str:
+                """
+                Format output data for display.
+                
+                Args:
+                    data: Data to format
+                    format_type: Type of formatting to apply
+                    
+                Returns:
+                    Formatted string representation
+                """
+                if format_type == "json":
+                    import json
+                    return json.dumps(data, indent=2)
+                else:
+                    return str(data)
+            
+            
+            def get_version() -> str:
+                """
+                Get the library version.
+                
+                Returns:
+                    Version string
+                """
+                from . import __version__
+                return __version__
+
+        - name: "exceptions.py"
+          content: |
+            """
+            Custom exceptions for {{project_name}}.
+            
+            This module defines custom exception classes used throughout
+            the {{project_name}} library.
+            """
+            
+            
+            class {{project_name|title}}Error(Exception):
+                """Base exception class for {{project_name}}."""
+                pass
+            
+            
+            class ValidationError({{project_name|title}}Error):
+                """Raised when input validation fails."""
+                pass
+            
+            
+            class ProcessingError({{project_name|title}}Error):
+                """Raised when data processing fails."""
+                pass
+            
+            
+            class ConfigurationError({{project_name|title}}Error):
+                """Raised when configuration is invalid."""
+                pass
+
+      directories:
+        - name: "submodule"
+          condition: "{{ include_submodules }}"
+          files:
+            - name: "__init__.py"
+              content: |
+                """Submodule for {{project_name}}."""
+                from .functions import helper_function
+                
+                __all__ = ["helper_function"]
+            - name: "functions.py"
+              content: |
+                """Helper functions in submodule."""
+                
+                def helper_function():
+                    """A helper function."""
+                    return "helper result"
+
+    - name: "tests"
+      files:
+        - name: "__init__.py"
+          content: ""
+        - name: "test_core.py"
+          content: |
+            """Tests for core functionality."""
+            import pytest
+            from {{project_name}}.core import main_function, process_data
+            from {{project_name}}.exceptions import {{project_name|title}}Error
+            
+            
+            def test_main_function():
+                """Test main function with valid input."""
+                result = main_function("test_data")
+                assert result == "test_data"
+            
+            
+            def test_main_function_with_options():
+                """Test main function with options."""
+                options = {"format": "json"}
+                result = main_function("test_data", options)
+                assert result == "test_data"
+            
+            
+            def test_process_data():
+                """Test data processing."""
+                result = process_data("test", {})
+                assert result == "test"
+        - name: "test_utils.py"
+          content: |
+            """Tests for utility functions."""
+            import pytest
+            from {{project_name}}.utils import validate_input, format_output, get_version
+            
+            
+            def test_validate_input():
+                """Test input validation."""
+                assert validate_input("valid_data") == True
+                assert validate_input(None) == False
+            
+            
+            def test_format_output():
+                """Test output formatting."""
+                data = {"test": "value"}
+                result = format_output(data, "json")
+                assert "test" in result
+                assert "value" in result
+            
+            
+            def test_get_version():
+                """Test version retrieval."""
+                version = get_version()
+                assert version == "0.1.0"
+
+    - name: "docs"
+      condition: "{{ include_docs }}"
+      files:
+        - name: "conf.py"
+          content: |
+            # Configuration file for the Sphinx documentation builder.
+            project = '{{project_name}}'
+            copyright = '2025, {{author}}'
+            author = '{{author}}'
+            
+            extensions = [
+                'sphinx.ext.autodoc',
+                'sphinx.ext.viewcode',
+                'sphinx.ext.napoleon',
+            ]
+            
+            templates_path = ['_templates']
+            exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+            
+            html_theme = 'alabaster'
+            html_static_path = ['_static']
+        - name: "index.rst"
+          content: |
+            {{project_name}} documentation
+            ===============================
+            
+            {{description}}
+            
+            .. toctree::
+               :maxdepth: 2
+               :caption: Contents:
+            
+               installation
+               usage
+               api
+            
+            Indices and tables
+            ==================
+            
+            * :ref:`genindex`
+            * :ref:`modindex`
+            * :ref:`search`
+      directories:
+        - name: "source"
+          files:
+            - name: "installation.rst"
+              content: |
+                Installation
+                ============
+                
+                Install {{project_name}} using pip:
+                
+                .. code-block:: bash
+                
+                    pip install {{project_name}}
+            - name: "usage.rst"
+              content: |
+                Usage
+                =====
+                
+                Basic usage of {{project_name}}:
+                
+                .. code-block:: python
+                
+                    import {{project_name}}
+                    
+                    result = {{project_name}}.main_function("your_data")
+            - name: "api.rst"
+              content: |
+                API Reference
+                =============
+                
+                .. automodule:: {{project_name}}.core
+                   :members:
+                
+                .. automodule:: {{project_name}}.utils
+                   :members:
+
+    - name: "examples"
+      condition: "{{ include_examples }}"
+      files:
+        - name: "basic_usage.py"
+          content: |
+            #!/usr/bin/env python3
+            """
+            Basic usage example for {{project_name}}.
+            
+            This example demonstrates how to use the main functionality
+            of the {{project_name}} library.
+            """
+            
+            import {{project_name}}
+            
+            
+            def main():
+                """Run the basic usage example."""
+                print("{{project_name}} Basic Usage Example")
+                print("=" * 40)
+                
+                # Example data
+                sample_data = "Hello, {{project_name}}!"
+                
+                # Process using the library
+                result = {{project_name}}.main_function(sample_data)
+                
+                print(f"Input: {sample_data}")
+                print(f"Output: {result}")
+                
+                # Example with options
+                options = {"format": "json"}
+                result_with_options = {{project_name}}.main_function(sample_data, options)
+                
+                print(f"With options: {result_with_options}")
+            
+            
+            if __name__ == "__main__":
+                main()
+        - name: "README.md"
+          content: |
+            # {{project_name}} Examples
+            
+            This directory contains usage examples for the {{project_name}} library.
+            
+            ## Files
+            
+            - `basic_usage.py` - Demonstrates basic library usage
+            
+            ## Running Examples
+            
+            ```bash
+            python examples/basic_usage.py
+            ```
+
+template_files:
+  files:
+    - name: "common/pyproject.toml"
+    - name: "common/readme.md"
+    - name: "common/gitignore.txt"
+
+hooks:
+  post_generation:
+    - type: "git"
+      command: "init"
+      condition: "{{ init_git | default(true) }}"
+    - type: "python"
+      command: "-m venv venv"
+      condition: "{{ create_venv | default(true) }}"
+    - type: "command"
+      command: "source venv/bin/activate && pip install -e ."
+      condition: "{{ create_venv }}"
+      platform: ["macOS", "Linux"]
+
+compatibility:
+  min_python_version: "{{python_version}}"
+  supported_os: ["macOS", "Linux", "Windows"]
+  dependencies: []
+
+examples:
+  - "Utility library"
+  - "API client library"
+  - "Data processing library"
+  - "Framework extension"
+
+related_templates:
+  - "cli_single_package"

@@ -1,0 +1,110 @@
+# ABOUTME: Modern Python project configuration using pyproject.toml
+# ABOUTME: Supports all project types with templated build system and dependencies
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "{{project_name}}"
+version = "0.1.0"
+description = "{{description}}"
+readme = "README.md"
+requires-python = ">={{python_version}}"
+license = {text = "{{license}}"}
+authors = [
+    {name = "{{author}}"{% if email %}, email = "{{email}}"{% endif %}}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: {{license_classifier}}",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.{{python_version.split('.')[1]}}",
+]
+
+{% if project_type == "library" %}
+dependencies = [
+    # Add your project dependencies here
+]
+{% elif project_type == "cli" %}
+dependencies = [
+    "click>=8.0.0",
+]
+{% elif project_type == "django" %}
+dependencies = [
+    "Django>={{django_version}}",
+]
+{% elif project_type == "flask" %}
+dependencies = [
+    "Flask>={{flask_version}}",
+    "Jinja2>=3.0.0",
+]
+{% endif %}
+
+{% if include_tests or include_dev_dependencies %}
+[project.optional-dependencies]
+{% if include_tests %}
+test = [
+    {% if testing_framework == "pytest" %}
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    {% else %}
+    "coverage>=7.0.0",
+    {% endif %}
+]
+{% endif %}
+{% if include_dev_dependencies %}
+dev = [
+    "black>=23.0.0",
+    "isort>=5.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+{% endif %}
+{% endif %}
+
+{% if project_type == "cli" %}
+[project.scripts]
+{{entry_point}} = "{{project_name}}.{{main_module}}:main"
+{% endif %}
+
+{% if project_type == "library" %}
+[project.urls]
+Homepage = "https://github.com/{{author}}/{{project_name}}"
+Repository = "https://github.com/{{author}}/{{project_name}}.git"
+Documentation = "https://{{project_name}}.readthedocs.io/"
+"Bug Tracker" = "https://github.com/{{author}}/{{project_name}}/issues"
+{% endif %}
+
+[tool.setuptools.packages.find]
+{% if project_type in ["cli_internal", "django", "flask", "library"] %}
+include = ["{{project_name}}*"]
+{% endif %}
+
+{% if include_tests and testing_framework == "pytest" %}
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_functions = ["test_*"]
+addopts = "--strict-markers --disable-warnings"
+{% if include_coverage %}
+addopts = "--strict-markers --disable-warnings --cov={{project_name}} --cov-report=html --cov-report=term"
+{% endif %}
+{% endif %}
+
+{% if include_dev_dependencies %}
+[tool.black]
+line-length = 88
+target-version = ['py{{python_version.replace(".", "")[:2]}}']
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.mypy]
+python_version = "{{python_version}}"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+{% endif %}

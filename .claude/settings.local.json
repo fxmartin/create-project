@@ -4,7 +4,8 @@
       "Bash(git add:*)",
       "Bash(mkdir:*)",
       "Bash(chmod:*)",
-      "Bash(uv run pytest:*)"
+      "Bash(uv run pytest:*)",
+      "Bash(gh issue list:*)"
     ],
     "deny": []
   }

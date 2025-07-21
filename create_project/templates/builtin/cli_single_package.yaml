@@ -1,0 +1,360 @@
+# ABOUTME: Built-in template for CLI applications as installable single packages
+# ABOUTME: Command-line tools packaged for distribution with proper structure
+
+schema_version: "1.0.0"
+
+metadata:
+  name: "CLI Application (Single Package)"
+  description: "Command-line application packaged as installable Python package"
+  version: "1.0.0"
+  category: "CLI"
+  tags: ["cli", "command-line", "package", "installable", "tool"]
+  author: "Create Project Team"
+  created: "2025-07-21T16:43:00Z"
+  template_id: "builtin_cli_single_package"
+
+variables:
+  - name: "project_name"
+    type: "string"
+    description: "Name of the CLI package"
+    required: true
+    validation:
+      pattern: "^[a-zA-Z][a-zA-Z0-9_-]*$"
+      min_length: 2
+      max_length: 50
+      message: "Package name must start with a letter and contain only letters, numbers, underscores, and hyphens"
+
+  - name: "author"
+    type: "string"
+    description: "Package author name"
+    required: true
+    default: "Your Name"
+    validation:
+      min_length: 2
+      max_length: 100
+
+  - name: "email"
+    type: "email"
+    description: "Author email address"
+    required: false
+    default: ""
+
+  - name: "description"
+    type: "string"
+    description: "Brief description of the CLI tool"
+    required: true
+    default: "A command-line application"
+    validation:
+      min_length: 10
+      max_length: 200
+
+  - name: "license"
+    type: "choice"
+    description: "License for the package"
+    required: true
+    default: "MIT"
+    choices: ["MIT", "Apache-2.0", "GPL-3.0", "BSD-3-Clause", "Unlicense"]
+
+  - name: "python_version"
+    type: "choice"
+    description: "Minimum Python version required"
+    required: true
+    default: "3.9.6"
+    choices: ["3.9.6", "3.10.0", "3.11.0", "3.12.0"]
+
+  - name: "entry_point"
+    type: "string"
+    description: "Command name for the CLI tool"
+    required: true
+    default: "{{project_name}}"
+    validation:
+      pattern: "^[a-zA-Z][a-zA-Z0-9_-]*$"
+      min_length: 2
+      max_length: 30
+
+  - name: "main_module"
+    type: "string"
+    description: "Name of the main module file"
+    required: true
+    default: "cli"
+    validation:
+      pattern: "^[a-zA-Z][a-zA-Z0-9_]*$"
+      min_length: 2
+      max_length: 30
+
+  - name: "include_helpers"
+    type: "boolean"
+    description: "Include helper functions module"
+    required: false
+    default: true
+
+  - name: "include_tests"
+    type: "boolean"
+    description: "Include test files"
+    required: false
+    default: true
+
+  - name: "testing_framework"
+    type: "choice"
+    description: "Testing framework to use"
+    required: false
+    default: "pytest"
+    choices: ["pytest", "unittest"]
+    show_if:
+      variable: "include_tests"
+      value: true
+
+  - name: "include_dev_dependencies"
+    type: "boolean"
+    description: "Include development dependencies (black, flake8, mypy)"
+    required: false
+    default: true
+
+  - name: "init_git"
+    type: "boolean"
+    description: "Initialize git repository"
+    required: false
+    default: true
+
+  - name: "create_venv"
+    type: "boolean"
+    description: "Create virtual environment"
+    required: false
+    default: true
+
+structure:
+  root_directory:
+      name: "{{project_name}}"
+    files:
+      - name: "pyproject.toml"
+        content: ""
+        template_file: "common/pyproject.toml"
+        description: "Project configuration file"
+
+      - name: "README.md"
+        content: ""
+        template_file: "common/readme.md"
+        description: "Project documentation"
+
+      - name: ".gitignore"
+        content: ""
+        template_file: "common/gitignore.txt"
+        description: "Git ignore file"
+
+      - name: "LICENSE"
+        content: "{{ license_text }}"
+        description: "License file"
+
+    directories:
+      - name: "{{project_name}}"
+        files:
+          - name: "__init__.py"
+            content: ""
+            template_file: "cli_single/__init__.py"
+            description: "Package initialization"
+
+          - name: "{{main_module}}.py"
+            content: ""
+            template_file: "cli_single/main_module.py"
+            description: "Main CLI module"
+
+          - name: "helpers.py"
+            content: ""
+            template_file: "cli_single/helpers.py"
+            condition: "{{ include_helpers }}"
+            description: "Helper functions"
+
+        directories: []
+
+      - name: "tests"
+        condition: "{{ include_tests }}"
+        files:
+          - name: "__init__.py"
+            content: ""
+            description: "Test package initialization"
+
+          - name: "test_{{main_module}}.py"
+            content: |
+              # ABOUTME: Test file for main CLI module
+              # ABOUTME: Tests CLI commands and functionality
+
+              import pytest
+              from click.testing import CliRunner
+              from {{project_name}}.{{main_module}} import cli
+
+
+              def test_cli_version():
+                  """Test CLI version command."""
+                  runner = CliRunner()
+                  result = runner.invoke(cli, ["--version"])
+                  assert result.exit_code == 0
+                  assert "{{project_name}}" in result.output
+
+
+              def test_cli_help():
+                  """Test CLI help command."""
+                  runner = CliRunner()
+                  result = runner.invoke(cli, ["--help"])
+                  assert result.exit_code == 0
+                  assert "{{description}}" in result.output
+
+
+              def test_info_command():
+                  """Test info command."""
+                  runner = CliRunner()
+                  result = runner.invoke(cli, ["info"])
+                  assert result.exit_code == 0
+                  assert "{{author}}" in result.output
+
+
+              def test_process_command():
+                  """Test process command."""
+                  runner = CliRunner()
+                  result = runner.invoke(cli, ["process"])
+                  assert result.exit_code == 0
+
+
+              def test_verbose_mode():
+                  """Test verbose mode."""
+                  runner = CliRunner()
+                  result = runner.invoke(cli, ["--verbose", "info"])
+                  assert result.exit_code == 0
+                  assert "Verbose mode enabled" in result.output
+            description: "Main CLI tests"
+
+          - name: "test_helpers.py"
+            condition: "{{ include_helpers }}"
+            content: |
+              # ABOUTME: Test file for helper functions
+              # ABOUTME: Tests utility functions and data processing
+
+              import pytest
+              import tempfile
+              import os
+              from pathlib import Path
+              from {{project_name}}.helpers import validate_input, process_data, format_output
+
+
+              def test_validate_input_existing_file():
+                  """Test input validation with existing file."""
+                  with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+                      f.write("test content")
+                      temp_path = f.name
+                  
+                  try:
+                      assert validate_input(temp_path) == True
+                  finally:
+                      os.unlink(temp_path)
+
+
+              def test_validate_input_nonexistent_file():
+                  """Test input validation with non-existent file."""
+                  assert validate_input("/nonexistent/file.txt") == False
+
+
+              def test_process_data_text_format():
+                  """Test data processing with text format."""
+                  result = process_data("Hello world", "text", from_stdin=True)
+                  assert "Processing Results" in result
+                  assert "Character Count: 11" in result
+
+
+              def test_process_data_json_format():
+                  """Test data processing with JSON format."""
+                  result = process_data("Hello world", "json", from_stdin=True)
+                  assert '"input_length": 11' in result
+                  assert '"word_count": 2' in result
+
+
+              def test_process_data_csv_format():
+                  """Test data processing with CSV format."""
+                  result = process_data("Hello world", "csv", from_stdin=True)
+                  assert "metric,value" in result
+                  assert "character_count,11" in result
+
+
+              def test_format_output():
+                  """Test output formatting."""
+                  data = {"test": "value", "number": 42}
+                  result = format_output(data, "json")
+                  assert "test" in result
+            description: "Helper function tests"
+
+        directories: []
+
+template_files:
+  files:
+    - name: "cli_single/__init__.py"
+      description: "Package initialization template"
+
+    - name: "cli_single/main_module.py"
+      description: "Main CLI module template with Click framework"
+
+    - name: "cli_single/helpers.py"
+      description: "Helper functions template"
+
+    - name: "common/pyproject.toml"
+      description: "Project configuration template"
+
+    - name: "common/readme.md"
+      description: "README template for CLI applications"
+
+    - name: "common/gitignore.txt"
+      description: "Standard Python .gitignore"
+
+hooks:
+  pre_generation: []
+  
+  post_generation:
+    - type: "git"
+      command: "init"
+      description: "Initialize git repository"
+      condition: "{{ init_git }}"
+      platform: ["macOS", "Linux", "Windows"]
+
+    - type: "python"
+      command: "-m venv venv"
+      description: "Create virtual environment"
+      condition: "{{ create_venv }}"
+      platform: ["macOS", "Linux", "Windows"]
+
+    - type: "command"
+      command: "source venv/bin/activate && pip install -e ."
+      description: "Install package in development mode"
+      condition: "{{ create_venv }}"
+      platform: ["macOS", "Linux"]
+
+    - type: "command"
+      command: "venv\\Scripts\\activate && pip install -e ."
+      description: "Install package in development mode"
+      condition: "{{ create_venv }}"
+      platform: ["Windows"]
+
+    - type: "git"
+      command: "add ."
+      description: "Add all files to git"
+      condition: "{{ init_git }}"
+      platform: ["macOS", "Linux", "Windows"]
+
+    - type: "git"
+      command: 'commit -m "Initial commit: {{project_name}} CLI package"'
+      description: "Create initial commit"
+      condition: "{{ init_git }}"
+      platform: ["macOS", "Linux", "Windows"]
+
+action_groups: []
+
+compatibility:
+  min_python_version: "{{python_version}}"
+  supported_os: ["macOS", "Linux", "Windows"]
+  dependencies: ["click>=8.0.0"]
+
+examples:
+  - "File processing CLI tool"
+  - "Data conversion utility"
+  - "System administration CLI"
+  - "Development workflow tool"
+
+related_templates:
+  - "one_off_script"
+  - "cli_internal_packages"

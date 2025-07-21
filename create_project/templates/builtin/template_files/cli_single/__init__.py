@@ -1,0 +1,17 @@
+# ABOUTME: Package initialization for CLI single package template
+# ABOUTME: Provides package metadata and version information
+
+"""
+{{description}}
+
+A command-line application implemented as an installable Python package.
+"""
+
+__version__ = "0.1.0"
+__author__ = "{{author}}"
+{% if email %}__email__ = "{{email}}"{% endif %}
+
+# Package-level imports for convenience
+from .{{main_module}} import main
+
+__all__ = ["main"]
