@@ -5,7 +5,7 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class TemplateCategory(str, Enum):
@@ -91,7 +91,8 @@ class TemplateMetadata(BaseModel):
 
     source_url: Optional[str] = Field(None, description="URL to template source code")
 
-    @validator("tags")
+    @field_validator("tags")
+    @classmethod
     def validate_tags(cls, v):
         """Validate tags are lowercase and alphanumeric."""
         if not v:
@@ -107,15 +108,8 @@ class TemplateMetadata(BaseModel):
 
         return v
 
-    @validator("updated")
-    def validate_updated_after_created(cls, v, values):
-        """Ensure updated date is after created date."""
-        if v is not None and "created" in values:
-            if v < values["created"]:
-                raise ValueError("Updated date must be after created date")
-        return v
-
-    @validator("compatibility")
+    @field_validator("compatibility")
+    @classmethod
     def validate_compatibility(cls, v):
         """Validate compatibility list contains valid OS names."""
         valid_os = {"macOS", "Linux", "Windows"}
@@ -123,6 +117,14 @@ class TemplateMetadata(BaseModel):
             if os_name not in valid_os:
                 raise ValueError(f"Invalid OS '{os_name}'. Must be one of: {valid_os}")
         return v
+
+    @model_validator(mode='after')
+    def validate_updated_after_created(self):
+        """Ensure updated date is after created date."""
+        if self.updated is not None and self.created is not None:
+            if self.updated < self.created:
+                raise ValueError("Updated date must be after created date")
+        return self
 
 
 class TemplateConfiguration(BaseModel):
@@ -161,7 +163,8 @@ class TemplateConfiguration(BaseModel):
 
     encoding: str = Field(default="utf-8", description="Default file encoding")
 
-    @validator("template_suffix")
+    @field_validator("template_suffix")
+    @classmethod
     def validate_template_suffix(cls, v):
         """Validate template suffix starts with dot."""
         if not v.startswith("."):
