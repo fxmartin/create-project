@@ -14,13 +14,36 @@ from typing import Dict, Any, List, Optional, Callable, Union
 from dataclasses import dataclass
 from structlog import get_logger
 
-from .exceptions import ProjectGenerationError, TemplateError, PathError
+from .exceptions import ProjectGenerationError, TemplateError, PathError, GitError, VirtualEnvError
 from .path_utils import PathHandler
 from .directory_creator import DirectoryCreator
 from .file_renderer import FileRenderer
+from .git_manager import GitManager, GitConfig
+from .venv_manager import VenvManager
+from .command_executor import CommandExecutor
 from ..config.config_manager import ConfigManager
 from ..templates.schema.template import Template
 from ..templates.loader import TemplateLoader
+
+
+@dataclass
+class ProjectOptions:
+    """Options for project generation.
+    
+    Attributes:
+        create_git_repo: Whether to initialize git repository
+        create_venv: Whether to create virtual environment
+        venv_name: Name of virtual environment directory
+        python_version: Specific Python version for virtual environment
+        execute_post_commands: Whether to execute post-creation commands
+        git_config: Git configuration for repository setup
+    """
+    create_git_repo: bool = True
+    create_venv: bool = True
+    venv_name: str = ".venv"
+    python_version: Optional[str] = None
+    execute_post_commands: bool = True
+    git_config: Optional[GitConfig] = None
 
 
 @dataclass
@@ -34,6 +57,9 @@ class GenerationResult:
         files_created: List of files that were created
         errors: List of error messages if any
         duration: Generation duration in seconds (optional)
+        git_initialized: Whether git repository was initialized
+        venv_created: Whether virtual environment was created
+        commands_executed: Number of post-creation commands executed
     """
     success: bool
     target_path: Path
@@ -41,6 +67,9 @@ class GenerationResult:
     files_created: List[str]
     errors: List[str]
     duration: Optional[float] = None
+    git_initialized: bool = False
+    venv_created: bool = False
+    commands_executed: int = 0
 
 
 class ProjectGenerator:
@@ -50,6 +79,9 @@ class ProjectGenerator:
     - Template validation and processing
     - Directory structure creation
     - File rendering with template variables
+    - Git repository initialization
+    - Virtual environment creation
+    - Post-creation command execution
     - Error handling with atomic rollback
     - Progress reporting through callbacks
     
@@ -62,6 +94,9 @@ class ProjectGenerator:
         path_handler: Cross-platform path operations
         directory_creator: Directory structure creation
         file_renderer: Template file rendering
+        git_manager: Git repository management
+        venv_manager: Virtual environment management
+        command_executor: Post-creation command execution
         generation_errors: Accumulated errors during generation
         rollback_handlers: Cleanup functions for rollback
         logger: Structured logger for operations
@@ -73,7 +108,10 @@ class ProjectGenerator:
         template_loader: Optional[TemplateLoader] = None,
         path_handler: Optional[PathHandler] = None,
         directory_creator: Optional[DirectoryCreator] = None,
-        file_renderer: Optional[FileRenderer] = None
+        file_renderer: Optional[FileRenderer] = None,
+        git_manager: Optional[GitManager] = None,
+        venv_manager: Optional[VenvManager] = None,
+        command_executor: Optional[CommandExecutor] = None
     ) -> None:
         """Initialize the ProjectGenerator.
         
@@ -83,6 +121,9 @@ class ProjectGenerator:
             path_handler: Optional PathHandler (creates new if None)
             directory_creator: Optional DirectoryCreator (creates new if None)
             file_renderer: Optional FileRenderer (creates new if None)
+            git_manager: Optional GitManager (creates new if None)
+            venv_manager: Optional VenvManager (creates new if None)
+            command_executor: Optional CommandExecutor (creates new if None)
         """
         self.config_manager = config_manager or ConfigManager()
         self.template_loader = template_loader or TemplateLoader()
@@ -90,6 +131,9 @@ class ProjectGenerator:
         # DirectoryCreator needs a base_path - we'll initialize it per project
         self.directory_creator = directory_creator
         self.file_renderer = file_renderer or FileRenderer()
+        self.git_manager = git_manager or GitManager()
+        self.venv_manager = venv_manager or VenvManager()
+        self.command_executor = command_executor or CommandExecutor()
         
         self.generation_errors: List[str] = []
         self.rollback_handlers: List[Callable[[], None]] = []
@@ -98,7 +142,9 @@ class ProjectGenerator:
         self.logger.info(
             "ProjectGenerator initialized",
             has_config_manager=self.config_manager is not None,
-            has_template_loader=self.template_loader is not None
+            has_template_loader=self.template_loader is not None,
+            git_available=self.git_manager._git_available,
+            venv_tools=len([t for t, p in self.venv_manager.available_tools.items() if p])
         )
     
     def generate_project(
@@ -106,6 +152,7 @@ class ProjectGenerator:
         template: Template,
         variables: Dict[str, Any],
         target_path: Union[str, Path],
+        options: Optional[ProjectOptions] = None,
         dry_run: bool = False,
         progress_callback: Optional[Callable[[str], None]] = None
     ) -> GenerationResult:
@@ -118,6 +165,7 @@ class ProjectGenerator:
             template: Template to use for generation
             variables: Template variables for substitution
             target_path: Where to create the project
+            options: Project generation options (git, venv, commands)
             dry_run: If True, validate but don't create files
             progress_callback: Optional progress reporting callback
             
@@ -130,17 +178,28 @@ class ProjectGenerator:
         import time
         start_time = time.time()
         
+        # Set default options if not provided
+        options = options or ProjectOptions()
+        
         # Reset state for new generation
         self.generation_errors.clear()
         self.rollback_handlers.clear()
         
         target_path = self.path_handler.normalize_path(target_path)
         
+        # Initialize result tracking
+        git_initialized = False
+        venv_created = False
+        commands_executed = 0
+        
         self.logger.info(
             "Starting project generation",
             template_name=template.name,
             target_path=str(target_path),
-            dry_run=dry_run
+            dry_run=dry_run,
+            create_git_repo=options.create_git_repo,
+            create_venv=options.create_venv,
+            execute_post_commands=options.execute_post_commands
         )
         
         try:
@@ -162,8 +221,26 @@ class ProjectGenerator:
                 
                 report_progress("Rendering template files...")
                 self._render_files(template, prepared_variables, target_path, report_progress)
+                
+                # Post-creation steps
+                if options.create_git_repo:
+                    report_progress("Initializing git repository...")
+                    git_initialized = self._initialize_git_repository(target_path, options.git_config, report_progress)
+                
+                if options.create_venv:
+                    report_progress("Creating virtual environment...")
+                    venv_created = self._create_virtual_environment(target_path, options, report_progress)
+                
+                if options.execute_post_commands and hasattr(template, 'hooks') and hasattr(template.hooks, 'post_generation'):
+                    report_progress("Executing post-creation commands...")
+                    commands_executed = self._execute_post_commands(template, target_path, report_progress)
+                
+                # Create initial git commit if git was initialized
+                if git_initialized:
+                    report_progress("Creating initial git commit...")
+                    self._create_initial_commit(target_path, options.git_config)
             else:
-                self.logger.info("Dry-run mode: Skipping actual file creation")
+                self.logger.info("Dry-run mode: Skipping actual file creation and post-creation steps")
             
             report_progress("Project generation completed successfully")
             
@@ -180,7 +257,10 @@ class ProjectGenerator:
                 template_name=template.name,
                 files_created=files_created,
                 errors=[],
-                duration=duration
+                duration=duration,
+                git_initialized=git_initialized,
+                venv_created=venv_created,
+                commands_executed=commands_executed
             )
             
             self.logger.info(
@@ -213,7 +293,10 @@ class ProjectGenerator:
                 template_name=template.name,
                 files_created=[],
                 errors=[str(e)] + self.generation_errors,
-                duration=duration
+                duration=duration,
+                git_initialized=git_initialized,
+                venv_created=venv_created,
+                commands_executed=commands_executed
             )
             
         except Exception as e:
@@ -310,7 +393,7 @@ class ProjectGenerator:
                 'current_year': datetime.datetime.now().year,
                 'current_date': datetime.datetime.now().strftime('%Y-%m-%d'),
                 'generator_name': 'create-project',
-                'generator_version': '1.0.0'  # TODO: Get from config
+                'generator_version': '1.0.0'
             })
             
             # Validate required variables
@@ -486,3 +569,268 @@ class ProjectGenerator:
         
         self.rollback_handlers.clear()
         self.logger.info("Rollback execution completed")
+    
+    def _initialize_git_repository(
+        self,
+        target_path: Path,
+        git_config: Optional[GitConfig],
+        progress_callback: Optional[Callable[[str], None]] = None
+    ) -> bool:
+        """Initialize git repository in project directory.
+        
+        Args:
+            target_path: Project directory path
+            git_config: Optional git configuration
+            progress_callback: Optional progress callback
+            
+        Returns:
+            True if git repository was initialized successfully
+        """
+        try:
+            self.git_manager.init_repository(target_path, git_config)
+            
+            self.logger.info(
+                "Git repository initialized",
+                target_path=str(target_path)
+            )
+            
+            return True
+            
+        except GitError as e:
+            # Git errors are not fatal - log and continue
+            error_msg = f"Git initialization failed: {e}"
+            self.generation_errors.append(error_msg)
+            self.logger.warning(
+                "Git repository initialization failed",
+                target_path=str(target_path),
+                error=str(e)
+            )
+            
+            return False
+        
+        except Exception as e:
+            # Unexpected errors - log but don't fail generation
+            error_msg = f"Unexpected git error: {e}"
+            self.generation_errors.append(error_msg)
+            self.logger.error(
+                "Unexpected error during git initialization",
+                target_path=str(target_path),
+                error=str(e)
+            )
+            
+            return False
+    
+    def _create_virtual_environment(
+        self,
+        target_path: Path,
+        options: ProjectOptions,
+        progress_callback: Optional[Callable[[str], None]] = None
+    ) -> bool:
+        """Create virtual environment in project directory.
+        
+        Args:
+            target_path: Project directory path
+            options: Project options with venv settings
+            progress_callback: Optional progress callback
+            
+        Returns:
+            True if virtual environment was created successfully
+        """
+        try:
+            # Look for requirements file
+            requirements_file = None
+            for req_name in ['requirements.txt', 'pyproject.toml', 'Pipfile']:
+                req_path = target_path / req_name
+                if req_path.exists():
+                    requirements_file = req_path
+                    break
+            
+            result = self.venv_manager.create_venv(
+                project_path=target_path,
+                venv_name=options.venv_name,
+                python_version=options.python_version,
+                requirements_file=requirements_file
+            )
+            
+            if result["success"]:
+                self.logger.info(
+                    "Virtual environment created",
+                    target_path=str(target_path),
+                    venv_name=options.venv_name,
+                    tool=result.get("tool"),
+                    requirements_file=str(requirements_file) if requirements_file else None
+                )
+                
+                return True
+            else:
+                error_msg = f"Virtual environment creation failed: {result.get('error', 'Unknown error')}"
+                self.generation_errors.append(error_msg)
+                self.logger.warning(
+                    "Virtual environment creation failed",
+                    target_path=str(target_path),
+                    error=result.get('error')
+                )
+                
+                return False
+                
+        except VirtualEnvError as e:
+            # VEnv errors are not fatal - log and continue
+            error_msg = f"Virtual environment creation failed: {e}"
+            self.generation_errors.append(error_msg)
+            self.logger.warning(
+                "Virtual environment creation failed",
+                target_path=str(target_path),
+                error=str(e)
+            )
+            
+            return False
+        
+        except Exception as e:
+            # Unexpected errors - log but don't fail generation
+            error_msg = f"Unexpected virtual environment error: {e}"
+            self.generation_errors.append(error_msg)
+            self.logger.error(
+                "Unexpected error during virtual environment creation",
+                target_path=str(target_path),
+                error=str(e)
+            )
+            
+            return False
+    
+    def _execute_post_commands(
+        self,
+        template: Template,
+        target_path: Path,
+        progress_callback: Optional[Callable[[str], None]] = None
+    ) -> int:
+        """Execute post-creation commands from template.
+        
+        Args:
+            template: Template with post-creation commands
+            target_path: Project directory path
+            progress_callback: Optional progress callback
+            
+        Returns:
+            Number of commands executed successfully
+        """
+        commands_executed = 0
+        
+        try:
+            if not hasattr(template, 'hooks') or not hasattr(template.hooks, 'post_generation'):
+                self.logger.debug("No post-generation commands in template")
+                return 0
+            
+            post_commands = template.hooks.post_generation
+            if not post_commands or not hasattr(post_commands, 'commands'):
+                self.logger.debug("No post-generation commands to execute")
+                return 0
+            
+            commands = post_commands.commands if hasattr(post_commands, 'commands') else []
+            
+            if not commands:
+                self.logger.debug("Empty post-generation commands list")
+                return 0
+            
+            self.logger.info(
+                "Executing post-creation commands",
+                target_path=str(target_path),
+                command_count=len(commands)
+            )
+            
+            def command_progress(message: str, current: int, total: int) -> None:
+                if progress_callback:
+                    progress_callback(f"Command {current + 1}/{total}: {message}")
+            
+            results = self.command_executor.execute_commands(
+                commands=commands,
+                cwd=target_path,
+                timeout_per_command=120,  # 2 minutes per command
+                progress_callback=command_progress,
+                stop_on_failure=False  # Continue with remaining commands even if one fails
+            )
+            
+            # Count successful commands
+            commands_executed = sum(1 for result in results if result.success)
+            
+            # Log failures
+            failed_commands = [result for result in results if not result.success]
+            if failed_commands:
+                for failed in failed_commands:
+                    error_msg = f"Post-creation command failed: {failed.command} - {failed.stderr}"
+                    self.generation_errors.append(error_msg)
+                    self.logger.warning(
+                        "Post-creation command failed",
+                        command=failed.command,
+                        error=failed.stderr,
+                        returncode=failed.returncode
+                    )
+            
+            self.logger.info(
+                "Post-creation commands completed",
+                target_path=str(target_path),
+                commands_executed=commands_executed,
+                total_commands=len(commands),
+                failed_commands=len(failed_commands)
+            )
+            
+            return commands_executed
+            
+        except Exception as e:
+            # Command execution errors are not fatal - log and continue
+            error_msg = f"Post-creation command execution failed: {e}"
+            self.generation_errors.append(error_msg)
+            self.logger.error(
+                "Unexpected error during post-creation command execution",
+                target_path=str(target_path),
+                error=str(e)
+            )
+            
+            return commands_executed
+    
+    def _create_initial_commit(
+        self,
+        target_path: Path,
+        git_config: Optional[GitConfig]
+    ) -> None:
+        """Create initial git commit with generated files.
+        
+        Args:
+            target_path: Project directory path
+            git_config: Optional git configuration
+        """
+        try:
+            commit_message = "Initial commit"
+            if git_config and git_config.initial_commit_message:
+                commit_message = git_config.initial_commit_message
+            
+            self.git_manager.create_initial_commit(
+                target_path,
+                message=commit_message,
+                git_config=git_config
+            )
+            
+            self.logger.info(
+                "Initial git commit created",
+                target_path=str(target_path),
+                message=commit_message
+            )
+            
+        except GitError as e:
+            # Git commit errors are not fatal - log and continue
+            error_msg = f"Initial git commit failed: {e}"
+            self.generation_errors.append(error_msg)
+            self.logger.warning(
+                "Initial git commit failed",
+                target_path=str(target_path),
+                error=str(e)
+            )
+        
+        except Exception as e:
+            # Unexpected errors - log but don't fail generation
+            error_msg = f"Unexpected git commit error: {e}"
+            self.generation_errors.append(error_msg)
+            self.logger.error(
+                "Unexpected error during initial git commit",
+                target_path=str(target_path),
+                error=str(e)
+            )

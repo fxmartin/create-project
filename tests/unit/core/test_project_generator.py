@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional, Callable
 from unittest.mock import Mock, MagicMock, patch, call
 
-from create_project.core.project_generator import ProjectGenerator, GenerationResult
+from create_project.core.project_generator import ProjectGenerator, GenerationResult, ProjectOptions
 from create_project.core.exceptions import ProjectGenerationError, TemplateError, PathError
 from create_project.core.path_utils import PathHandler
 from create_project.core.directory_creator import DirectoryCreator
@@ -117,6 +117,11 @@ class TestProjectGenerator:
         project_generator._prepare_template_variables = Mock(return_value=sample_variables)
         project_generator._create_directories = Mock()
         project_generator._render_files = Mock()
+        # Mock the new integration methods
+        project_generator._initialize_git_repository = Mock(return_value=True)
+        project_generator._create_virtual_environment = Mock(return_value=True)
+        project_generator._execute_post_commands = Mock(return_value=2)
+        project_generator._create_initial_commit = Mock()
         
         # Execute
         result = project_generator.generate_project(
@@ -132,6 +137,10 @@ class TestProjectGenerator:
         assert result.target_path.resolve() == target_path.resolve()
         assert result.template_name == "python_library"
         assert len(result.errors) == 0
+        # Verify new integration fields
+        assert result.git_initialized is True
+        assert result.venv_created is True
+        assert result.commands_executed == 2
         
         # Verify method calls (paths might be normalized)
         project_generator._validate_target_path.assert_called_once()
@@ -139,12 +148,16 @@ class TestProjectGenerator:
             sample_template, sample_variables
         )
         
-        # Verify progress callbacks
+        # Verify progress callbacks - updated for new integration steps
         progress_callback.assert_has_calls([
             call("Validating template and target path..."),
             call("Preparing template variables..."),
             call("Creating directory structure..."),
             call("Rendering template files..."),
+            call("Initializing git repository..."),
+            call("Creating virtual environment..."),
+            call("Executing post-creation commands..."),
+            call("Creating initial git commit..."),
             call("Project generation completed successfully")
         ])
     
@@ -187,6 +200,11 @@ class TestProjectGenerator:
         project_generator._validate_target_path = Mock()
         project_generator._prepare_template_variables = Mock(return_value=sample_variables)
         project_generator._create_directories = Mock()
+        # Mock integration methods
+        project_generator._initialize_git_repository = Mock(return_value=False)
+        project_generator._create_virtual_environment = Mock(return_value=False)
+        project_generator._execute_post_commands = Mock(return_value=0)
+        project_generator._create_initial_commit = Mock()
         
         result = project_generator.generate_project(
             template=sample_template,
