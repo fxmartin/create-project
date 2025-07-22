@@ -51,12 +51,7 @@ class OptionsStep(WizardStep):
         Args:
             parent: Parent widget
         """
-        super().__init__(
-            title="Configuration Options",
-            subtitle="Configure project options",
-            parent=parent,
-        )
-
+        # Initialize attributes before calling super().__init__
         # License manager for license operations
         self.license_manager = LicenseManager()
 
@@ -65,8 +60,12 @@ class OptionsStep(WizardStep):
 
         # Option widgets mapping
         self.option_widgets: Dict[str, QWidget] = {}
-
-        self._setup_ui()
+        
+        super().__init__(
+            title="Configuration Options",
+            subtitle="Configure project options",
+            parent=parent,
+        )
 
     def _setup_ui(self) -> None:
         """Set up the user interface."""
@@ -134,7 +133,7 @@ class OptionsStep(WizardStep):
         scroll_area.setWidget(content_widget)
 
         # Add to main layout
-        self.layout().addWidget(scroll_area)
+        self.layout.addWidget(scroll_area)
 
         # Store widgets for later access
         self.option_widgets["license"] = self.license_combo
@@ -146,15 +145,17 @@ class OptionsStep(WizardStep):
     def _populate_licenses(self) -> None:
         """Populate the license combo box."""
         try:
-            licenses = self.license_manager.list_licenses()
-
             # Add "No License" option first
             self.license_combo.addItem("No License", None)
 
+            # Get available license IDs
+            license_ids = self.license_manager.get_available_licenses()
+            
             # Add available licenses
-            for license_info in licenses:
-                display_name = f"{license_info['name']} ({license_info['id']})"
-                self.license_combo.addItem(display_name, license_info["id"])
+            for license_id in license_ids:
+                license = self.license_manager.get_license(license_id)
+                display_name = f"{license.name} ({license_id})"
+                self.license_combo.addItem(display_name, license_id)
 
             # Set MIT as default if available
             for i in range(self.license_combo.count()):
@@ -221,9 +222,27 @@ class OptionsStep(WizardStep):
         Returns:
             Template schema or None if not found
         """
-        if hasattr(self.wizard(), "template_loader"):
+        if hasattr(self.wizard(), "template_engine"):
             try:
-                return self.wizard().template_loader.load_template(template_id)
+                # Try to get template path from wizard data
+                wizard = self.wizard()
+                if hasattr(wizard, "data") and hasattr(wizard.data, "template_path"):
+                    template_path = wizard.data.template_path
+                    if template_path:
+                        return self.wizard().template_engine.load_template(template_path)
+                
+                # Fallback: Try to find template by name in the builtin directory
+                from pathlib import Path
+                builtin_dir = Path("create_project/templates/builtin")
+                for yaml_file in builtin_dir.glob("*.yaml"):
+                    try:
+                        metadata = self.wizard().template_loader.load_template_metadata(yaml_file)
+                        if metadata.get("name") == template_id:
+                            return self.wizard().template_engine.load_template(yaml_file)
+                    except:
+                        pass
+                
+                logger.error(f"Template {template_id} not found")
             except Exception as e:
                 logger.error(f"Failed to load template {template_id}: {e}")
         return None
@@ -407,7 +426,17 @@ class OptionsStep(WizardStep):
         # Update wizard data
         wizard = self.wizard()
         if wizard and hasattr(wizard, "data"):
-            wizard.data.options = options
+            # Store universal options
+            wizard.data.license = options.get("license")
+            wizard.data.init_git = options.get("git_init", True)
+            wizard.data.create_venv = options.get("venv_tool") is not None
+            wizard.data.venv_tool = options.get("venv_tool")
+            
+            # Store template-specific options
+            wizard.data.additional_options = {
+                k: v for k, v in options.items() 
+                if k not in ["license", "git_init", "venv_tool"]
+            }
 
         logger.debug(f"Updated wizard data: options={options}")
 

@@ -107,12 +107,17 @@ def initialize_services(
     ai_service = None
     if config_manager.get_setting("ai.enabled", True):
         try:
+            import asyncio
             ai_service = AIService(config_manager)
-            ai_service.initialize()
-            if ai_service.is_available():
+            # Run async initialization synchronously
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(ai_service.initialize())
+            if loop.run_until_complete(ai_service.is_available()):
                 logger.info("AI service initialized and available")
             else:
                 logger.warning("AI service initialized but not available")
+            loop.close()
         except Exception as e:
             logger.warning(f"Failed to initialize AI service: {e}")
             # Continue without AI service

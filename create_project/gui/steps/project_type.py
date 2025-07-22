@@ -225,6 +225,13 @@ class ProjectTypeStep(WizardStep):
         wizard = self.wizard()
         if wizard and hasattr(wizard, "data"):
             wizard.data.template_id = template_id
+            # Also store the template object for later use
+            template = self.templates.get(template_id)
+            if template and isinstance(template, dict):
+                wizard.data.template_name = template.get("name")
+                # Store the file path if available
+                if "file_path" in template:
+                    wizard.data.template_path = template["file_path"]
 
     def _format_structure(self, structure: Any, indent: int = 0) -> str:
         """Format template structure for display."""

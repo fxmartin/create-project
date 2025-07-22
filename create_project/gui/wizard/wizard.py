@@ -43,6 +43,7 @@ class WizardData:
     # Template selection
     template_id: Optional[str] = None
     template_name: Optional[str] = None
+    template_path: Optional[str] = None
 
     # Basic information
     project_name: Optional[str] = None
@@ -107,7 +108,23 @@ class ProjectGenerationThread(QThread):
             self.progress.emit(0, "Starting project generation...")
 
             # Get template
-            template = self.template_engine.get_template(self.wizard_data.template_id)
+            template = None
+            if self.wizard_data.template_path:
+                # Load template using file path
+                try:
+                    template = self.template_engine.load_template(self.wizard_data.template_path)
+                except Exception as e:
+                    self.finished.emit(
+                        False, f"Failed to load template: {str(e)}"
+                    )
+                    return
+            else:
+                # Fallback to template ID (name)
+                self.finished.emit(
+                    False, f"Template path not available for '{self.wizard_data.template_id}'"
+                )
+                return
+            
             if not template:
                 self.finished.emit(
                     False, f"Template '{self.wizard_data.template_id}' not found"
