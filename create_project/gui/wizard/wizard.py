@@ -30,6 +30,7 @@ from create_project.ai.ai_service import AIService
 from create_project.utils.logger import get_logger
 from .base_step import WizardStep
 from ..steps.project_type import ProjectTypeStep
+from ..steps.basic_info import BasicInfoStep
 
 logger = get_logger(__name__)
 
@@ -248,9 +249,11 @@ class ProjectWizard(QWizard):
         # Project Type Selection (implemented)
         self.addPage(ProjectTypeStep(self))
         
+        # Basic Information (implemented)
+        self.addPage(BasicInfoStep(self))
+        
         # Placeholder pages for remaining steps
         for i, (title, subtitle) in enumerate([
-            ("Basic Information", "Enter project details"),
             ("Select Location", "Choose where to create your project"),
             ("Configure Options", "Customize project settings"),
             ("Review and Create", "Review your choices and create the project")
