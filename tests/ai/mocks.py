@@ -331,6 +331,10 @@ class MockOllamaClient:
     def get_last_request(self) -> Optional[Dict[str, Any]]:
         """Get details of last request."""
         return self._last_request
+    
+    async def get_models(self) -> List[Dict[str, Any]]:
+        """Get available models (mock implementation)."""
+        return self.available_models
 
 
 class MockCachePersistence:

@@ -247,7 +247,7 @@ class TestAIService:
         
         # Mock client
         mock_client_instance = Mock()
-        mock_client.get_instance.return_value = mock_client_instance
+        mock_client.return_value = mock_client_instance
         
         # Mock model manager
         mock_model_mgr = Mock()
@@ -276,7 +276,7 @@ class TestAIService:
         
         # Verify components were created
         mock_detector_class.assert_called_once_with(service_url=self.config.ollama_url)
-        mock_client.get_instance.assert_called_once()
+        mock_client.assert_called_once()  # Changed from get_instance
         mock_model_manager.assert_called_once()
         mock_response_gen.assert_called_once()
         mock_cache_manager.assert_called_once()

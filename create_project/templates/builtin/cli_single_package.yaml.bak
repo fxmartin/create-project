@@ -152,33 +152,39 @@ structure:
     name: "{{project_name}}"
     files:
       - name: "pyproject.toml"
+        content: ""
         template_file: "common/pyproject.toml.j2"
         description: "Project configuration file"
 
       - name: "README.md"
+        content: ""
         template_file: "common/readme.md.j2"
         description: "Project documentation"
 
       - name: ".gitignore"
+        content: ""
         template_file: "common/gitignore.txt.j2"
         description: "Git ignore file"
 
       - name: "LICENSE"
-        content: "# License file will be populated based on selected license"
+        content: "{{ license_text }}"
         description: "License file"
 
     directories:
       - name: "{{project_name}}"
         files:
           - name: "__init__.py"
+            content: ""
             template_file: "cli_single/__init__.py.j2"
             description: "Package initialization"
 
           - name: "{{main_module}}.py"
+            content: ""
             template_file: "cli_single/main_module.py.j2"
             description: "Main CLI module"
 
           - name: "helpers.py"
+            content: ""
             template_file: "cli_single/helpers.py.j2"
             condition:
               expression: "{{ include_helpers }}"
@@ -193,6 +199,7 @@ structure:
           variables: ["include_tests"]
         files:
           - name: "__init__.py"
+            content: ""
             description: "Test package initialization"
 
           - name: "test_{{main_module}}.py"

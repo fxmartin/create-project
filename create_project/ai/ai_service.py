@@ -212,7 +212,7 @@ class AIService:
                 return self._service_status
 
             # Initialize HTTP client
-            self._client = OllamaClient.get_instance(
+            self._client = OllamaClient(
                 base_url=self.config.ollama_url,
                 timeout=self.config.ollama_timeout
             )

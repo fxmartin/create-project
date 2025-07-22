@@ -308,8 +308,8 @@ class TestTemplateEngineIntegration:
             # Update config to point to our test directories
             self.config_manager.get_setting.side_effect = lambda key, default: {
                 "templates.directories": [str(temp_path)],
-                "templates.builtin_directory": str(builtin_dir),
-                "templates.user_directory": str(user_dir),
+                "templates.builtin_path": str(builtin_dir),
+                "templates.custom_path": str(user_dir),
             }.get(key, default)
 
             # Create test templates

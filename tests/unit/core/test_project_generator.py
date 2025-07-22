@@ -313,7 +313,7 @@ class TestProjectGenerator:
         # Mock DirectoryCreator creation
         with patch('create_project.core.project_generator.DirectoryCreator') as mock_dir_creator_class:
             mock_dir_creator = Mock()
-            mock_dir_creator.created_directories = []  # Add this attribute
+            mock_dir_creator.created_dirs = []  # Change to created_dirs
             mock_dir_creator_class.return_value = mock_dir_creator
             
             project_generator._create_directories(

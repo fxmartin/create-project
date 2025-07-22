@@ -513,7 +513,7 @@ class TestAIErrorHandling:
         network_conditions = ["connection_error", "timeout", "rate_limit"]
         call_count = 0
         
-        def get_mock_client():
+        def get_mock_client(*args, **kwargs):
             nonlocal call_count
             condition = network_conditions[min(call_count, len(network_conditions) - 1)]
             call_count += 1

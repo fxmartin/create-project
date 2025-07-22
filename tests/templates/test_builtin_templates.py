@@ -381,10 +381,10 @@ class TestTemplateIntegration:
 
         # Create config with builtin templates directory
         config = ConfigManager()
-        config.set_setting("templates.builtin_directory", str(builtin_templates_dir))
+        config.set_setting("templates.builtin_path", str(builtin_templates_dir))
 
         loader = TemplateLoader(config_manager=config)
-        engine = TemplateEngine()
+        engine = TemplateEngine(config_manager=config)
 
         # Sample variables for testing
         sample_vars = {
@@ -402,8 +402,8 @@ class TestTemplateIntegration:
         # Test each template can be loaded and basic structure accessed
         templates = loader.list_templates()
         for template_info in templates:
-            # Load the actual template
-            template = loader.load_template(template_info["template_id"])
+            # Load the actual template using file path, not template_id
+            template = engine.load_template(template_info["file_path"])
 
             # Verify we can access basic template properties
             assert template.metadata.name is not None

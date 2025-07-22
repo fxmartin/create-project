@@ -121,7 +121,7 @@ class TestTemplateConfig:
     def test_default_values(self):
         """Test that default values are properly assigned."""
         config = TemplateConfig()
-        assert config.builtin_path == "./templates"
+        assert config.builtin_path == "create_project/templates/builtin"
         assert config.custom_path == "~/.project-creator/templates"
         assert config.auto_update is False
 

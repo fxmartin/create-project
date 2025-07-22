@@ -628,8 +628,16 @@ class ProjectGenerator:
 
         try:
             # Run async method in sync context
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
+            try:
+                loop = asyncio.get_running_loop()
+                # If there's already a loop running, we can't use run_until_complete
+                # This typically happens in test environments
+                self.logger.debug("Existing event loop detected, skipping AI assistance")
+                return None
+            except RuntimeError:
+                # No loop running, we can create our own
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
 
             try:
                 ai_help = loop.run_until_complete(

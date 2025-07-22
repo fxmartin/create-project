@@ -23,8 +23,8 @@ class TestTemplateLoader:
         self.config_manager = Mock(spec=ConfigManager)
         self.config_manager.get_setting.side_effect = lambda key, default: {
             "templates.directories": ["tests/fixtures/templates"],
-            "templates.builtin_directory": "tests/fixtures/builtin",
-            "templates.user_directory": "tests/fixtures/user",
+            "templates.builtin_path": "tests/fixtures/builtin",
+            "templates.custom_path": "tests/fixtures/user",
         }.get(key, default)
         self.loader = TemplateLoader(self.config_manager)
 
@@ -33,7 +33,7 @@ class TestTemplateLoader:
         assert self.loader.config_manager == self.config_manager
         assert self.loader.template_directories == ["tests/fixtures/templates"]
         assert self.loader.builtin_templates_dir == "tests/fixtures/builtin"
-        assert self.loader.user_templates_dir == "tests/fixtures/user"
+        assert str(self.loader.user_templates_dir) == "tests/fixtures/user"
 
     def test_find_yaml_files(self):
         """Test finding YAML files in directory."""
