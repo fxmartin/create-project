@@ -80,6 +80,11 @@ class CacheError(AIError):
 class ContextCollectionError(AIError):
     """Raised when error context collection fails."""
 
-    def __init__(self, message: str, details: Optional[dict] = None, original_error: Optional[Exception] = None):
+    def __init__(
+        self,
+        message: str,
+        details: Optional[dict] = None,
+        original_error: Optional[Exception] = None,
+    ):
         super().__init__(message, original_error)
         self.details = details or {}

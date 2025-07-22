@@ -17,7 +17,7 @@ class TestLicense:
             "name": "MIT License",
             "text": "Copyright (c) {year} {author}\n\nPermission is hereby granted...",
             "url": "https://opensource.org/licenses/MIT",
-            "requires_fields": ["author", "year"]
+            "requires_fields": ["author", "year"],
         }
 
         license_obj = License(**license_data)
@@ -34,7 +34,7 @@ class TestLicense:
             "id": "unlicense",
             "name": "The Unlicense",
             "text": "This is free and unencumbered software...",
-            "url": "https://unlicense.org/"
+            "url": "https://unlicense.org/",
         }
 
         license_obj = License(**license_data)
@@ -61,7 +61,7 @@ class TestLicense:
                 id=license_id,
                 name="Test License",
                 text="Test text",
-                url="https://example.com"
+                url="https://example.com",
             )
             assert license_obj.id == license_id
 
@@ -71,17 +71,14 @@ class TestLicense:
             id="test",
             name="Test License",
             text="Test text",
-            url="https://opensource.org/licenses/MIT"
+            url="https://opensource.org/licenses/MIT",
         )
         assert str(valid_license.url) == "https://opensource.org/licenses/MIT"
 
     def test_license_requires_fields_default(self):
         """Test that requires_fields defaults to empty list."""
         license_obj = License(
-            id="test",
-            name="Test License",
-            text="Test text",
-            url="https://example.com"
+            id="test", name="Test License", text="Test text", url="https://example.com"
         )
         assert license_obj.requires_fields == []
 
@@ -93,7 +90,7 @@ class TestLicense:
             name="Test License",
             text=license_text,
             url="https://example.com",
-            requires_fields=["year", "author", "description"]
+            requires_fields=["year", "author", "description"],
         )
 
         assert "{year}" in license_obj.text

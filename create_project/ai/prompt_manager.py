@@ -10,7 +10,7 @@ templates and custom user templates with caching for performance.
 
 The manager handles:
 - Template discovery and loading from filesystem
-- Template validation and syntax checking  
+- Template validation and syntax checking
 - Dynamic template selection based on error type
 - Variable injection with proper escaping
 - Template caching for performance
@@ -32,12 +32,12 @@ logger = get_logger(__name__)
 
 class PromptManager:
     """Manages AI prompt templates with validation and caching.
-    
+
     This class provides a centralized way to manage Jinja2 templates used for
     generating AI prompts. It supports loading templates from the filesystem,
     validating their syntax, caching compiled templates, and rendering them
     with context variables.
-    
+
     Attributes:
         template_dir: Directory containing template files
         custom_template_dir: Optional directory for user custom templates
@@ -58,17 +58,17 @@ class PromptManager:
         PromptType.ERROR_HELP: {"error_message", "error_type"},
         PromptType.SUGGESTIONS: {"project_type"},
         PromptType.EXPLANATION: {"topic"},
-        PromptType.GENERIC_HELP: {"request"}
+        PromptType.GENERIC_HELP: {"request"},
     }
 
     def __init__(
         self,
         template_dir: Optional[Path] = None,
         custom_template_dir: Optional[Path] = None,
-        cache_enabled: bool = True
+        cache_enabled: bool = True,
     ) -> None:
         """Initialize prompt manager.
-        
+
         Args:
             template_dir: Directory containing built-in templates
             custom_template_dir: Directory for user custom templates
@@ -94,7 +94,7 @@ class PromptManager:
             autoescape=select_autoescape(["html", "xml"]),
             trim_blocks=True,
             lstrip_blocks=True,
-            cache_size=50 if cache_enabled else 0
+            cache_size=50 if cache_enabled else 0,
         )
 
         # Template cache
@@ -107,7 +107,7 @@ class PromptManager:
             "Prompt manager initialized",
             template_dir=str(self.template_dir),
             custom_dir=str(custom_template_dir) if custom_template_dir else None,
-            cache_enabled=cache_enabled
+            cache_enabled=cache_enabled,
         )
 
     def _validate_builtin_templates(self) -> None:
@@ -136,7 +136,7 @@ class PromptManager:
                         "Template missing required variables",
                         template=template_name,
                         missing=list(missing),
-                        required=list(required)
+                        required=list(required),
                     )
 
                 # Cache if enabled
@@ -146,7 +146,7 @@ class PromptManager:
                 logger.debug(
                     "Template validated",
                     template=template_name,
-                    variables=list(variables)
+                    variables=list(variables),
                 )
 
             except Jinja2TemplateError as e:
@@ -154,13 +154,13 @@ class PromptManager:
 
     def get_template(self, prompt_type: PromptType) -> Template:
         """Get a compiled template by type.
-        
+
         Args:
             prompt_type: Type of prompt template to retrieve
-            
+
         Returns:
             Compiled Jinja2 template
-            
+
         Raises:
             AIError: If template not found or has syntax errors
         """
@@ -181,9 +181,7 @@ class PromptManager:
 
         except Jinja2TemplateError as e:
             logger.error(
-                "Failed to load template",
-                template=template_name,
-                error=str(e)
+                "Failed to load template", template=template_name, error=str(e)
             )
             raise AIError(f"Template loading failed for {template_name}: {e}")
 
@@ -191,18 +189,18 @@ class PromptManager:
         self,
         prompt_type: PromptType,
         context: Dict[str, Any],
-        validate_required: bool = True
+        validate_required: bool = True,
     ) -> str:
         """Render a prompt template with given context.
-        
+
         Args:
             prompt_type: Type of prompt to render
             context: Context variables for template
             validate_required: Whether to validate required variables
-            
+
         Returns:
             Rendered prompt string
-            
+
         Raises:
             AIError: If rendering fails or required variables missing
         """
@@ -223,25 +221,23 @@ class PromptManager:
                 "Prompt rendered successfully",
                 prompt_type=prompt_type.value,
                 context_keys=list(context.keys()),
-                rendered_length=len(rendered)
+                rendered_length=len(rendered),
             )
 
             return rendered
 
         except Jinja2TemplateError as e:
             logger.error(
-                "Template rendering failed",
-                prompt_type=prompt_type.value,
-                error=str(e)
+                "Template rendering failed", prompt_type=prompt_type.value, error=str(e)
             )
             raise AIError(f"Failed to render {prompt_type.value} template: {e}")
 
     def get_template_variables(self, prompt_type: PromptType) -> Set[str]:
         """Get all variables used in a template.
-        
+
         Args:
             prompt_type: Type of prompt template
-            
+
         Returns:
             Set of variable names used in template
         """
@@ -251,18 +247,15 @@ class PromptManager:
         return meta.find_undeclared_variables(ast)
 
     def add_custom_template(
-        self,
-        name: str,
-        content: str,
-        required_vars: Optional[Set[str]] = None
+        self, name: str, content: str, required_vars: Optional[Set[str]] = None
     ) -> None:
         """Add a custom template programmatically.
-        
+
         Args:
             name: Template name (without extension)
             content: Template content
             required_vars: Optional set of required variables
-            
+
         Raises:
             AIError: If template has syntax errors
         """
@@ -287,7 +280,7 @@ class PromptManager:
                     logger.warning(
                         "Custom template missing required variables",
                         template=name,
-                        missing=list(missing)
+                        missing=list(missing),
                     )
 
         except Jinja2TemplateError as e:
@@ -308,12 +301,12 @@ class PromptManager:
             "Custom template added",
             name=name,
             path=str(template_path),
-            variables=list(variables)
+            variables=list(variables),
         )
 
     def list_available_templates(self) -> Dict[str, Dict[str, Any]]:
         """List all available templates with metadata.
-        
+
         Returns:
             Dictionary mapping template names to their metadata
         """
@@ -331,13 +324,13 @@ class PromptManager:
                         "type": "builtin",
                         "path": str(template_path),
                         "variables": list(variables),
-                        "required": list(self.REQUIRED_VARS.get(prompt_type, set()))
+                        "required": list(self.REQUIRED_VARS.get(prompt_type, set())),
                     }
                 except Exception as e:
                     logger.warning(
                         "Failed to get template info",
                         template=template_name,
-                        error=str(e)
+                        error=str(e),
                     )
 
         # List custom templates if directory exists
@@ -346,7 +339,9 @@ class PromptManager:
                 name = template_file.stem
                 try:
                     # Load template to get variables
-                    source = self._env.loader.get_source(self._env, template_file.name)[0]
+                    source = self._env.loader.get_source(self._env, template_file.name)[
+                        0
+                    ]
                     ast = self._env.parse(source)
                     variables = meta.find_undeclared_variables(ast)
 
@@ -354,23 +349,23 @@ class PromptManager:
                         "type": "custom",
                         "path": str(template_file),
                         "variables": list(variables),
-                        "required": []  # No enforced requirements for custom
+                        "required": [],  # No enforced requirements for custom
                     }
                 except Exception as e:
                     logger.warning(
                         "Failed to get custom template info",
                         template=template_file.name,
-                        error=str(e)
+                        error=str(e),
                     )
 
         return templates
 
     def select_template_for_error(self, error: Exception) -> PromptType:
         """Select the best template type based on error type.
-        
+
         Args:
             error: The exception that occurred
-            
+
         Returns:
             Most appropriate prompt type for the error
         """

@@ -28,7 +28,7 @@ Usage Example:
     ```python
     from create_project.ai.cache_manager import ResponseCacheManager
     from datetime import timedelta
-    
+
     # Initialize cache manager
     cache = ResponseCacheManager(
         max_size=100,  # Maximum 100 entries
@@ -36,32 +36,32 @@ Usage Example:
         auto_persist=True,  # Auto-save to disk
         persist_interval=300  # Save every 5 minutes
     )
-    
+
     # Generate cache key from parameters
     key = cache.generate_key(
         model="llama2:7b",
         prompt="Explain Python decorators",
         temperature=0.7
     )
-    
+
     # Check cache
     cached_response = cache.get(key)
     if cached_response is None:
         # Generate response (expensive operation)
         response = generate_ai_response(...)
-        
+
         # Store in cache with custom TTL
         cache.put(key, response, ttl=timedelta(hours=12))
-    
+
     # Get cache statistics
     stats = cache.get_stats()
     print(f"Cache hit rate: {stats.hit_rate:.1f}%")
     print(f"Cache fill rate: {stats.fill_rate:.1f}%")
-    
+
     # Cleanup expired entries
     expired_count = cache.cleanup_expired()
     print(f"Removed {expired_count} expired entries")
-    
+
     # Persist cache to disk
     cache.persist()
     ```
@@ -92,6 +92,7 @@ logger = structlog.get_logger(__name__)
 @dataclass
 class CacheEntry:
     """A single cache entry with metadata."""
+
     key: str
     value: Any
     created_at: datetime
@@ -116,6 +117,7 @@ class CacheEntry:
 @dataclass
 class CacheStats:
     """Cache statistics for monitoring and optimization."""
+
     total_entries: int = 0
     max_size: int = 0
     hits: int = 0
@@ -140,7 +142,7 @@ class CacheStats:
 class ResponseCacheManager:
     """
     LRU cache manager for AI responses with TTL expiration and JSON persistence.
-    
+
     Features:
     - LRU (Least Recently Used) eviction policy
     - TTL (Time To Live) expiration with 24-hour default
@@ -151,16 +153,18 @@ class ResponseCacheManager:
     - Automatic cleanup and file rotation
     """
 
-    def __init__(self,
-                 max_size: int = 100,
-                 default_ttl_hours: int = 24,
-                 cache_dir: Optional[Path] = None,
-                 cache_filename: str = "ai_responses.json",
-                 auto_persist: bool = True,
-                 persist_interval: int = 300):  # 5 minutes
+    def __init__(
+        self,
+        max_size: int = 100,
+        default_ttl_hours: int = 24,
+        cache_dir: Optional[Path] = None,
+        cache_filename: str = "ai_responses.json",
+        auto_persist: bool = True,
+        persist_interval: int = 300,
+    ):  # 5 minutes
         """
         Initialize the response cache manager.
-        
+
         Args:
             max_size: Maximum number of cache entries
             default_ttl_hours: Default TTL for entries in hours
@@ -199,19 +203,21 @@ class ResponseCacheManager:
         # Load existing cache
         self._load_cache()
 
-        logger.info("Cache manager initialized",
-                   max_size=max_size,
-                   cache_dir=str(self.cache_dir),
-                   cache_file=str(self.cache_file),
-                   existing_entries=len(self._cache))
+        logger.info(
+            "Cache manager initialized",
+            max_size=max_size,
+            cache_dir=str(self.cache_dir),
+            cache_file=str(self.cache_file),
+            existing_entries=len(self._cache),
+        )
 
     def generate_key(self, **params: Any) -> str:
         """
         Generate a cache key from request parameters.
-        
+
         Args:
             **params: Request parameters to hash
-            
+
         Returns:
             SHA-256 hash of the sorted parameters
         """
@@ -230,10 +236,10 @@ class ResponseCacheManager:
     def get(self, key: str) -> Optional[Any]:
         """
         Retrieve a value from the cache.
-        
+
         Args:
             key: Cache key
-            
+
         Returns:
             Cached value or None if not found/expired
         """
@@ -264,7 +270,7 @@ class ResponseCacheManager:
     def put(self, key: str, value: Any, ttl: Optional[timedelta] = None) -> None:
         """
         Store a value in the cache.
-        
+
         Args:
             key: Cache key
             value: Value to cache
@@ -279,10 +285,7 @@ class ResponseCacheManager:
 
             # Create new entry
             entry = CacheEntry(
-                key=key,
-                value=value,
-                created_at=now,
-                expires_at=expires_at
+                key=key, value=value, created_at=now, expires_at=expires_at
             )
 
             # If key already exists, remove old entry
@@ -304,10 +307,10 @@ class ResponseCacheManager:
     def delete(self, key: str) -> bool:
         """
         Remove an entry from the cache.
-        
+
         Args:
             key: Cache key to remove
-            
+
         Returns:
             True if entry was removed, False if not found
         """
@@ -322,7 +325,7 @@ class ResponseCacheManager:
     def clear(self) -> int:
         """
         Clear all entries from the cache.
-        
+
         Returns:
             Number of entries cleared
         """
@@ -337,14 +340,13 @@ class ResponseCacheManager:
     def cleanup_expired(self) -> int:
         """
         Remove all expired entries from the cache.
-        
+
         Returns:
             Number of expired entries removed
         """
         with self._lock:
             expired_keys = [
-                key for key, entry in self._cache.items()
-                if entry.is_expired()
+                key for key, entry in self._cache.items() if entry.is_expired()
             ]
 
             for key in expired_keys:
@@ -372,10 +374,10 @@ class ResponseCacheManager:
     def persist(self, force: bool = False) -> bool:
         """
         Persist cache to disk.
-        
+
         Args:
             force: Force persist even if cache is clean
-            
+
         Returns:
             True if persisted, False if no changes or error
         """
@@ -389,7 +391,7 @@ class ResponseCacheManager:
                     "version": "1.0",
                     "created": datetime.now().isoformat(),
                     "stats": asdict(self._stats),
-                    "entries": {}
+                    "entries": {},
                 }
 
                 # Convert entries to serializable format
@@ -400,7 +402,9 @@ class ResponseCacheManager:
                         "created_at": entry.created_at.isoformat(),
                         "expires_at": entry.expires_at.isoformat(),
                         "access_count": entry.access_count,
-                        "last_accessed": entry.last_accessed.isoformat() if entry.last_accessed else None
+                        "last_accessed": entry.last_accessed.isoformat()
+                        if entry.last_accessed
+                        else None,
                     }
 
                 # Write to temporary file first, then rename (atomic operation)
@@ -442,7 +446,11 @@ class ResponseCacheManager:
                         created_at=datetime.fromisoformat(entry_data["created_at"]),
                         expires_at=datetime.fromisoformat(entry_data["expires_at"]),
                         access_count=entry_data.get("access_count", 0),
-                        last_accessed=datetime.fromisoformat(entry_data["last_accessed"]) if entry_data.get("last_accessed") else None
+                        last_accessed=datetime.fromisoformat(
+                            entry_data["last_accessed"]
+                        )
+                        if entry_data.get("last_accessed")
+                        else None,
                     )
 
                     if entry.is_valid():
@@ -452,7 +460,9 @@ class ResponseCacheManager:
                         expired_count += 1
 
                 except (ValueError, KeyError) as e:
-                    logger.warning("Invalid cache entry skipped", key=key[:16], error=str(e))
+                    logger.warning(
+                        "Invalid cache entry skipped", key=key[:16], error=str(e)
+                    )
 
             # Load stats if available
             if "stats" in cache_data:
@@ -461,13 +471,15 @@ class ResponseCacheManager:
                     self._stats.hits = stats_data.get("hits", 0)
                     self._stats.misses = stats_data.get("misses", 0)
                     self._stats.evictions = stats_data.get("evictions", 0)
-                    self._stats.expired_entries = stats_data.get("expired_entries", 0) + expired_count
+                    self._stats.expired_entries = (
+                        stats_data.get("expired_entries", 0) + expired_count
+                    )
                 except Exception as e:
                     logger.warning("Failed to load cache stats", error=str(e))
 
-            logger.info("Cache loaded from disk",
-                       loaded=loaded_count,
-                       expired=expired_count)
+            logger.info(
+                "Cache loaded from disk", loaded=loaded_count, expired=expired_count
+            )
 
         except Exception as e:
             logger.error("Failed to load cache from disk", error=str(e))
@@ -514,7 +526,7 @@ class ResponseCacheManager:
                 sample_data[key] = {
                     "value": entry.value,
                     "created_at": entry.created_at.isoformat(),
-                    "expires_at": entry.expires_at.isoformat()
+                    "expires_at": entry.expires_at.isoformat(),
                 }
                 count += 1
                 if count >= 10:  # Sample first 10 entries
@@ -539,10 +551,10 @@ class ResponseCacheManager:
                     "default_ttl_hours": self.default_ttl.total_seconds() / 3600,
                     "cache_dir": str(self.cache_dir),
                     "cache_file": str(self.cache_file),
-                    "auto_persist": self.auto_persist
+                    "auto_persist": self.auto_persist,
                 },
                 "stats": asdict(self.get_stats()),
-                "entries": []
+                "entries": [],
             }
 
             # Add entry information
@@ -551,12 +563,16 @@ class ResponseCacheManager:
                     "key": key[:16] + "..." if len(key) > 16 else key,
                     "created_at": entry.created_at.isoformat(),
                     "expires_at": entry.expires_at.isoformat(),
-                    "expires_in_seconds": int((entry.expires_at - datetime.now()).total_seconds()),
+                    "expires_in_seconds": int(
+                        (entry.expires_at - datetime.now()).total_seconds()
+                    ),
                     "access_count": entry.access_count,
-                    "last_accessed": entry.last_accessed.isoformat() if entry.last_accessed else None,
+                    "last_accessed": entry.last_accessed.isoformat()
+                    if entry.last_accessed
+                    else None,
                     "is_expired": entry.is_expired(),
                     "value_type": type(entry.value).__name__,
-                    "value_size": len(str(entry.value))
+                    "value_size": len(str(entry.value)),
                 }
                 info["entries"].append(entry_info)
 
@@ -565,10 +581,10 @@ class ResponseCacheManager:
     def rotate_cache_file(self, backup_count: int = 5) -> bool:
         """
         Rotate cache file when it gets too large.
-        
+
         Args:
             backup_count: Number of backup files to keep
-            
+
         Returns:
             True if rotation occurred, False otherwise
         """

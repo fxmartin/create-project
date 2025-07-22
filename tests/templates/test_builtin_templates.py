@@ -15,10 +15,7 @@ from create_project.templates.validator import TemplateValidator
 def builtin_templates_dir() -> Path:
     """Get the builtin templates directory."""
     return (
-        Path(__file__).parent.parent.parent
-        / "create_project"
-        / "templates"
-        / "builtin"
+        Path(__file__).parent.parent.parent / "create_project" / "templates" / "builtin"
     )
 
 
@@ -32,7 +29,9 @@ class TestBuiltinTemplates:
         with open(template_path) as f:
             content = f.read()
             # Replace Jinja2 syntax with placeholders for YAML parsing
-            test_content = re.sub(r"\{\{python_version\}\}", "3.9.6", content)  # Replace python_version with valid value
+            test_content = re.sub(
+                r"\{\{python_version\}\}", "3.9.6", content
+            )  # Replace python_version with valid value
             test_content = re.sub(r"\{\{[^}]+\}\}", "PLACEHOLDER", test_content)
             test_content = re.sub(r"\{\%[^%]+\%\}", "", test_content)
             return yaml.safe_load(test_content)
@@ -117,7 +116,9 @@ class TestBuiltinTemplates:
                 # Validate the processed template data
                 validation_result = validator.validate_template_data(template_data)
                 # If we get here, validation passed
-                assert validation_result is not None, f"Template {template_name} validation returned None"
+                assert validation_result is not None, (
+                    f"Template {template_name} validation returned None"
+                )
             except Exception as e:
                 pytest.fail(f"Template {template_name} validation failed: {e}")
 

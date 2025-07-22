@@ -13,17 +13,18 @@ This module contains reusable custom widgets that provide enhanced functionality
 
 from typing import TYPE_CHECKING
 
+from .license_preview import LicensePreviewDialog
+
 if TYPE_CHECKING:
-    from .custom_widgets import FilePathEdit
-    from .validated_line_edit import ValidatedLineEdit
     from .collapsible_section import CollapsibleSection
+    from .custom_widgets import FilePathEdit
     from .progress_dialog import ProgressDialog
-    from .license_preview import LicensePreviewWidget
+    from .validated_line_edit import ValidatedLineEdit
 
 __all__ = [
     "FilePathEdit",
     "ValidatedLineEdit",
     "CollapsibleSection",
     "ProgressDialog",
-    "LicensePreviewWidget"
+    "LicensePreviewDialog",
 ]

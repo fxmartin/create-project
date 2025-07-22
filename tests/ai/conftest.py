@@ -10,8 +10,8 @@ including mock clients, sample data, and test helpers.
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List
-from unittest.mock import AsyncMock, MagicMock, patch
+from typing import Any, Dict
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
@@ -19,13 +19,10 @@ from pytest_mock import MockerFixture
 from create_project.ai.types import PromptType
 from tests.ai.mocks import (
     MockCachePersistence,
-    MockChatResponse,
-    MockModelData,
     MockOllamaClient,
     create_mock_ai_service,
-    create_streaming_response_mock
+    create_streaming_response_mock,
 )
-
 
 # Test data directory
 TEST_DATA_DIR = Path(__file__).parent / "test_data"
@@ -67,10 +64,7 @@ def mock_ollama_client() -> MockOllamaClient:
 @pytest.fixture
 def mock_ollama_unavailable() -> MockOllamaClient:
     """Create a mock client simulating Ollama unavailable."""
-    return MockOllamaClient(
-        available_models=[],
-        network_condition="connection_error"
-    )
+    return MockOllamaClient(available_models=[], network_condition="connection_error")
 
 
 @pytest.fixture
@@ -125,7 +119,7 @@ def mock_env_vars(mocker: MockerFixture) -> Dict[str, str]:
         "APP_AI_OLLAMA_HOST": "http://test.local",
         "APP_AI_OLLAMA_PORT": "11435",
         "APP_AI_CACHE_MAX_SIZE": "200",
-        "APP_AI_CACHE_TTL_SECONDS": "43200"
+        "APP_AI_CACHE_TTL_SECONDS": "43200",
     }
     mocker.patch.dict(os.environ, env_vars)
     return env_vars
@@ -140,7 +134,7 @@ def mock_httpx_client(mocker: MockerFixture) -> MagicMock:
     mock_client.aclose = AsyncMock()
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = AsyncMock(return_value=None)
-    
+
     mocker.patch("httpx.AsyncClient", return_value=mock_client)
     return mock_client
 
@@ -166,7 +160,7 @@ def mock_subprocess_run(mocker: MockerFixture) -> MagicMock:
 def mock_datetime_now(mocker: MockerFixture) -> MagicMock:
     """Mock datetime.now for consistent timestamps."""
     from datetime import datetime, timezone
-    
+
     fixed_time = datetime(2024, 11, 17, 12, 0, 0, tzinfo=timezone.utc)
     mock_now = mocker.patch("datetime.datetime")
     mock_now.now.return_value = fixed_time
@@ -177,7 +171,7 @@ def mock_datetime_now(mocker: MockerFixture) -> MagicMock:
 # Test helper functions
 def assert_valid_response(response: str, min_length: int = 50) -> None:
     """Assert that an AI response is valid.
-    
+
     Args:
         response: The response to validate
         min_length: Minimum acceptable length
@@ -191,14 +185,14 @@ def assert_valid_response(response: str, min_length: int = 50) -> None:
 
 def assert_cache_entry_valid(entry: Dict[str, Any]) -> None:
     """Assert that a cache entry has valid structure.
-    
+
     Args:
         entry: Cache entry to validate
     """
     required_fields = ["key", "prompt", "response", "model", "timestamp", "ttl"]
     for field in required_fields:
         assert field in entry, f"Missing required field: {field}"
-    
+
     assert isinstance(entry["key"], str)
     assert isinstance(entry["prompt"], str)
     assert isinstance(entry["response"], str)
@@ -208,14 +202,14 @@ def assert_cache_entry_valid(entry: Dict[str, Any]) -> None:
 
 def assert_model_info_valid(model: Dict[str, Any]) -> None:
     """Assert that model info has valid structure.
-    
+
     Args:
         model: Model information to validate
     """
     required_fields = ["name", "model", "size", "modified_at"]
     for field in required_fields:
         assert field in model, f"Missing required field: {field}"
-    
+
     assert isinstance(model["name"], str)
     assert isinstance(model["size"], int)
     assert model["size"] > 0
@@ -227,7 +221,7 @@ ERROR_SCENARIOS = [
     ("module_not_found", "ModuleNotFoundError", PromptType.ERROR_HELP),
     ("git_not_initialized", "fatal: not a git repository", PromptType.ERROR_HELP),
     ("file_not_found", "FileNotFoundError", PromptType.ERROR_HELP),
-    ("syntax_error", "SyntaxError: invalid syntax", PromptType.ERROR_HELP)
+    ("syntax_error", "SyntaxError: invalid syntax", PromptType.ERROR_HELP),
 ]
 
 
@@ -237,7 +231,7 @@ NETWORK_CONDITIONS = [
     ("connection_error", "connection_error", None),
     ("timeout", "timeout", None),
     ("rate_limit", "rate_limit", 429),
-    ("server_error", "server_error", 500)
+    ("server_error", "server_error", 500),
 ]
 
 
@@ -245,7 +239,7 @@ MODEL_CAPABILITIES = [
     ("general", ["llama3.2:latest", "mistral:7b-instruct"]),
     ("code", ["codellama:7b", "deepseek-coder:6.7b"]),
     ("chat", ["llama3.2:latest", "mistral:7b-instruct"]),
-    ("technical", ["codellama:7b", "deepseek-coder:6.7b"])
+    ("technical", ["codellama:7b", "deepseek-coder:6.7b"]),
 ]
 
 
@@ -255,9 +249,7 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
     )
-    config.addinivalue_line(
-        "markers", "integration: marks tests as integration tests"
-    )
+    config.addinivalue_line("markers", "integration: marks tests as integration tests")
     config.addinivalue_line(
         "markers", "requires_ollama: marks tests that require Ollama to be installed"
     )

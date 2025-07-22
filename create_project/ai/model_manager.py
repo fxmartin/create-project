@@ -24,24 +24,24 @@ Main Classes:
 Usage Example:
     ```python
     from create_project.ai.model_manager import ModelManager, ModelCapability
-    
+
     # Initialize manager
     manager = ModelManager()
-    
+
     # Get all available models
     models = manager.get_models()
     for model in models:
         print(f"{model.name} - {model.family} ({model.parameter_size})")
-    
+
     # Find models by capability
     code_models = manager.get_models_by_capability(ModelCapability.CODE_GENERATION)
-    
+
     # Get best model for a specific task
     best_model = manager.get_best_model_for_capability(
         ModelCapability.TEXT_GENERATION,
         prefer_smaller=True  # For faster inference
     )
-    
+
     # Validate a specific model exists
     try:
         model_info = manager.validate_model_availability("llama2:7b")
@@ -70,6 +70,7 @@ from .ollama_client import OllamaClient
 
 class ModelCapability(Enum):
     """Model capabilities."""
+
     TEXT_GENERATION = "text_generation"
     CODE_GENERATION = "code_generation"
     CHAT = "chat"
@@ -80,6 +81,7 @@ class ModelCapability(Enum):
 @dataclass
 class ModelInfo:
     """Information about an Ollama model."""
+
     name: str
     size: int
     digest: str
@@ -92,6 +94,7 @@ class ModelInfo:
 
 class ModelListResponse(BaseModel):
     """Pydantic model for Ollama model list response."""
+
     models: List[Dict[str, str]] = Field(default_factory=list)
 
     class Config:
@@ -105,26 +108,57 @@ class ModelManager:
 
     # Known model families and their typical capabilities
     MODEL_FAMILIES = {
-        "llama": {ModelCapability.TEXT_GENERATION, ModelCapability.CHAT, ModelCapability.CODE_GENERATION},
-        "codellama": {ModelCapability.CODE_GENERATION, ModelCapability.TEXT_GENERATION, ModelCapability.CHAT},
+        "llama": {
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.CHAT,
+            ModelCapability.CODE_GENERATION,
+        },
+        "codellama": {
+            ModelCapability.CODE_GENERATION,
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.CHAT,
+        },
         "mistral": {ModelCapability.TEXT_GENERATION, ModelCapability.CHAT},
-        "dolphin": {ModelCapability.TEXT_GENERATION, ModelCapability.CHAT, ModelCapability.CODE_GENERATION},
+        "dolphin": {
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.CHAT,
+            ModelCapability.CODE_GENERATION,
+        },
         "orca": {ModelCapability.TEXT_GENERATION, ModelCapability.CHAT},
         "vicuna": {ModelCapability.TEXT_GENERATION, ModelCapability.CHAT},
-        "wizardcoder": {ModelCapability.CODE_GENERATION, ModelCapability.TEXT_GENERATION},
+        "wizardcoder": {
+            ModelCapability.CODE_GENERATION,
+            ModelCapability.TEXT_GENERATION,
+        },
         "starcoder": {ModelCapability.CODE_GENERATION, ModelCapability.TEXT_GENERATION},
-        "deepseek": {ModelCapability.CODE_GENERATION, ModelCapability.TEXT_GENERATION, ModelCapability.CHAT},
-        "phi": {ModelCapability.TEXT_GENERATION, ModelCapability.CHAT, ModelCapability.CODE_GENERATION},
+        "deepseek": {
+            ModelCapability.CODE_GENERATION,
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.CHAT,
+        },
+        "phi": {
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.CHAT,
+            ModelCapability.CODE_GENERATION,
+        },
         "gemma": {ModelCapability.TEXT_GENERATION, ModelCapability.CHAT},
-        "qwen": {ModelCapability.TEXT_GENERATION, ModelCapability.CHAT, ModelCapability.CODE_GENERATION},
+        "qwen": {
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.CHAT,
+            ModelCapability.CODE_GENERATION,
+        },
         "nomic": {ModelCapability.EMBEDDING},
-        "llava": {ModelCapability.VISION, ModelCapability.TEXT_GENERATION, ModelCapability.CHAT}
+        "llava": {
+            ModelCapability.VISION,
+            ModelCapability.TEXT_GENERATION,
+            ModelCapability.CHAT,
+        },
     }
 
     def __init__(self, client: Optional[OllamaClient] = None):
         """
         Initialize model manager.
-        
+
         Args:
             client: Ollama client instance (creates default if None)
         """
@@ -141,13 +175,13 @@ class ModelManager:
     def get_models(self, force_refresh: bool = False) -> List[ModelInfo]:
         """
         Get list of available models with caching.
-        
+
         Args:
             force_refresh: If True, bypass cache and fetch fresh data
-            
+
         Returns:
             List of ModelInfo objects
-            
+
         Raises:
             AIError: If unable to fetch models
         """
@@ -197,7 +231,7 @@ class ModelManager:
                     self.logger.warning(
                         "Failed to parse model info",
                         model_data=model_data,
-                        error=str(e)
+                        error=str(e),
                     )
                     continue
 
@@ -228,7 +262,9 @@ class ModelManager:
         try:
             if modified_str:
                 # Ollama returns RFC3339 format: 2024-01-01T12:00:00Z
-                modified_at = datetime.fromisoformat(modified_str.replace("Z", "+00:00"))
+                modified_at = datetime.fromisoformat(
+                    modified_str.replace("Z", "+00:00")
+                )
             else:
                 modified_at = datetime.now()
         except (ValueError, TypeError):
@@ -248,16 +284,18 @@ class ModelManager:
             capabilities=capabilities,
             family=family,
             parameter_size=parameter_size,
-            quantization=quantization
+            quantization=quantization,
         )
 
-    def _analyze_model(self, model_name: str) -> tuple[Optional[str], Set[ModelCapability]]:
+    def _analyze_model(
+        self, model_name: str
+    ) -> tuple[Optional[str], Set[ModelCapability]]:
         """
         Analyze model name to determine family and capabilities.
-        
+
         Args:
             model_name: Full model name (e.g., "llama2:7b-chat")
-            
+
         Returns:
             Tuple of (family, capabilities)
         """
@@ -270,7 +308,11 @@ class ModelManager:
 
         # Vision models
         if any(keyword in name_lower for keyword in ["vision", "llava", "bakllava"]):
-            return "llava", {ModelCapability.VISION, ModelCapability.TEXT_GENERATION, ModelCapability.CHAT}
+            return "llava", {
+                ModelCapability.VISION,
+                ModelCapability.TEXT_GENERATION,
+                ModelCapability.CHAT,
+            }
 
         # Code-specific models (before general code check)
         if "codellama" in name_lower:
@@ -284,8 +326,14 @@ class ModelManager:
 
         # Try to match known families (order matters - more specific first)
         family_order = [
-            "dolphin", "mistral", "orca", "vicuna", "phi", "gemma", "qwen",
-            "llama"  # llama should be last since it's a substring of others
+            "dolphin",
+            "mistral",
+            "orca",
+            "vicuna",
+            "phi",
+            "gemma",
+            "qwen",
+            "llama",  # llama should be last since it's a substring of others
         ]
 
         for family in family_order:
@@ -294,19 +342,24 @@ class ModelManager:
 
         # Fallback for general code models
         if any(keyword in name_lower for keyword in ["code", "coder", "coding"]):
-            return "code", {ModelCapability.CODE_GENERATION, ModelCapability.TEXT_GENERATION}
+            return "code", {
+                ModelCapability.CODE_GENERATION,
+                ModelCapability.TEXT_GENERATION,
+            }
 
         # Default capabilities for unknown models
         default_capabilities = {ModelCapability.TEXT_GENERATION, ModelCapability.CHAT}
         return None, default_capabilities
 
-    def _parse_model_name_details(self, model_name: str) -> tuple[Optional[str], Optional[str]]:
+    def _parse_model_name_details(
+        self, model_name: str
+    ) -> tuple[Optional[str], Optional[str]]:
         """
         Parse parameter size and quantization from model name.
-        
+
         Args:
             model_name: Full model name (e.g., "llama2:7b-chat-q4_0")
-            
+
         Returns:
             Tuple of (parameter_size, quantization)
         """
@@ -327,7 +380,16 @@ class ModelManager:
 
         # Common quantizations
         quantization = None
-        quantization_patterns = ["q8_0", "q4_k_m", "q4_0", "q5_k_m", "q5_0", "q6_k", "fp16", "bf16"]
+        quantization_patterns = [
+            "q8_0",
+            "q4_k_m",
+            "q4_0",
+            "q5_k_m",
+            "q5_0",
+            "q6_k",
+            "fp16",
+            "bf16",
+        ]
         for quant in quantization_patterns:
             if quant in tag_lower:
                 quantization = quant.upper()
@@ -338,10 +400,10 @@ class ModelManager:
     def get_model_by_name(self, model_name: str) -> Optional[ModelInfo]:
         """
         Get specific model by name.
-        
+
         Args:
             model_name: Name of the model to find
-            
+
         Returns:
             ModelInfo if found, None otherwise
         """
@@ -356,10 +418,10 @@ class ModelManager:
     def get_models_by_capability(self, capability: ModelCapability) -> List[ModelInfo]:
         """
         Get models that support a specific capability.
-        
+
         Args:
             capability: Required capability
-            
+
         Returns:
             List of models supporting the capability
         """
@@ -370,10 +432,10 @@ class ModelManager:
     def get_models_by_family(self, family: str) -> List[ModelInfo]:
         """
         Get models from a specific family.
-        
+
         Args:
             family: Model family name
-            
+
         Returns:
             List of models from the specified family
         """
@@ -384,13 +446,13 @@ class ModelManager:
     def validate_model_availability(self, model_name: str) -> ModelInfo:
         """
         Validate that a model is available and return its info.
-        
+
         Args:
             model_name: Name of the model to validate
-            
+
         Returns:
             ModelInfo for the validated model
-            
+
         Raises:
             ModelNotAvailableError: If model is not available
         """
@@ -404,17 +466,15 @@ class ModelManager:
         return model
 
     def get_best_model_for_capability(
-        self,
-        capability: ModelCapability,
-        prefer_smaller: bool = False
+        self, capability: ModelCapability, prefer_smaller: bool = False
     ) -> Optional[ModelInfo]:
         """
         Get the best available model for a specific capability.
-        
+
         Args:
             capability: Required capability
             prefer_smaller: If True, prefer smaller models for faster inference
-            
+
         Returns:
             Best model for the capability, or None if none available
         """
@@ -444,7 +504,7 @@ class ModelManager:
     def get_cache_info(self) -> Dict[str, any]:
         """
         Get information about the current cache state.
-        
+
         Returns:
             Dictionary with cache information
         """
@@ -458,6 +518,8 @@ class ModelManager:
                 "cached": True,
                 "model_count": len(self._cache),
                 "age_minutes": age.total_seconds() / 60,
-                "expires_in_minutes": max(0, self.CACHE_TTL_MINUTES - (age.total_seconds() / 60)),
-                "cache_timestamp": self._cache_timestamp.isoformat()
+                "expires_in_minutes": max(
+                    0, self.CACHE_TTL_MINUTES - (age.total_seconds() / 60)
+                ),
+                "cache_timestamp": self._cache_timestamp.isoformat(),
             }

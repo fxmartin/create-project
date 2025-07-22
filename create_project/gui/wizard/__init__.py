@@ -8,7 +8,7 @@ This module contains the main wizard interface and base components for
 guiding users through project creation with a step-by-step interface.
 """
 
-from .wizard import ProjectWizard, WizardData, ProjectGenerationThread
 from .base_step import WizardStep
+from .wizard import ProjectGenerationThread, ProjectWizard, WizardData
 
 __all__ = ["ProjectWizard", "WizardStep", "WizardData", "ProjectGenerationThread"]

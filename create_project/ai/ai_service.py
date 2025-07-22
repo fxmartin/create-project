@@ -41,7 +41,7 @@ logger = get_logger(__name__)
 @dataclass
 class AIServiceConfig:
     """Configuration for AI service operations.
-    
+
     Attributes:
         enabled: Whether AI service is enabled
         ollama_url: Ollama server URL
@@ -53,6 +53,7 @@ class AIServiceConfig:
         context_collection_enabled: Whether to collect error context
         max_context_size_kb: Maximum context size in KB
     """
+
     enabled: bool = True
     ollama_url: str = "http://localhost:11434"
     ollama_timeout: int = 30
@@ -71,14 +72,14 @@ class AIServiceConfig:
                 "llama2:13b",
                 "mistral:7b",
                 "codellama:7b",
-                "llama2:7b"
+                "llama2:7b",
             ]
 
 
 @dataclass
 class AIServiceStatus:
     """Status of AI service components.
-    
+
     Attributes:
         service_available: Whether AI service is available overall
         ollama_available: Whether Ollama is detected and running
@@ -88,6 +89,7 @@ class AIServiceStatus:
         ollama_status: Detailed Ollama status
         error_message: Error message if service unavailable
     """
+
     service_available: bool
     ollama_available: bool
     models_loaded: int
@@ -99,15 +101,15 @@ class AIServiceStatus:
 
 class AIService:
     """Unified AI service facade for project generation assistance.
-    
+
     This class provides a single interface for all AI operations, integrating
     Ollama detection, response generation, caching, and error context collection.
     It handles graceful degradation when AI services are unavailable.
-    
+
     The service automatically detects Ollama availability, manages model discovery,
     handles request routing with caching, and enriches requests with error context
     for better AI assistance quality.
-    
+
     Attributes:
         config: AI service configuration
         detector: Ollama detection service
@@ -121,10 +123,10 @@ class AIService:
     def __init__(
         self,
         config_manager: Optional[ConfigManager] = None,
-        ai_config: Optional[AIServiceConfig] = None
+        ai_config: Optional[AIServiceConfig] = None,
     ) -> None:
         """Initialize the AI service facade.
-        
+
         Args:
             config_manager: Configuration manager for settings
             ai_config: AI service specific configuration
@@ -140,7 +142,7 @@ class AIService:
             models_loaded=0,
             cache_enabled=False,
             context_collection_enabled=False,
-            ollama_status=None
+            ollama_status=None,
         )
 
         # Initialize components (lazy loading)
@@ -158,12 +160,12 @@ class AIService:
             "AI service initialized",
             enabled=self.config.enabled,
             ollama_url=self.config.ollama_url,
-            cache_enabled=self.config.cache_enabled
+            cache_enabled=self.config.cache_enabled,
         )
 
     async def initialize(self) -> AIServiceStatus:
         """Initialize AI service components and check availability.
-        
+
         Returns:
             AIServiceStatus with current service status
         """
@@ -183,7 +185,7 @@ class AIService:
                     cache_enabled=False,
                     context_collection_enabled=False,
                     ollama_status=None,
-                    error_message="AI service disabled in configuration"
+                    error_message="AI service disabled in configuration",
                 )
                 self._initialized = True
                 return self._service_status
@@ -197,7 +199,7 @@ class AIService:
                     "Ollama not available",
                     is_installed=ollama_status.is_installed,
                     is_running=ollama_status.is_running,
-                    error=ollama_status.error_message
+                    error=ollama_status.error_message,
                 )
                 self._service_status = AIServiceStatus(
                     service_available=False,
@@ -206,15 +208,14 @@ class AIService:
                     cache_enabled=self.config.cache_enabled,
                     context_collection_enabled=self.config.context_collection_enabled,
                     ollama_status=ollama_status,
-                    error_message=f"Ollama unavailable: {ollama_status.error_message}"
+                    error_message=f"Ollama unavailable: {ollama_status.error_message}",
                 )
                 self._initialized = True
                 return self._service_status
 
             # Initialize HTTP client
             self._client = OllamaClient(
-                base_url=self.config.ollama_url,
-                timeout=self.config.ollama_timeout
+                base_url=self.config.ollama_url, timeout=self.config.ollama_timeout
             )
 
             # Initialize model manager and load models
@@ -223,15 +224,14 @@ class AIService:
 
             # Initialize response generator
             self._response_generator = ResponseGenerator(
-                model_manager=self._model_manager,
-                ollama_client=self._client
+                model_manager=self._model_manager, ollama_client=self._client
             )
 
             # Initialize cache manager if enabled
             if self.config.cache_enabled:
                 self._cache_manager = ResponseCacheManager(
                     max_entries=self.config.max_cache_entries,
-                    default_ttl_hours=self.config.cache_ttl_hours
+                    default_ttl_hours=self.config.cache_ttl_hours,
                 )
                 await self._cache_manager.load_cache()
 
@@ -246,7 +246,7 @@ class AIService:
                 models_loaded=len(models),
                 cache_enabled=self.config.cache_enabled,
                 context_collection_enabled=self.config.context_collection_enabled,
-                ollama_status=ollama_status
+                ollama_status=ollama_status,
             )
 
             self._initialized = True
@@ -255,7 +255,7 @@ class AIService:
                 "AI service initialization completed",
                 models_available=len(models),
                 cache_enabled=self.config.cache_enabled,
-                context_collection_enabled=self.config.context_collection_enabled
+                context_collection_enabled=self.config.context_collection_enabled,
             )
 
             return self._service_status
@@ -264,7 +264,7 @@ class AIService:
             self.logger.error(
                 "AI service initialization failed",
                 error=str(e),
-                error_type=type(e).__name__
+                error_type=type(e).__name__,
             )
             self._service_status = AIServiceStatus(
                 service_available=False,
@@ -273,14 +273,14 @@ class AIService:
                 cache_enabled=False,
                 context_collection_enabled=False,
                 ollama_status=None,
-                error_message=f"Initialization failed: {str(e)}"
+                error_message=f"Initialization failed: {str(e)}",
             )
             self._initialized = True
             return self._service_status
 
     async def get_status(self) -> AIServiceStatus:
         """Get current AI service status.
-        
+
         Returns:
             Current service status
         """
@@ -290,7 +290,7 @@ class AIService:
 
     async def is_available(self) -> bool:
         """Check if AI service is available.
-        
+
         Returns:
             True if service is available, False otherwise
         """
@@ -299,10 +299,10 @@ class AIService:
 
     async def get_available_models(self) -> List[ModelInfo]:
         """Get list of available models.
-        
+
         Returns:
             List of available models
-            
+
         Raises:
             OllamaNotFoundError: If Ollama is not available
         """
@@ -320,10 +320,10 @@ class AIService:
         options: Optional[Dict[str, Any]] = None,
         attempted_operations: Optional[List[str]] = None,
         partial_results: Optional[Dict[str, Any]] = None,
-        config: Optional[GenerationConfig] = None
+        config: Optional[GenerationConfig] = None,
     ) -> str:
         """Generate AI-powered help response for project generation errors.
-        
+
         Args:
             error: The error that occurred
             template: Template being processed
@@ -333,17 +333,17 @@ class AIService:
             attempted_operations: Operations that were attempted
             partial_results: Partial results from generation
             config: Generation configuration
-            
+
         Returns:
             AI-generated help response
-            
+
         Raises:
             AIError: If response generation fails
         """
         self.logger.info(
             "Generating help response for error",
             error_type=type(error).__name__,
-            template_name=template.name if template else None
+            template_name=template.name if template else None,
         )
 
         # Check if service is available
@@ -362,19 +362,18 @@ class AIService:
                         target_path=target_path,
                         options=options,
                         attempted_operations=attempted_operations,
-                        partial_results=partial_results
+                        partial_results=partial_results,
                     )
 
                     self.logger.debug(
                         "Error context collected",
                         context_size_bytes=context.context_size_bytes,
-                        collection_duration_ms=context.collection_duration_ms
+                        collection_duration_ms=context.collection_duration_ms,
                     )
 
                 except Exception as ctx_error:
                     self.logger.warning(
-                        "Failed to collect error context",
-                        error=str(ctx_error)
+                        "Failed to collect error context", error=str(ctx_error)
                     )
 
             # Check cache if enabled
@@ -384,7 +383,7 @@ class AIService:
                     "error_type": type(error).__name__,
                     "error_message": str(error),
                     "template_name": template.name if template else None,
-                    "context_hash": hash(str(context)) if context else None
+                    "context_hash": hash(str(context)) if context else None,
                 }
                 cache_key = self._cache_manager.generate_key(cache_params)
                 cached_response = self._cache_manager.get(cache_key)
@@ -405,9 +404,9 @@ class AIService:
                     "target_path": str(target_path) if target_path else None,
                     "options": options,
                     "attempted_operations": attempted_operations,
-                    "partial_results": partial_results
+                    "partial_results": partial_results,
                 },
-                config=generation_config
+                config=generation_config,
             )
 
             # Cache the response if enabled
@@ -417,7 +416,7 @@ class AIService:
             self.logger.info(
                 "Help response generated successfully",
                 response_length=len(response),
-                from_cache=False
+                from_cache=False,
             )
 
             return response
@@ -426,7 +425,7 @@ class AIService:
             self.logger.error(
                 "Failed to generate AI help response",
                 error=str(e),
-                error_type=type(e).__name__
+                error_type=type(e).__name__,
             )
             # Fallback to static help
             return self._get_fallback_help_response(error, template)
@@ -440,10 +439,10 @@ class AIService:
         options: Optional[Dict[str, Any]] = None,
         attempted_operations: Optional[List[str]] = None,
         partial_results: Optional[Dict[str, Any]] = None,
-        config: Optional[GenerationConfig] = None
+        config: Optional[GenerationConfig] = None,
     ) -> AsyncGenerator[str, None]:
         """Stream AI-powered help response for project generation errors.
-        
+
         Args:
             error: The error that occurred
             template: Template being processed
@@ -453,14 +452,14 @@ class AIService:
             attempted_operations: Operations that were attempted
             partial_results: Partial results from generation
             config: Generation configuration
-            
+
         Yields:
             Chunks of AI-generated help response
         """
         self.logger.info(
             "Streaming help response for error",
             error_type=type(error).__name__,
-            template_name=template.name if template else None
+            template_name=template.name if template else None,
         )
 
         # Check if service is available
@@ -481,12 +480,12 @@ class AIService:
                         target_path=target_path,
                         options=options,
                         attempted_operations=attempted_operations,
-                        partial_results=partial_results
+                        partial_results=partial_results,
                     )
                 except Exception as ctx_error:
                     self.logger.warning(
                         "Failed to collect error context for streaming",
-                        error=str(ctx_error)
+                        error=str(ctx_error),
                     )
 
             # Stream response using AI
@@ -503,9 +502,9 @@ class AIService:
                     "target_path": str(target_path) if target_path else None,
                     "options": options,
                     "attempted_operations": attempted_operations,
-                    "partial_results": partial_results
+                    "partial_results": partial_results,
                 },
-                config=generation_config
+                config=generation_config,
             ):
                 full_response += chunk
                 yield chunk
@@ -516,21 +515,20 @@ class AIService:
                     "error_type": type(error).__name__,
                     "error_message": str(error),
                     "template_name": template.name if template else None,
-                    "context_hash": hash(str(context)) if context else None
+                    "context_hash": hash(str(context)) if context else None,
                 }
                 cache_key = self._cache_manager.generate_key(cache_params)
                 self._cache_manager.put(cache_key, full_response)
 
             self.logger.info(
-                "Streamed help response completed",
-                response_length=len(full_response)
+                "Streamed help response completed", response_length=len(full_response)
             )
 
         except Exception as e:
             self.logger.error(
                 "Failed to stream AI help response",
                 error=str(e),
-                error_type=type(e).__name__
+                error_type=type(e).__name__,
             )
             # Fallback to static help
             fallback_response = self._get_fallback_help_response(error, template)
@@ -540,22 +538,22 @@ class AIService:
         self,
         context: Dict[str, Any],
         suggestion_type: str = "general",
-        config: Optional[GenerationConfig] = None
+        config: Optional[GenerationConfig] = None,
     ) -> List[str]:
         """Get AI-powered suggestions for project generation.
-        
+
         Args:
             context: Context information for suggestions
             suggestion_type: Type of suggestions to generate
             config: Generation configuration
-            
+
         Returns:
             List of suggestions
         """
         self.logger.debug(
             "Generating suggestions",
             suggestion_type=suggestion_type,
-            context_keys=list(context.keys())
+            context_keys=list(context.keys()),
         )
 
         if not await self.is_available():
@@ -566,25 +564,31 @@ class AIService:
             response = await self._response_generator.generate_response(
                 prompt_type="suggestions",
                 context={"suggestion_type": suggestion_type, **context},
-                config=generation_config
+                config=generation_config,
             )
 
             # Parse response into list of suggestions
             suggestions = []
             for line in response.split("\n"):
                 line = line.strip()
-                if line and (line.startswith("-") or line.startswith("•") or line.startswith("*")):
+                if line and (
+                    line.startswith("-") or line.startswith("•") or line.startswith("*")
+                ):
                     suggestions.append(line[1:].strip())
                 elif line and len(suggestions) < 10:  # Limit to 10 suggestions
                     suggestions.append(line)
 
-            return suggestions[:10] if suggestions else self._get_fallback_suggestions(context, suggestion_type)
+            return (
+                suggestions[:10]
+                if suggestions
+                else self._get_fallback_suggestions(context, suggestion_type)
+            )
 
         except Exception as e:
             self.logger.error(
                 "Failed to generate suggestions",
                 error=str(e),
-                suggestion_type=suggestion_type
+                suggestion_type=suggestion_type,
             )
             return self._get_fallback_suggestions(context, suggestion_type)
 
@@ -604,22 +608,17 @@ class AIService:
             self.logger.info("AI service cleanup completed")
 
         except Exception as e:
-            self.logger.error(
-                "Error during AI service cleanup",
-                error=str(e)
-            )
+            self.logger.error("Error during AI service cleanup", error=str(e))
 
     def _get_fallback_help_response(
-        self,
-        error: Exception,
-        template: Optional[Template] = None
+        self, error: Exception, template: Optional[Template] = None
     ) -> str:
         """Get fallback help response when AI is unavailable.
-        
+
         Args:
             error: The error that occurred
             template: Template being processed
-            
+
         Returns:
             Static fallback help response
         """
@@ -634,7 +633,9 @@ class AIService:
             "ProjectGenerationError": f"Project generation failed for template '{template_name}'. Review the template configuration and try again.",
         }
 
-        base_response = fallback_responses.get(error_type, f"An error occurred during project generation: {str(error)}")
+        base_response = fallback_responses.get(
+            error_type, f"An error occurred during project generation: {str(error)}"
+        )
 
         return f"""
 {base_response}
@@ -655,16 +656,14 @@ For more detailed assistance, ensure Ollama is installed and running to enable A
 """.strip()
 
     def _get_fallback_suggestions(
-        self,
-        context: Dict[str, Any],
-        suggestion_type: str
+        self, context: Dict[str, Any], suggestion_type: str
     ) -> List[str]:
         """Get fallback suggestions when AI is unavailable.
-        
+
         Args:
             context: Context information
             suggestion_type: Type of suggestions
-            
+
         Returns:
             List of static fallback suggestions
         """
@@ -674,25 +673,27 @@ For more detailed assistance, ensure Ollama is installed and running to enable A
                 "Verify template configuration is correct",
                 "Check file permissions in target directory",
                 "Review project variables for completeness",
-                "Test with a simpler template first"
+                "Test with a simpler template first",
             ],
             "template": [
                 "Check template syntax for Jinja2 errors",
                 "Verify all required variables are defined",
                 "Test template rendering with sample data",
                 "Review template structure and file paths",
-                "Validate template YAML configuration"
+                "Validate template YAML configuration",
             ],
             "path": [
                 "Use absolute paths when possible",
                 "Avoid special characters in path names",
                 "Check directory permissions",
                 "Ensure parent directories exist",
-                "Verify path length limitations"
-            ]
+                "Verify path length limitations",
+            ],
         }
 
-        return fallback_suggestions.get(suggestion_type, fallback_suggestions["general"])
+        return fallback_suggestions.get(
+            suggestion_type, fallback_suggestions["general"]
+        )
 
     async def __aenter__(self):
         """Async context manager entry."""

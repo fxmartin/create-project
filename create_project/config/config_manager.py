@@ -375,15 +375,16 @@ class ConfigManager:
 
         # Integer values
         if any(
-            path_part in [
-                "timeout", 
+            path_part
+            in [
+                "timeout",
                 "max_files",
                 "ollama_timeout",  # AI timeout
                 "cache_ttl_hours",  # AI cache TTL
                 "max_cache_entries",  # AI cache size
                 "max_context_size_kb",  # AI context size
                 "max_response_tokens",  # AI response tokens
-            ] 
+            ]
             for path_part in config_path
         ) or (len(config_path) > 2 and config_path[1] == "window_size"):
             try:
@@ -392,22 +393,16 @@ class ConfigManager:
                 return value  # Return as string if conversion fails
 
         # Float values
-        if any(
-            path_part in ["temperature", "top_p"]
-            for path_part in config_path
-        ):
+        if any(path_part in ["temperature", "top_p"] for path_part in config_path):
             try:
                 return float(value)
             except ValueError:
                 return value  # Return as string if conversion fails
-        
+
         # List values (comma-separated)
-        if any(
-            path_part in ["preferred_models"]
-            for path_part in config_path
-        ):
+        if any(path_part in ["preferred_models"] for path_part in config_path):
             return [v.strip() for v in value.split(",") if v.strip()]
-        
+
         # Handle empty string for optional fields
         if not value.strip() and any(
             path_part in ["preferred_model"] for path_part in config_path

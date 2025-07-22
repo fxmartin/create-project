@@ -167,7 +167,9 @@ class TemplateVariable(BaseModel):
 
     @field_validator("choices")
     @classmethod
-    def validate_choices(cls, v: Optional[List[str]], info: ValidationInfo) -> Optional[List[str]]:
+    def validate_choices(
+        cls, v: Optional[List[str]], info: ValidationInfo
+    ) -> Optional[List[str]]:
         """Validate choices are provided for choice/multichoice variables."""
         if info.data and "type" in info.data:
             var_type = info.data["type"]
