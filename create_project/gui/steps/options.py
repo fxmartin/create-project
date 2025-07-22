@@ -441,3 +441,41 @@ class OptionsStep(WizardStep):
         logger.debug(f"Updated wizard data: options={options}")
 
         super().cleanupPage()
+
+    def get_options(self) -> Dict[str, Any]:
+        """Get all configured options.
+        
+        Returns:
+            Dictionary of option names to values
+        """
+        options: Dict[str, Any] = {}
+
+        # Universal options
+        license_id = self.license_combo.currentData()
+        options["license"] = license_id
+        options["git_init"] = self.git_checkbox.isChecked()
+
+        # Virtual environment tool 
+        venv_text = self.venv_combo.currentText()
+        if "uv" in venv_text:
+            options["venv_tool"] = "uv"
+        elif "virtualenv" in venv_text:
+            options["venv_tool"] = "virtualenv"
+        elif "venv" in venv_text and "virtualenv" not in venv_text:
+            options["venv_tool"] = "venv"
+        elif venv_text == "none":
+            options["venv_tool"] = "none"
+        else:
+            options["venv_tool"] = venv_text
+
+        # Template-specific options
+        for name, widget in self.option_widgets.items():
+            if name not in ["license", "git_init", "venv_tool"]:
+                if isinstance(widget, QLineEdit):
+                    options[name] = widget.text().strip()
+                elif isinstance(widget, QCheckBox):
+                    options[name] = widget.isChecked()
+                elif isinstance(widget, QComboBox):
+                    options[name] = widget.currentText()
+
+        return options

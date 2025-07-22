@@ -31,6 +31,7 @@ from ..steps.basic_info import BasicInfoStep
 from ..steps.location import LocationStep
 from ..steps.options import OptionsStep
 from ..steps.project_type import ProjectTypeStep
+from ..steps.review import ReviewStep
 from .base_step import WizardStep
 
 logger = get_logger(__name__)
@@ -92,13 +93,17 @@ class ProjectGenerationThread(QThread):
 
     def __init__(
         self,
+        project_path: Path,
+        options: ProjectOptions,
         template_engine: TemplateEngine,
-        wizard_data: WizardData,
+        wizard,
         ai_service: Optional[AIService] = None,
     ):
         super().__init__()
+        self.project_path = project_path
+        self.options = options
         self.template_engine = template_engine
-        self.wizard_data = wizard_data
+        self.wizard = wizard
         self.ai_service = ai_service
         self._cancelled = False
 
@@ -107,60 +112,49 @@ class ProjectGenerationThread(QThread):
         try:
             self.progress.emit(0, "Starting project generation...")
 
-            # Get template
-            template = None
-            if self.wizard_data.template_path:
-                # Load template using file path
-                try:
-                    template = self.template_engine.load_template(self.wizard_data.template_path)
-                except Exception as e:
-                    self.finished.emit(
-                        False, f"Failed to load template: {str(e)}"
-                    )
-                    return
-            else:
-                # Fallback to template ID (name)
-                self.finished.emit(
-                    False, f"Template path not available for '{self.wizard_data.template_id}'"
-                )
-                return
-            
-            if not template:
-                self.finished.emit(
-                    False, f"Template '{self.wizard_data.template_id}' not found"
-                )
-                return
-
             if self._cancelled:
                 return
 
             self.progress.emit(20, "Creating project structure...")
 
-            # Create project options
-            options = ProjectOptions(
-                dry_run=False,
-                create_git_repo=self.wizard_data.init_git,
-                create_venv=self.wizard_data.create_venv,
-                venv_tool=self.wizard_data.venv_tool,
-                execute_post_commands=True,
-                enable_ai_assistance=self.ai_service is not None,
+            # Use the async API directly with required parameters
+            from create_project.core.project_generator import ProjectGenerator
+            
+            # Create generator
+            generator = ProjectGenerator(
+                template_loader=self.template_engine.template_loader if hasattr(self.template_engine, 'template_loader') else None,
+                ai_service=self.ai_service
             )
-
-            # Use the async API
-            result = create_project_async(
+            
+            # Get template
+            template = self.template_engine.load_template(self.wizard.wizard_data.template_path)
+            
+            # Collect variables
+            variables = {
+                "project_name": self.wizard.wizard_data.project_name,
+                "author": self.wizard.wizard_data.author,
+                "version": self.wizard.wizard_data.version,
+                "description": self.wizard.wizard_data.description,
+                "license": self.wizard.wizard_data.license,
+            }
+            # Add any additional template variables
+            if self.wizard.wizard_data.additional_options:
+                variables.update(self.wizard.wizard_data.additional_options)
+            
+            # Generate project
+            result = generator.generate_project(
                 template=template,
-                variables=self.wizard_data.to_variables(),
-                target_path=self.wizard_data.target_path,
-                options=options,
-                ai_service=self.ai_service,
+                variables=variables,
+                target_path=self.project_path,
+                options=self.options,
                 progress_callback=self._progress_callback,
             )
 
             if result.success:
-                message = f"Project created successfully at {result.target_path}"
+                message = f"Project created successfully at {result.project_path}"
                 self.finished.emit(True, message)
             else:
-                error_msg = "\n".join(result.errors)
+                error_msg = "\n".join(result.errors) if result.errors else "Unknown error occurred"
                 self.finished.emit(False, error_msg)
 
         except Exception as e:
@@ -280,19 +274,16 @@ class ProjectWizard(QWizard):
         options_step.license_preview_requested.connect(self._show_license_preview)
         self.addPage(options_step)
 
-        # Placeholder pages for remaining steps
-        for i, (title, subtitle) in enumerate(
-            [("Review and Create", "Review your choices and create the project")]
-        ):
-            page = QWizardPage()
-            page.setTitle(title)
-            page.setSubTitle(subtitle)
-            self.addPage(page)
+        # Review and Create (implemented)
+        review_step = ReviewStep(self.config_manager, self.template_engine, self)
+        review_step.create_requested.connect(self._on_create_project)
+        self.addPage(review_step)
 
     def _connect_signals(self) -> None:
         """Connect signals and slots."""
         self.helpRequested.connect(self._on_help_requested)
         self.finished.connect(self._on_finished)
+        self.currentIdChanged.connect(self._on_page_changed)
 
     @pyqtSlot()
     def _on_help_requested(self) -> None:
@@ -340,8 +331,13 @@ class ProjectWizard(QWizard):
         """
         return super().validateCurrentPage()
 
-    def _start_generation(self) -> None:
-        """Start project generation process."""
+    def _start_generation(self, project_path: Path, options: ProjectOptions) -> None:
+        """Start project generation process.
+        
+        Args:
+            project_path: Path where project will be created
+            options: Project generation options
+        """
         # Create progress dialog
         self.progress_dialog = QProgressDialog(
             "Creating project...", "Cancel", 0, 100, self
@@ -353,7 +349,7 @@ class ProjectWizard(QWizard):
 
         # Create and start generation thread
         self.generation_thread = ProjectGenerationThread(
-            self.template_engine, self.wizard_data, self.ai_service
+            project_path, options, self.template_engine, self, self.ai_service
         )
 
         # Connect signals
@@ -408,16 +404,33 @@ class ProjectWizard(QWizard):
             self.generation_thread.cancel()
             logger.info("Project generation cancelled by user")
 
-    def collect_data(self) -> WizardData:
+    def collect_data(self) -> Dict[str, Any]:
         """
         Collect data from all wizard pages.
 
         Returns:
-            WizardData object with all collected information
+            Dictionary with all collected information
         """
-        # This will be implemented once we have the actual step pages
-        # For now, return the existing wizard_data
-        return self.wizard_data
+        data = {}
+        
+        # Get fields from wizard
+        data["project_name"] = self.field("projectName")
+        data["author"] = self.field("author")
+        data["version"] = self.field("version")
+        data["description"] = self.field("description")
+        data["base_path"] = self.field("location")
+        
+        # Get template from wizard data 
+        data["template_type"] = self.wizard_data.template_path
+        
+        # Get additional options from options step
+        options_page = self.page(3)  # Options is the 4th page (0-indexed)
+        if hasattr(options_page, 'get_options'):
+            data["additional_options"] = options_page.get_options()
+        else:
+            data["additional_options"] = {}
+            
+        return data
 
     def done(self, result: int) -> None:
         """
@@ -439,3 +452,44 @@ class ProjectWizard(QWizard):
                 return
 
         super().done(result)
+
+    @pyqtSlot(int)
+    def _on_page_changed(self, page_id: int) -> None:
+        """Handle page change events.
+        
+        Args:
+            page_id: ID of the new current page
+        """
+        # If we're on the review page, update it with collected data
+        if page_id == 4:  # Review is the 5th page (0-indexed)
+            review_page = self.page(4)
+            if isinstance(review_page, ReviewStep):
+                data = self.collect_data()
+                review_page.set_wizard_data(data)
+
+    @pyqtSlot()
+    def _on_create_project(self) -> None:
+        """Handle project creation request from review step."""
+        logger.info("Project creation requested")
+        
+        # Collect all data
+        data = self.collect_data()
+        
+        # Create project options
+        project_path = Path(data["base_path"]) / data["project_name"]
+        
+        # Get additional options
+        additional = data.get("additional_options", {})
+        
+        # Create ProjectOptions
+        options = ProjectOptions(
+            create_git_repo=additional.get("git_init", True),
+            create_venv=additional.get("venv_tool") != "none",
+            venv_name=".venv",
+            python_version=additional.get("python_version"),
+            execute_post_commands=True,
+            enable_ai_assistance=self.ai_service is not None,
+        )
+        
+        # Start generation in thread
+        self._start_generation(project_path, options)

@@ -11,6 +11,7 @@ This module provides a dialog for previewing full license text with:
 - Search functionality
 """
 
+from datetime import datetime
 from typing import Optional
 
 from PyQt6.QtCore import QSize, Qt
@@ -109,18 +110,13 @@ class LicensePreviewDialog(QDialog):
         """Load and display the license text."""
         try:
             # Get license info
-            licenses = self.license_manager.list_licenses()
-            license_info = next(
-                (lic for lic in licenses if lic["id"] == self.license_id), None
-            )
+            license = self.license_manager.get_license(self.license_id)
+            
+            # Set header with proper license name
+            self.header_label.setText(f"{license.name} License")
 
-            if license_info:
-                self.header_label.setText(f"{license_info['name']} License")
-            else:
-                self.header_label.setText(f"{self.license_id} License")
-
-            # Get license text
-            license_text = self.license_manager.get_license_text(self.license_id)
+            # Get license text (template variables will be shown as-is in preview)
+            license_text = license.text
 
             if license_text:
                 # Display as plain text to preserve formatting

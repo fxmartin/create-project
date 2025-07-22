@@ -18,9 +18,7 @@ from .basic_info import BasicInfoStep
 from .location import LocationStep
 from .options import OptionsStep
 from .project_type import ProjectTypeStep
-
-if TYPE_CHECKING:
-    from .review import ReviewStep
+from .review import ReviewStep
 
 __all__ = [
     "ProjectTypeStep",
