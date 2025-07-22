@@ -5,7 +5,9 @@
         "remember_window_state": true
     },
     "templates": {
-        "builtin_path": "./templates",
+        "directories": ["create_project/templates/builtin"],
+        "builtin_directory": "create_project/templates/builtin",
+        "user_directory": "create_project/templates/user",
         "custom_path": "~/.project-creator/templates",
         "auto_update": false
     },
