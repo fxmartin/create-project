@@ -53,6 +53,7 @@ This build plan outlines the implementation tasks for creating a comprehensive P
   - Comprehensive GUI test infrastructure with pytest-qt
   - Thread-safe wizard with background project generation
   - Test suite improvements: Reduced failing tests from 18 to 14
+  - GUI runtime fixes: Layout access, async/await handling, template loading
 
 - **Overall Progress**: 4/7 milestones complete, 1 in progress (61.4%)
 
@@ -317,6 +318,13 @@ This build plan outlines the implementation tasks for creating a comprehensive P
 - **Dependencies**: 5.1, 2.3, 2.6
 - **Deliverable**: Options screen with universal and type-specific options, license preview
 - **Status**: Complete - 414 lines options.py, 170 lines license_preview.py with dynamic template variable support
+- **Implementation Details**:
+  - Dynamic widget creation based on TemplateVariable types (string, boolean, choice, email, url, path)
+  - License dropdown with 5 available licenses and preview functionality
+  - Git initialization checkbox and virtual environment tool selection
+  - Scrollable area for template-specific options
+  - Full integration with wizard data flow
+  - 19 tests (15 passing, 4 skipped)
 
 ### 5.6 Implement Review and Create Step
 - **Task**: Create review.py with summary and preview functionality

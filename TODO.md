@@ -14,7 +14,7 @@
 
 ## Progress Update (2025-07-22)
 
-**Completed Tasks**: 7/35 (20.0%)
+**Completed Tasks**: 8/35 (22.9%)
 - ✅ Task S001: Initialize GUI Package Structure
 - ✅ Task S002: Install PyQt6 Dependencies  
 - ✅ Task S003: Create GUI Test Infrastructure
@@ -22,14 +22,17 @@
 - ✅ Task D002: Implement Project Type Selection Step
 - ✅ Task D003: Implement Basic Information Step
 - ✅ Task D004: Implement Location Selection Step
+- ✅ Task D005: Implement Options Configuration Step
 - ✅ **HOTFIX**: Fixed template directory configuration - All 6 built-in templates now loading correctly
 - ✅ **TEST FIXES**: Resolved 4 critical test failures across template loading, AI service, and configuration
+- ✅ **GUI FIXES**: Fixed runtime errors in options.py, app.py async/await, and template loading
 
 **Current Status**: 
-- First three wizard steps complete (Project Type Selection, Basic Information, and Location Selection)
+- First four wizard steps complete (Project Type Selection, Basic Information, Location Selection, and Options Configuration)
 - All steps have full validation, data flow integration, and comprehensive test coverage
+- Options step successfully loads dynamic template variables and license preview functionality
 - Test suite improvements: Reduced failing tests from 18 to 14 through systematic fixes
-- Ready to implement Options Configuration step
+- Ready to implement Review and Create step
 
 **Test Suite Health**: 
 - Total Tests: 704 (628 passing, 14 failing, 62 skipped)
@@ -181,25 +184,36 @@
 - Full integration with wizard data flow and field registration
 - Type-safe implementation with proper error handling
 
-#### Task D005: Implement Options Configuration Step
+#### Task D005: Implement Options Configuration Step ✅ **COMPLETED**
 **Type**: Code  
 **Estimated Time**: 4hrs  
 **Prerequisites**: D001, D002  
-**Files to Create/Modify**: 
-- `create_project/gui/steps/options.py`
-- `create_project/gui/widgets/license_preview.py`
+**Files Created/Modified**: 
+- `create_project/gui/steps/options.py` (414 lines)
+- `create_project/gui/widgets/license_preview.py` (170 lines)
+- `create_project/gui/steps/__init__.py` (updated exports)
+- `create_project/gui/widgets/__init__.py` (updated exports)
+- `create_project/gui/wizard/wizard.py` (updated to use OptionsStep)
+- `tests/gui/test_options_step.py` (310 lines, 11 tests)
+- `tests/gui/test_license_preview.py` (195 lines, 8 tests)
 
 **Acceptance Criteria**:
-- [ ] Dynamic options based on selected template
-- [ ] License dropdown with preview button
-- [ ] Git initialization checkbox
-- [ ] Virtual environment tool selection
-- [ ] Additional template-specific options
+- [x] Dynamic options based on selected template
+- [x] License dropdown with preview button
+- [x] Git initialization checkbox
+- [x] Virtual environment tool selection
+- [x] Additional template-specific options
 
-**Implementation Notes**:
-- Load options from template's `options` field
-- Use `LicenseManager.get_license_text()` for preview
-- Group options by category (universal/specific)
+**Completion Notes**:
+- Implemented scrollable options area with universal and template-specific sections
+- License dropdown populated from LicenseManager with 5 available licenses (MIT, Apache-2.0, GPL-3.0, BSD-3-Clause, Unlicense)
+- Preview button launches modal dialog with full license text and copy functionality
+- Git initialization checkbox (default: checked) and virtual environment tool dropdown (uv/virtualenv/venv/none)
+- Dynamic widget creation based on TemplateVariable types (string, boolean, choice, email, url, path)
+- Full integration with wizard data flow - options stored in WizardData.additional_options
+- 19 tests created: 15 passing, 4 skipped due to Qt signal/visibility issues in headless environment
+- Fixed runtime errors: layout access, async/await handling, and template loading by path
+- Type-safe implementation with proper error handling and logging
 
 #### Task D006: Implement Review and Create Step
 **Type**: Code  
@@ -653,7 +667,7 @@ create-project-gui = "create_project.gui:main"
 
 ## 🚀 Milestone 5 Progress Update (July 22, 2025)
 
-**Current Status**: 7/35 tasks completed (20.0%)
+**Current Status**: 8/35 tasks completed (22.9%)
 
 **✅ Completed**:
 - GUI package structure initialized with proper organization
@@ -663,10 +677,11 @@ create-project-gui = "create_project.gui:main"
 - **Project Type Selection Step with full template integration**
 - **Basic Information Step with real-time validation**
 - **Location Selection Step with directory browsing and validation**
+- **Options Configuration Step with dynamic template variables and license preview**
 
 **📊 Implementation Summary**:
-- **Lines of Code**: ~2,103 lines (wizard: 780, steps: 756, tests: 813)
-- **Test Coverage**: 47 GUI tests (40 passing, 7 skipped due to Qt headless issues)
+- **Lines of Code**: ~2,687 lines (wizard: 780, steps: 1,340, widgets: 170, tests: 1,318)
+- **Test Coverage**: 66 GUI tests (55 passing, 11 skipped due to Qt headless issues)
 - **Architecture**: Thread-safe wizard with background project generation and template integration
 - **Key Features**: 
   - Template loading and preview with rich HTML display
@@ -674,12 +689,15 @@ create-project-gui = "create_project.gui:main"
   - Form-based UI with real-time validation for basic information
   - Directory selection with path validation and permission checks
   - Real-time path preview and existing directory warnings
+  - Dynamic options configuration based on selected template
+  - License preview dialog with full text display and copy functionality
+  - Git and virtual environment tool selection
   - Full validation and error handling across all implemented steps
   - Type-safe implementation with mypy compliance
   - Data flow integration between wizard steps
 
 **🔄 Next Steps**:
-- Implement remaining 2 wizard steps (Options, Review)
+- Implement remaining wizard step (Review and Create)
 - Create custom widgets (ValidatedLineEdit, CollapsibleSection, etc.)
 - Implement dialogs (Settings, Error, AI Help)
 - Add visual styling with QSS stylesheets
