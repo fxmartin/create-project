@@ -23,7 +23,10 @@
       "Bash(QT_QPA_PLATFORM=offscreen uv run pytest tests/gui/test_basic_info_step.py -v)",
       "Bash(QT_QPA_PLATFORM=offscreen uv run python -c \"\nimport re\npattern = r''^[a-zA-Z_][a-zA-Z0-9_]*$''\ntest_names = [''123project'', ''valid_name'', ''my-project'']\nfor name in test_names:\n    print(f''{name}: {bool(re.match(pattern, name))}'')\")",
       "Bash(QT_QPA_PLATFORM=offscreen uv run pytest tests/gui/test_basic_info_step.py::test_project_name_validation_invalid -v -s)",
-      "Bash(QT_QPA_PLATFORM=offscreen uv run pytest tests/gui/ -v)"
+      "Bash(QT_QPA_PLATFORM=offscreen uv run pytest tests/gui/ -v)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(QT_QPA_PLATFORM=offscreen uv run pytest tests/gui/test_location_step.py -v)"
     ],
     "deny": []
   }

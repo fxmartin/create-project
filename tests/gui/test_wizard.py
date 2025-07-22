@@ -116,7 +116,7 @@ class TestProjectWizard:
         expected_titles = [
             "Select Project Type",
             "Basic Information",
-            "Select Location",
+            "Project Location",  # Updated to match LocationStep
             "Configure Options",
             "Review and Create"
         ]

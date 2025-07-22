@@ -31,6 +31,7 @@ from create_project.utils.logger import get_logger
 from .base_step import WizardStep
 from ..steps.project_type import ProjectTypeStep
 from ..steps.basic_info import BasicInfoStep
+from ..steps.location import LocationStep
 
 logger = get_logger(__name__)
 
@@ -252,9 +253,11 @@ class ProjectWizard(QWizard):
         # Basic Information (implemented)
         self.addPage(BasicInfoStep(self))
         
+        # Location Selection (implemented)
+        self.addPage(LocationStep(self))
+        
         # Placeholder pages for remaining steps
         for i, (title, subtitle) in enumerate([
-            ("Select Location", "Choose where to create your project"),
             ("Configure Options", "Customize project settings"),
             ("Review and Create", "Review your choices and create the project")
         ]):
