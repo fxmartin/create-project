@@ -32,6 +32,8 @@ from .base_step import WizardStep
 from ..steps.project_type import ProjectTypeStep
 from ..steps.basic_info import BasicInfoStep
 from ..steps.location import LocationStep
+from ..steps.options import OptionsStep
+from ..steps.review import ReviewStep
 
 logger = get_logger(__name__)
 
@@ -134,10 +136,8 @@ class ProjectGenerationThread(QThread):
             
             # Create project options
             options = ProjectOptions(
-                dry_run=False,
                 create_git_repo=self.wizard_data.init_git,
                 create_venv=self.wizard_data.create_venv,
-                venv_tool=self.wizard_data.venv_tool,
                 execute_post_commands=True,
                 enable_ai_assistance=self.ai_service is not None
             )
@@ -270,25 +270,23 @@ class ProjectWizard(QWizard):
         """Add wizard pages."""
         logger.info("Adding wizard pages")
         
-        # Add actual step implementations
-        # Project Type Selection (implemented)
+        # Add all step implementations
+        # Project Type Selection
         self.addPage(ProjectTypeStep(self))
         
-        # Basic Information (implemented)
+        # Basic Information
         self.addPage(BasicInfoStep(self))
         
-        # Location Selection (implemented)
+        # Location Selection
         self.addPage(LocationStep(self))
         
-        # Placeholder pages for remaining steps
-        for i, (title, subtitle) in enumerate([
-            ("Configure Options", "Customize project settings"),
-            ("Review and Create", "Review your choices and create the project")
-        ]):
-            page = QWizardPage()
-            page.setTitle(title)
-            page.setSubTitle(subtitle)
-            self.addPage(page)
+        # Options Configuration
+        self.addPage(OptionsStep(self))
+        
+        # Review and Create
+        review_step = ReviewStep(self)
+        review_step.create_clicked.connect(self._on_create_clicked)
+        self.addPage(review_step)
     
     def _connect_signals(self) -> None:
         """Connect signals and slots."""
@@ -315,8 +313,8 @@ class ProjectWizard(QWizard):
     def _on_finished(self, result: int) -> None:
         """Handle wizard finish."""
         if result == QWizard.DialogCode.Accepted:
-            logger.info("Wizard completed, starting project generation")
-            self._start_generation()
+            logger.info("Wizard completed successfully")
+            # Generation is triggered by the Create button in ReviewStep
         else:
             logger.info("Wizard cancelled")
     
@@ -327,6 +325,12 @@ class ProjectWizard(QWizard):
         Overrides QWizard method to ensure proper validation.
         """
         return super().validateCurrentPage()
+    
+    @pyqtSlot()
+    def _on_create_clicked(self) -> None:
+        """Handle create button click from review step."""
+        logger.info("Create button clicked, starting project generation")
+        self._start_generation()
     
     def _start_generation(self) -> None:
         """Start project generation process."""
