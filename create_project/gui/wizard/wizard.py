@@ -170,13 +170,21 @@ class ProjectGenerationThread(QThread):
             if self._cancelled:
                 return
             
+            # Create project options
+            options = ProjectOptions(
+                create_git_repo=self.wizard_data.init_git,
+                create_venv=self.wizard_data.create_venv,
+                execute_post_commands=True,
+                enable_ai_assistance=self.ai_service is not None
+            )
+            
             self.progress.emit(40, "Starting project generation...")
             # Generate project
             result = generator.generate_project(
                 template=template,
                 variables=variables,
                 target_path=self.project_path,
-                options=self.options,
+                options=options,
                 progress_callback=self._progress_callback,
             )
 
@@ -313,7 +321,6 @@ class ProjectWizard(QWizard):
         review_step = ReviewStep(self.config_manager, self.template_engine, self)
         review_step.create_requested.connect(self._on_create_project)
         self.addPage(review_step)
-
     def _connect_signals(self) -> None:
         """Connect signals and slots."""
         self.helpRequested.connect(self._on_help_requested)
@@ -340,8 +347,8 @@ class ProjectWizard(QWizard):
     def _on_finished(self, result: int) -> None:
         """Handle wizard finish."""
         if result == QWizard.DialogCode.Accepted:
-            logger.info("Wizard completed, starting project generation")
-            self._start_generation()
+            logger.info("Wizard completed successfully")
+            # Generation is triggered by the Create button in ReviewStep
         else:
             logger.info("Wizard cancelled")
 
