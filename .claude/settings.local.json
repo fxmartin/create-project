@@ -26,7 +26,8 @@
       "Bash(QT_QPA_PLATFORM=offscreen uv run pytest tests/gui/ -v)",
       "Bash(git push:*)",
       "Bash(gh pr create:*)",
-      "Bash(QT_QPA_PLATFORM=offscreen uv run pytest tests/gui/test_location_step.py -v)"
+      "Bash(QT_QPA_PLATFORM=offscreen uv run pytest tests/gui/test_location_step.py -v)",
+      "Bash(QT_QPA_PLATFORM=offscreen uv run pytest tests/gui/test_custom_widgets.py -v)"
     ],
     "deny": []
   }
