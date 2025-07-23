@@ -1,177 +1,238 @@
-# ABOUTME: QLineEdit widget with built-in regex validation and error display
-# ABOUTME: Shows real-time validation status with customizable error messages
+# ABOUTME: Custom QLineEdit widget with regex validation support
+# ABOUTME: Provides real-time validation feedback with visual indicators and error messages
 
-"""ValidatedLineEdit widget with regex validation support.
+"""ValidatedLineEdit widget with regex validation."""
+from __future__ import annotations
 
-This widget extends QLineEdit to provide built-in validation with visual
-feedback and error messages.
-"""
+from typing import Optional
 
-import re
-from typing import Optional, Union, Pattern
+from PyQt6.QtCore import QRegularExpression, pyqtSignal
+from PyQt6.QtGui import QRegularExpressionValidator
+from PyQt6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QWidget
 
-from PyQt6.QtWidgets import QLineEdit, QVBoxLayout, QLabel, QWidget
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QPalette
+from create_project.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
-class ValidatedLineEdit(QLineEdit):
+class ValidatedLineEdit(QWidget):
     """A QLineEdit with built-in regex validation and error display.
     
-    This widget provides real-time validation feedback with visual
-    indicators and optional error message display.
-    
-    Signals:
-        validationChanged: Emitted when validation state changes (bool)
+    This widget provides:
+    - Real-time regex validation
+    - Visual feedback (red border for invalid input)
+    - Error message display
+    - Validation state signals
     """
     
-    validationChanged = pyqtSignal(bool)  # True = valid, False = invalid
+    # Signals
+    validationChanged = pyqtSignal(bool)  # Emitted when validation state changes
+    textChanged = pyqtSignal(str)  # Re-emit line edit's textChanged
     
     def __init__(
-        self,
-        validator_regex: Union[str, Pattern[str]],
+        self, 
+        validator_regex: str = ".*",
         error_message: str = "Invalid input",
-        parent: Optional[QWidget] = None,
-        required: bool = True,
-        placeholder: Optional[str] = None
+        placeholder: str = "",
+        parent: Optional[QWidget] = None
     ) -> None:
-        """Initialize the ValidatedLineEdit.
-        
-        Args:
-            validator_regex: Regular expression pattern for validation
-            error_message: Message to display when validation fails
-            parent: Parent widget
-            required: Whether the field is required (empty = invalid)
+        """Initialize the validated line edit.
             placeholder: Placeholder text for the input field
+            parent: Parent widget
         """
         super().__init__(parent)
         
-        # Store validation parameters
-        self.error_message = error_message
-        self.required = required
+        self._validator_regex = validator_regex
+        self._error_message = error_message
+        self._is_valid = True
         
-        # Compile regex pattern
-        if isinstance(validator_regex, str):
-            self.validator_pattern = re.compile(validator_regex)
-        else:
-            self.validator_pattern = validator_regex
+        self._setup_ui(placeholder)
+        self._setup_validator()
+        
+    def _setup_ui(self, placeholder: str) -> None:
+        """Set up the user interface."""
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(5)
+        
+        # Line edit
+        self._line_edit = QLineEdit()
+        self._line_edit.setPlaceholderText(placeholder)
+        layout.addWidget(self._line_edit)
+        
+        # Error label (hidden by default)
+        self._error_label = QLabel()
+        self._error_label.setStyleSheet("QLabel { color: red; font-size: 11px; }")
+        self._error_label.hide()
+        layout.addWidget(self._error_label)
+        
+        # Connect signals
+        self._line_edit.textChanged.connect(self._on_text_changed)
+        
+    def _setup_validator(self) -> None:
+        """Set up the regex validator."""
+        try:
+            regex = QRegularExpression(self._validator_regex)
+            if not regex.isValid():
+                logger.error(f"Invalid regex pattern: {self._validator_regex}")
+                return
+                
+            validator = QRegularExpressionValidator(regex)
+            self._line_edit.setValidator(validator)
+            logger.debug(f"Set validator with pattern: {self._validator_regex}")
+        except Exception as e:
+            logger.error(f"Failed to set validator: {e}")
             
-        # Set placeholder if provided
-        if placeholder:
-            self.setPlaceholderText(placeholder)
-            
-        # Initialize validation state
-        self._is_valid = not self.required  # Empty optional fields are valid
-        self._error_label: Optional[QLabel] = None
-        
-        # Connect text change signal for real-time validation
-        self.textChanged.connect(self._validate_text)
-        
-        # Apply initial styling
-        self._update_style()
-        
-    def set_error_label(self, error_label: QLabel) -> None:
-        """Set an external error label to display validation messages.
+    def _on_text_changed(self, text: str) -> None:
+        """Handle text changes and validate input.
         
         Args:
-            error_label: QLabel widget to display error messages
+            text: Current text in the line edit
         """
-        self._error_label = error_label
-        self._update_error_display()
+        # Re-emit signal
+        self.textChanged.emit(text)
         
-    def is_valid(self) -> bool:
-        """Check if the current text is valid.
+        # Validate text
+        is_valid = self._validate_text(text)
         
-        Returns:
-            True if the text matches the validation pattern
-        """
-        return self._is_valid
-        
-    def _validate_text(self, text: str) -> None:
+        # Update UI based on validation state
+        if is_valid:
+            self._set_valid_state()
+        else:
+            self._set_invalid_state()
+            
+        # Emit validation change if state changed
+        if is_valid != self._is_valid:
+            self._is_valid = is_valid
+            self.validationChanged.emit(is_valid)
+            
+    def _validate_text(self, text: str) -> bool:
         """Validate the text against the regex pattern.
         
         Args:
-            text: The current text to validate
+            text: Text to validate
+            
+        Returns:
+            True if text is valid, False otherwise
         """
-        old_state = self._is_valid
+        if not text and self.isRequired():
+            return False
+            
+        try:
+            regex = QRegularExpression(self._validator_regex)
+            match = regex.match(text)
+            return match.hasMatch() and match.capturedStart() == 0 and match.capturedEnd() == len(text)
+        except Exception as e:
+            logger.error(f"Validation error: {e}")
+            return False
+            
+    def _set_valid_state(self) -> None:
+        """Set the UI to valid state."""
+        self._line_edit.setStyleSheet("")
+        self._error_label.hide()
         
-        # Check if empty
-        if not text:
-            self._is_valid = not self.required
-        else:
-            # Check against regex pattern
-            self._is_valid = bool(self.validator_pattern.match(text))
-            
-        # Update UI if state changed
-        if old_state != self._is_valid:
-            self._update_style()
-            self._update_error_display()
-            self.validationChanged.emit(self._is_valid)
-            
-    def _update_style(self) -> None:
-        """Update the widget style based on validation state."""
-        if self._is_valid or not self.text():
-            # Valid or empty - use default style
-            self.setStyleSheet("")
-        else:
-            # Invalid - use error style
-            self.setStyleSheet("""
-                QLineEdit {
-                    border: 1px solid #dc3545;
-                    background-color: #fff5f5;
-                }
-                QLineEdit:focus {
-                    border: 2px solid #dc3545;
-                    outline: none;
-                }
-            """)
-            
-    def _update_error_display(self) -> None:
-        """Update the error label visibility and text."""
-        if self._error_label:
-            if self._is_valid or not self.text():
-                self._error_label.hide()
-            else:
-                self._error_label.setText(self.error_message)
-                self._error_label.show()
-                
-    def set_validator_regex(self, validator_regex: Union[str, Pattern[str]]) -> None:
-        """Update the validation regex pattern.
+    def _set_invalid_state(self) -> None:
+        """Set the UI to invalid state."""
+        self._line_edit.setStyleSheet("QLineEdit { border: 1px solid red; }")
+        self._error_label.setText(self._error_message)
+        self._error_label.show()
+        
+    # Public methods
+    def text(self) -> str:
+        """Get the current text.
+        
+        Returns:
+            Current text in the line edit
+        """
+        return self._line_edit.text()
+        
+    def setText(self, text: str) -> None:
+        """Set the text.
         
         Args:
-            validator_regex: New regular expression pattern
+            text: Text to set
         """
-        if isinstance(validator_regex, str):
-            self.validator_pattern = re.compile(validator_regex)
-        else:
-            self.validator_pattern = validator_regex
-            
-        # Re-validate current text
-        self._validate_text(self.text())
+        self._line_edit.setText(text)
         
-    def set_error_message(self, error_message: str) -> None:
+    def setPlaceholderText(self, text: str) -> None:
+        """Set placeholder text.
+        
+        Args:
+            text: Placeholder text
+        """
+        self._line_edit.setPlaceholderText(text)
+        
+    def isValid(self) -> bool:
+        """Check if current input is valid.
+        
+        Returns:
+            True if input is valid, False otherwise
+        """
+        return self._is_valid
+        
+    def setRequired(self, required: bool = True) -> None:
+        """Set whether the field is required.
+        
+        Args:
+            required: Whether field is required
+        """
+        self._required = required
+        # Revalidate current text
+        self._on_text_changed(self.text())
+        
+    def isRequired(self) -> bool:
+        """Check if field is required.
+        
+        Returns:
+            True if field is required
+        """
+        return getattr(self, "_required", False)
+        
+    def setValidatorRegex(self, pattern: str) -> None:
+        """Update the validator regex pattern.
+        
+        Args:
+            pattern: New regex pattern
+        """
+        self._validator_regex = pattern
+        self._setup_validator()
+        # Revalidate current text
+        self._on_text_changed(self.text())
+        
+    def setErrorMessage(self, message: str) -> None:
         """Update the error message.
         
         Args:
-            error_message: New error message to display
+            message: New error message
         """
-        self.error_message = error_message
-        self._update_error_display()
+        self._error_message = message
+        if not self._is_valid:
+            self._error_label.setText(message)
+            
+    def clear(self) -> None:
+        """Clear the input field."""
+        self._line_edit.clear()
         
-    def set_required(self, required: bool) -> None:
-        """Update whether the field is required.
+    def setFocus(self) -> None:
+        """Set focus to the input field."""
+        self._line_edit.setFocus()
+        
+    def selectAll(self) -> None:
+        """Select all text in the input field."""
+        self._line_edit.selectAll()
+        
+    def setReadOnly(self, read_only: bool) -> None:
+        """Set read-only state.
         
         Args:
-            required: Whether the field should be required
+            read_only: Whether field should be read-only
         """
-        self.required = required
-        self._validate_text(self.text())
+        self._line_edit.setReadOnly(read_only)
         
-    def force_validation(self) -> bool:
-        """Force validation and update display.
+    def hasAcceptableInput(self) -> bool:
+        """Check if input is acceptable according to validator.
         
         Returns:
-            True if the current text is valid
+            True if input is acceptable
         """
-        self._validate_text(self.text())
-        return self._is_valid
+        return self._line_edit.hasAcceptableInput() and self._is_valid
