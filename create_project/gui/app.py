@@ -143,22 +143,33 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
 
     parser.add_argument("--no-ai", action="store_true", help="Disable AI assistance")
-
+    
+    # Accept --gui flag (when called from main module) but ignore it
+    parser.add_argument(
+        "--gui",
+        action="store_true",
+        help=argparse.SUPPRESS  # Hide from help
+    )
     return parser.parse_args()
 
 
-def main() -> int:
+def main(args=None) -> int:
     """
     Main entry point for GUI application.
-
+    
+    Args:
+        args: Optional command-line arguments (for testing)
+    
     Returns:
         Exit code (0 for success, non-zero for error)
     """
-    # Parse arguments
-    args = parse_arguments()
-
+    # Parse arguments - but don't require them if called from main module
+    if args is not None:
+        parsed_args = args
+    else:
+        parsed_args = parse_arguments()
     # Set up logging
-    if args.debug:
+    if hasattr(parsed_args, 'debug') and parsed_args.debug:
         import logging
 
         logging.getLogger("create_project").setLevel(logging.DEBUG)
@@ -171,7 +182,7 @@ def main() -> int:
         config_manager = load_configuration()
 
         # Override AI setting if requested
-        if args.no_ai:
+        if hasattr(parsed_args, 'no_ai') and parsed_args.no_ai:
             config_manager.set_setting("ai.enabled", False)
 
         # Initialize services

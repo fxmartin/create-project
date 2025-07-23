@@ -14,7 +14,7 @@
 
 ## Progress Update (2025-07-23)
 
-**Completed Tasks**: 15/35 (42.9%)
+**Completed Tasks**: 17/35 (48.6%)
 - ✅ Task S001: Initialize GUI Package Structure
 - ✅ Task S002: Install PyQt6 Dependencies  
 - ✅ Task S003: Create GUI Test Infrastructure
@@ -30,6 +30,8 @@
 - ✅ Task D010: Implement Error Dialog with AI Help
 - ✅ Task D011: Implement AI Help Dialog
 - ✅ Task D012: Create Resource Management System
+- ✅ Task D013: Implement Main Application Entry
+- ✅ Task I001: Connect Wizard to Template System
 - ✅ **HOTFIX**: Fixed template directory configuration - All 6 built-in templates now loading correctly
 - ✅ **TEST FIXES**: Resolved 4 critical test failures across template loading, AI service, and configuration
 - ✅ **GUI FIXES**: Fixed runtime errors in options.py, app.py async/await, and template loading
@@ -40,8 +42,10 @@
 - All custom dialogs implemented (Progress, Settings, Error, AI Help)
 - Custom widgets module complete with reusable UI components
 - Resource management system implemented with icon loading and style theming
-- 120 new GUI tests added across all components
-- Ready to implement main application entry and integration tasks
+- Main application entry complete with CLI/GUI modes and launch scripts
+- Wizard successfully loads templates from template system
+- GUI application is functional and can navigate through implemented steps
+- Ready to implement project generation integration (Task I002)
 
 **Test Suite Health**: 
 - Total Tests: 825 (702 passing, 15 failing, 108 skipped)
@@ -408,49 +412,49 @@
 - Font definitions and sizing constants for consistent UI
 - 24 comprehensive tests covering both modules
 
-#### Task D013: Implement Main Application Entry
+#### Task D013: Implement Main Application Entry ✅ **COMPLETED**
 **Type**: Code  
 **Estimated Time**: 2hrs  
 **Prerequisites**: D001  
-**Files to Create/Modify**: 
-- `create_project/gui/app.py`
-- `create_project/__main__.py` (update)
+**Files Modified**: 
+- `create_project/main.py` (complete rewrite for CLI/GUI modes)
+- `create_project/gui/app.py` (updated argument handling)
+- `pyproject.toml` (added console scripts)
+- `scripts/run-gui.py`, `scripts/run-gui.sh`, `scripts/run-gui.ps1` (created)
 
 **Acceptance Criteria**:
-- [ ] QApplication initialization
-- [ ] Command-line argument handling
-- [ ] Wizard launch with dependencies
-- [ ] Exception handling at top level
+- [x] QApplication initialization
+- [x] Command-line argument handling
+- [x] Wizard launch with dependencies
+- [x] Exception handling at top level
 
-**Implementation Notes**:
-```python
-def main():
-    app = QApplication(sys.argv)
-    app.setApplicationName("Create Project")
-    wizard = ProjectWizard(config_manager, template_engine)
-    wizard.show()
-    sys.exit(app.exec())
-```
+**Completion Notes**:
+- Unified entry point supporting both CLI and GUI modes
+- Full argument parsing with --gui, --list-templates, project creation options
+- Cross-platform launch scripts with environment detection
+- Proper exception handling and error messages
 
 ### Integration Tasks
 
-#### Task I001: Connect Wizard to Template System
+#### Task I001: Connect Wizard to Template System ✅ **COMPLETED**
 **Type**: Integration  
 **Estimated Time**: 2hrs  
 **Prerequisites**: D002, D005  
-**Files to Create/Modify**: 
-- `create_project/gui/wizard/wizard.py`
-- `create_project/gui/steps/project_type.py`
+**Files Modified**: 
+- `create_project/gui/wizard/wizard.py` (updated ProjectGenerationThread)
+- `create_project/gui/steps/project_type.py` (template loading with IDs)
 
 **Acceptance Criteria**:
-- [ ] Templates loaded from template engine
-- [ ] Template validation on selection
-- [ ] Options populated from template data
-- [ ] Template preview rendering
+- [x] Templates loaded from template engine
+- [x] Template validation on selection
+- [x] Options populated from template data
+- [x] Template preview rendering
 
-**Implementation Notes**:
-- Use `template_engine.get_template()`
-- Handle template loading errors
+**Completion Notes**:
+- Templates load from template loader with proper ID tracking
+- Template preview shows metadata, description, tags, and structure
+- Project generation thread updated to load templates by ID
+- Full integration with 6 built-in templates working
 
 #### Task I002: Connect Wizard to Project Generator
 **Type**: Integration  

@@ -100,14 +100,17 @@ class ProjectTypeStep(WizardStep):
             # Add templates to the list
             if templates:
                 for template_data in templates:
+                    # Extract template info (already flattened)
+                    template_id = template_data.get("template_id", "unknown")
                     template_name = template_data.get("name", "Unknown Template")
-                    # Store template data (convert dict to simple storage)
-                    self.templates[template_name] = template_data
-
+                    template_path = template_data.get("file_path")
+                    
+                    # Store template data with template_id as key
+                    self.templates[template_id] = template_data
+                    
                     # Create list item
                     item = QListWidgetItem(template_name)
-                    item.setData(Qt.ItemDataRole.UserRole, template_name)
-
+                    item.setData(Qt.ItemDataRole.UserRole, template_id)
                     # Add brief description as tooltip
                     if template_data.get("description"):
                         item.setToolTip(template_data["description"][:100] + "...")
@@ -135,13 +138,14 @@ class ProjectTypeStep(WizardStep):
                         "structure": "Simple script structure",
                     },
                 ]
-
-                for template_data in sample_templates:
+                
+                for i, template_data in enumerate(sample_templates):
+                    template_id = f"sample_{i}"
                     template_name = template_data["name"]
-                    self.templates[template_name] = template_data
-
+                    template_data["template_id"] = template_id
+                    self.templates[template_id] = template_data
                     item = QListWidgetItem(template_name)
-                    item.setData(Qt.ItemDataRole.UserRole, template_name)
+                    item.setData(Qt.ItemDataRole.UserRole, template_id)
                     item.setToolTip(template_data["description"])
 
                     self.template_list.addItem(item)
