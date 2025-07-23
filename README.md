@@ -1,10 +1,58 @@
 # Python Project Structure Creator
 
+> ⚠️ **WORK IN PROGRESS**: This project is currently under active development and is not yet ready for production use. See the progress section below for current status.
+
 **Note: This project is a real-life experiment in "vibe coding" with Claude Code. The process, methodology, and conclusions will be documented in a separate repository for research purposes.**
+
+## 🚧 Development Progress
+
+**Overall Progress: 61.4% Complete (4/7 milestones)**
+
+| Milestone | Status | Progress |
+|-----------|--------|----------|
+| ✅ Project Setup & Core Infrastructure | Complete | 100% |
+| ✅ Template System | Complete | 100% |
+| ✅ Core Project Generation | Complete | 100% |
+| ✅ AI Integration (Ollama) | Complete | 100% |
+| 🚧 **GUI Implementation** | **In Progress** | **34.3% (12/35 tasks)** |
+| ⏳ Integration & Testing | Not Started | 0% |
+| ⏳ Distribution & Documentation | Not Started | 0% |
+
+### Current Status
+- Core engine fully functional with CLI interface
+- GUI wizard framework implemented with all 5 steps
+- Settings dialog and custom widgets complete
+- Working on error dialogs and visual styling
+- 769 total tests (686 passing, 89.2% success rate)
+
+---
 
 A PyQt-based GUI application that automates the creation of Python project directory structures with templates, configuration, and best practices.
 
-## 🚀 Quick Start
+## 🔧 What's Working / What's Not
+
+### ✅ What's Working
+- **Core Engine**: Fully functional project generation with templates
+- **Template System**: 6 built-in templates with validation
+- **Configuration**: Thread-safe config management with JSON/env support
+- **AI Integration**: Ollama integration for error assistance
+- **GUI Wizard**: 5-step wizard with data flow (not yet connected to engine)
+- **Custom Widgets**: Validated inputs, file browsers, collapsible sections
+
+### ❌ What's Not Working Yet
+- **GUI to Engine Connection**: Wizard doesn't yet trigger project generation
+- **Error Dialogs**: AI-powered error assistance UI not implemented
+- **Visual Styling**: No professional styling applied yet
+- **Distribution**: No standalone executables available
+- **Some Tests**: 14 failing tests related to GUI/async operations
+
+### 🎯 Next Steps
+1. Connect GUI wizard to project generation engine
+2. Implement error and AI help dialogs
+3. Apply professional visual styling
+4. Create distributable packages
+
+## 🚀 Quick Start (Development Only)
 
 ```bash
 # Clone the repository
@@ -16,19 +64,24 @@ cd create-project
 # OR
 ./scripts/setup-dev.ps1  # On Windows
 
-# Run the application
+# Run the application (GUI launches but not yet connected to engine)
 uv run python -m create_project
+
+# For now, use the CLI interface for actual project generation:
+uv run python -m create_project.cli --help
 ```
 
-## ✨ Features
+## ✨ Features (Planned)
 
-- **Project Templates**: Built-in templates for common Python project types
-- **GUI Interface**: Easy-to-use PyQt wizard interface
-- **Custom Templates**: Support for user-defined project templates
-- **Configuration Management**: Persistent settings and preferences
-- **Structure Validation**: Ensures project structure integrity
-- **Cross-Platform**: Works on macOS, Windows, and Linux
-- **AI Integration**: Optional Ollama integration for intelligent assistance
+- **Project Templates**: Built-in templates for common Python project types ✅
+- **GUI Interface**: Easy-to-use PyQt wizard interface 🚧
+- **Custom Templates**: Support for user-defined project templates ✅
+- **Configuration Management**: Persistent settings and preferences ✅
+- **Structure Validation**: Ensures project structure integrity ✅
+- **Cross-Platform**: Works on macOS, Windows, and Linux ✅
+- **AI Integration**: Optional Ollama integration for intelligent assistance ✅
+
+**Legend**: ✅ Implemented | 🚧 In Progress | ⏳ Planned
 
 ## 📋 Prerequisites
 
@@ -280,8 +333,11 @@ chmod -R u+w .
 # Wrong
 python -m create_project
 
-# Correct
+# Correct (but GUI not yet connected)
 uv run python -m create_project
+
+# For actual project generation (CLI):
+uv run python -m create_project.cli --template python-library --name myproject
 ```
 
 ### Debug Mode
