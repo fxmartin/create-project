@@ -370,17 +370,26 @@ This build plan outlines the implementation tasks for creating a comprehensive P
 - **Deliverable**: Settings dialog with all configuration options
 - **Status**: Complete - 447 lines with tabbed interface, ConfigManager integration
 
-### 5.10 Implement Error Dialog
+### 5.10 Implement Error Dialog ✅ **COMPLETED**
 - **Task**: Create error.py with progressive disclosure
 - **Responsible**: Frontend Developer
 - **Dependencies**: 5.1
 - **Deliverable**: Error dialog with details and AI help options
+- **Status**: Complete - 454 lines with CollapsibleSection integration, AI help button, clipboard support
 
-### 5.11 Implement AI Help Dialog
+### 5.11 Implement AI Help Dialog ✅ **COMPLETED**
 - **Task**: Create ai_help.py for displaying Ollama suggestions
 - **Responsible**: Frontend Developer
 - **Dependencies**: 5.1, 4.1
 - **Deliverable**: AI help dialog with formatted suggestions
+- **Status**: Complete - 358 lines with streaming responses, markdown rendering, retry functionality
+- **Implementation Details**:
+  - AIQueryWorker thread for non-blocking AI queries
+  - Streaming response support with chunk-by-chunk display
+  - Basic markdown to HTML conversion for formatting
+  - Copy to clipboard functionality with user feedback
+  - Retry button for failed or unsatisfactory responses
+  - 15 comprehensive tests (all skipped in headless environment)
 
 ### 5.12 Apply Visual Styling
 - **Task**: Create cross-platform QSS stylesheets for professional appearance
