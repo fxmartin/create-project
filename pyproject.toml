@@ -50,7 +50,7 @@ dev = [
 
 [project.scripts]
 create-project = "create_project.main:main"
-create-project-gui = "create_project.gui.main:main"
+create-project-gui = "create_project.gui.app:main"
 
 [build-system]
 requires = ["hatchling"]

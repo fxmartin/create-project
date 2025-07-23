@@ -24,8 +24,8 @@ from PyQt6.QtCore import Qt, pyqtSignal, QThread, pyqtSlot
 
 from create_project.config.config_manager import ConfigManager
 from create_project.templates.engine import TemplateEngine
-from create_project.core.api import create_project_async
-from create_project.core.project_generator import ProjectOptions
+from create_project.core.api import create_project
+from create_project.core.project_generator import ProjectOptions, ProjectGenerator
 from create_project.ai.ai_service import AIService
 from create_project.utils.logger import get_logger
 from .base_step import WizardStep
@@ -92,11 +92,13 @@ class ProjectGenerationThread(QThread):
     def __init__(
         self,
         template_engine: TemplateEngine,
+        template_loader,
         wizard_data: WizardData,
         ai_service: Optional[AIService] = None
     ):
         super().__init__()
         self.template_engine = template_engine
+        self.template_loader = template_loader
         self.wizard_data = wizard_data
         self.ai_service = ai_service
         self._cancelled = False
@@ -106,10 +108,23 @@ class ProjectGenerationThread(QThread):
         try:
             self.progress.emit(0, "Starting project generation...")
             
-            # Get template
-            template = self.template_engine.get_template(self.wizard_data.template_id)
-            if not template:
+            # Find template file path first
+            template_path = None
+            templates = self.template_loader.list_templates()
+            for template_info in templates:
+                if template_info.get('template_id') == self.wizard_data.template_id:
+                    template_path = template_info.get('file_path')
+                    break
+            
+            if not template_path:
                 self.finished.emit(False, f"Template '{self.wizard_data.template_id}' not found")
+                return
+            
+            # Load the template
+            try:
+                template = self.template_engine.load_template(template_path)
+            except Exception as e:
+                self.finished.emit(False, f"Failed to load template: {str(e)}")
                 return
             
             if self._cancelled:
@@ -127,13 +142,22 @@ class ProjectGenerationThread(QThread):
                 enable_ai_assistance=self.ai_service is not None
             )
             
-            # Use the async API
-            result = create_project_async(
+            # Create project generator instance
+            # Use wizard's config manager if available  
+            wizard = self.parent()
+            config_manager = wizard.config_manager if wizard and hasattr(wizard, 'config_manager') else ConfigManager()
+            
+            generator = ProjectGenerator(
+                config_manager=config_manager,
+                threading_model=None
+            )
+            
+            # Generate the project
+            result = generator.generate(
                 template=template,
                 variables=self.wizard_data.to_variables(),
                 target_path=self.wizard_data.target_path,
                 options=options,
-                ai_service=self.ai_service,
                 progress_callback=self._progress_callback
             )
             
@@ -322,6 +346,7 @@ class ProjectWizard(QWizard):
         # Create and start generation thread
         self.generation_thread = ProjectGenerationThread(
             self.template_engine,
+            self.template_loader,
             self.wizard_data,
             self.ai_service
         )
