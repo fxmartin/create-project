@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field, HttpUrl
 
 class License(BaseModel):
     """Model representing a software license with its metadata and text.
-    
+
     Attributes:
         id: Unique identifier for the license (e.g., 'mit', 'apache-2.0')
         name: Human-readable name of the license
@@ -21,28 +21,24 @@ class License(BaseModel):
         ...,
         description="Unique identifier for the license",
         min_length=1,
-        max_length=50
+        max_length=50,
     )
 
     name: str = Field(
         ...,
         description="Human-readable name of the license",
         min_length=1,
-        max_length=200
+        max_length=200,
     )
 
     text: str = Field(
         ...,
         description="Full license text with optional template variables",
-        min_length=1
+        min_length=1,
     )
 
-    url: HttpUrl = Field(
-        ...,
-        description="Canonical URL for the license"
-    )
+    url: HttpUrl = Field(..., description="Canonical URL for the license")
 
     requires_fields: List[str] = Field(
-        default_factory=list,
-        description="Template variables that need substitution"
+        default_factory=list, description="Template variables that need substitution"
     )

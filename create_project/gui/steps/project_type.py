@@ -32,9 +32,7 @@ class ProjectTypeStep(WizardStep):
         self.templates: dict[str, Template] = {}
 
         super().__init__(
-            "Select Project Type",
-            "Choose a template for your new project",
-            parent
+            "Select Project Type", "Choose a template for your new project", parent
         )
 
     def _setup_ui(self) -> None:
@@ -84,7 +82,11 @@ class ProjectTypeStep(WizardStep):
     def load_templates(self) -> None:
         """Load available templates from the template loader."""
         wizard = self.wizard()
-        if not wizard or not hasattr(wizard, "template_loader") or not wizard.template_loader:
+        if (
+            not wizard
+            or not hasattr(wizard, "template_loader")
+            or not wizard.template_loader
+        ):
             return
 
         try:
@@ -101,15 +103,15 @@ class ProjectTypeStep(WizardStep):
                     template_name = template_data.get("name", "Unknown Template")
                     # Store template data (convert dict to simple storage)
                     self.templates[template_name] = template_data
-                    
+
                     # Create list item
                     item = QListWidgetItem(template_name)
                     item.setData(Qt.ItemDataRole.UserRole, template_name)
-                    
+
                     # Add brief description as tooltip
                     if template_data.get("description"):
                         item.setToolTip(template_data["description"][:100] + "...")
-                        
+
                     self.template_list.addItem(item)
             else:
                 # Fallback: Create some sample templates for demonstration
@@ -121,27 +123,27 @@ class ProjectTypeStep(WizardStep):
                         "author": "Template System",
                         "category": "library",
                         "tags": ["python", "library", "package"],
-                        "structure": "Standard Python package structure"
+                        "structure": "Standard Python package structure",
                     },
                     {
-                        "name": "CLI Script", 
+                        "name": "CLI Script",
                         "description": "A command-line script with argument parsing",
                         "version": "1.0.0",
                         "author": "Template System",
-                        "category": "script", 
+                        "category": "script",
                         "tags": ["python", "cli", "script"],
-                        "structure": "Simple script structure"
-                    }
+                        "structure": "Simple script structure",
+                    },
                 ]
-                
+
                 for template_data in sample_templates:
                     template_name = template_data["name"]
                     self.templates[template_name] = template_data
-                    
+
                     item = QListWidgetItem(template_name)
                     item.setData(Qt.ItemDataRole.UserRole, template_name)
                     item.setToolTip(template_data["description"])
-                    
+
                     self.template_list.addItem(item)
 
             # Select first item if available
@@ -202,7 +204,10 @@ class ProjectTypeStep(WizardStep):
                 tags_str = ", ".join(template.metadata.tags)
                 html_parts.append(f"<p><b>Tags:</b> {tags_str}</p>")
 
-            if hasattr(template, "compatibility") and template.compatibility.dependencies:
+            if (
+                hasattr(template, "compatibility")
+                and template.compatibility.dependencies
+            ):
                 html_parts.append("<h3>Dependencies:</h3><ul>")
                 for dep in template.compatibility.dependencies:
                     html_parts.append(f"<li>{dep}</li>")
@@ -220,6 +225,13 @@ class ProjectTypeStep(WizardStep):
         wizard = self.wizard()
         if wizard and hasattr(wizard, "data"):
             wizard.data.template_id = template_id
+            # Also store the template object for later use
+            template = self.templates.get(template_id)
+            if template and isinstance(template, dict):
+                wizard.data.template_name = template.get("name")
+                # Store the file path if available
+                if "file_path" in template:
+                    wizard.data.template_path = template["file_path"]
 
     def _format_structure(self, structure: Any, indent: int = 0) -> str:
         """Format template structure for display."""
@@ -277,4 +289,3 @@ class ProjectTypeStep(WizardStep):
         """Called when navigating away from the page."""
         super().cleanupPage()
         # Keep selection when going back
-

@@ -62,7 +62,8 @@ class TemplateConfig(BaseModel):
     """Template system configuration settings."""
 
     builtin_path: str = Field(
-        default="create_project/templates/builtin", description="Path to built-in templates"
+        default="create_project/templates/builtin",
+        description="Path to built-in templates",
     )
     custom_path: str = Field(
         default="~/.project-creator/templates",
@@ -196,12 +197,12 @@ class LoggingConfig(BaseModel):
 
 class AIPromptTemplatesConfig(BaseModel):
     """AI prompt templates configuration."""
-    
+
     custom_path: str = Field(
         default="~/.project-creator/ai-templates",
-        description="Path to custom AI prompt templates"
+        description="Path to custom AI prompt templates",
     )
-    
+
     @field_validator("custom_path")
     @classmethod
     def validate_custom_path(cls, v):
@@ -211,7 +212,7 @@ class AIPromptTemplatesConfig(BaseModel):
 
 class AIConfig(BaseModel):
     """AI service configuration settings."""
-    
+
     enabled: bool = Field(default=True, description="Enable AI features")
     ollama_url: Union[HttpUrl, str] = Field(
         default="http://localhost:11434", description="Ollama server URL"
@@ -232,9 +233,9 @@ class AIConfig(BaseModel):
             "llama2:13b",
             "mistral:7b",
             "codellama:7b",
-            "llama2:7b"
+            "llama2:7b",
         ],
-        description="Ordered list of preferred models"
+        description="Ordered list of preferred models",
     )
     context_collection_enabled: bool = Field(
         default=True, description="Enable error context collection"
@@ -262,9 +263,9 @@ class AIConfig(BaseModel):
     )
     prompt_templates: AIPromptTemplatesConfig = Field(
         default_factory=AIPromptTemplatesConfig,
-        description="Prompt template configuration"
+        description="Prompt template configuration",
     )
-    
+
     @field_validator("ollama_url")
     @classmethod
     def validate_ollama_url(cls, v):

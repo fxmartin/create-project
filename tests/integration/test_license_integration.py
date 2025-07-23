@@ -15,7 +15,13 @@ class TestLicenseIntegration:
         licenses = manager.get_available_licenses()
 
         # Should have all 5 licenses we created
-        expected_licenses = {"mit", "apache-2.0", "gpl-3.0", "bsd-3-clause", "unlicense"}
+        expected_licenses = {
+            "mit",
+            "apache-2.0",
+            "gpl-3.0",
+            "bsd-3-clause",
+            "unlicense",
+        }
         assert set(licenses) == expected_licenses
 
     def test_mit_license_loading_and_rendering(self):

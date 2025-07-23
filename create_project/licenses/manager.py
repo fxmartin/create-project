@@ -11,14 +11,14 @@ from .models import License
 
 class LicenseManager:
     """Manager for loading and retrieving software licenses.
-    
+
     Provides centralized access to license templates and handles
     license text retrieval and variable substitution.
     """
 
     def __init__(self, licenses_dir: Optional[Path] = None):
         """Initialize the license manager.
-        
+
         Args:
             licenses_dir: Directory containing license text files.
                          Defaults to resources/licenses/ in package.
@@ -36,13 +36,13 @@ class LicenseManager:
 
     def get_license(self, license_id: str) -> License:
         """Get a license by its ID.
-        
+
         Args:
             license_id: Unique identifier for the license
-            
+
         Returns:
             License object with metadata and text
-            
+
         Raises:
             ValueError: If license ID is not found
         """
@@ -56,7 +56,7 @@ class LicenseManager:
 
     def get_available_licenses(self) -> List[str]:
         """Get list of available license IDs.
-        
+
         Returns:
             List of license IDs
         """
@@ -67,14 +67,14 @@ class LicenseManager:
 
     def render_license(self, license_id: str, variables: Dict[str, str]) -> str:
         """Render license text with variable substitution.
-        
+
         Args:
             license_id: Unique identifier for the license
             variables: Dictionary of variables to substitute
-            
+
         Returns:
             License text with variables substituted
-            
+
         Raises:
             ValueError: If license ID is not found
         """
@@ -88,16 +88,18 @@ class LicenseManager:
 
         return rendered_text
 
-    def validate_license_variables(self, license_id: str, variables: Dict[str, str]) -> bool:
+    def validate_license_variables(
+        self, license_id: str, variables: Dict[str, str]
+    ) -> bool:
         """Validate that all required variables are provided for a license.
-        
+
         Args:
             license_id: Unique identifier for the license
             variables: Dictionary of variables to validate
-            
+
         Returns:
             True if all required variables are provided, False otherwise
-            
+
         Raises:
             ValueError: If license ID is not found
         """
@@ -136,7 +138,7 @@ class LicenseManager:
                     name=metadata["name"],
                     text=license_text,
                     url=metadata["url"],
-                    requires_fields=metadata.get("requires_fields", [])
+                    requires_fields=metadata.get("requires_fields", []),
                 )
 
                 self._licenses[license_id] = license_obj
@@ -151,10 +153,10 @@ class LicenseManager:
 
     def _get_license_metadata(self, license_id: str) -> Dict[str, any]:
         """Get metadata for a specific license ID.
-        
+
         Args:
             license_id: Unique identifier for the license
-            
+
         Returns:
             Dictionary with license metadata (name, url, requires_fields)
         """
@@ -163,32 +165,35 @@ class LicenseManager:
             "mit": {
                 "name": "MIT License",
                 "url": "https://opensource.org/licenses/MIT",
-                "requires_fields": ["author", "year"]
+                "requires_fields": ["author", "year"],
             },
             "apache-2.0": {
                 "name": "Apache License 2.0",
                 "url": "https://opensource.org/licenses/Apache-2.0",
-                "requires_fields": ["author", "year"]
+                "requires_fields": ["author", "year"],
             },
             "gpl-3.0": {
                 "name": "GNU General Public License v3.0",
                 "url": "https://www.gnu.org/licenses/gpl-3.0",
-                "requires_fields": []
+                "requires_fields": [],
             },
             "bsd-3-clause": {
                 "name": "BSD 3-Clause License",
                 "url": "https://opensource.org/licenses/BSD-3-Clause",
-                "requires_fields": ["author", "year"]
+                "requires_fields": ["author", "year"],
             },
             "unlicense": {
                 "name": "The Unlicense",
                 "url": "https://unlicense.org/",
-                "requires_fields": []
-            }
+                "requires_fields": [],
+            },
         }
 
-        return license_metadata.get(license_id, {
-            "name": f"Unknown License ({license_id})",
-            "url": "https://example.com",
-            "requires_fields": []
-        })
+        return license_metadata.get(
+            license_id,
+            {
+                "name": f"Unknown License ({license_id})",
+                "url": "https://example.com",
+                "requires_fields": [],
+            },
+        )

@@ -31,12 +31,12 @@ Usage Example:
         ResponseCacheManager
     )
     import asyncio
-    
+
     async def main():
         # Initialize components
         generator = ResponseGenerator()
         cache = ResponseCacheManager(max_size=100)
-        
+
         # Configure generation
         config = GenerationConfig(
             model_preference="llama2:7b",
@@ -44,20 +44,20 @@ Usage Example:
             max_tokens=1000,
             quality_check=True
         )
-        
+
         # Generate error help
         context = {
             "error_message": "Permission denied",
             "error_type": "PermissionError",
             "operation": "Creating directory"
         }
-        
+
         # Check cache first
         cache_key = cache.generate_key(
             prompt_type=PromptType.ERROR_HELP.value,
             **context
         )
-        
+
         cached = cache.get(cache_key)
         if cached:
             print("Using cached response:", cached)
@@ -68,11 +68,11 @@ Usage Example:
                 context,
                 config
             )
-            
+
             # Cache the response
             cache.put(cache_key, response)
             print("Generated response:", response)
-    
+
     asyncio.run(main())
     ```
 

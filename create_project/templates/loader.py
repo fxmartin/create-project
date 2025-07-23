@@ -37,9 +37,11 @@ class TemplateLoader:
         self.builtin_templates_dir = self.config_manager.get_setting(
             "templates.builtin_path", "create_project/templates/builtin"
         )
-        self.user_templates_dir = Path(self.config_manager.get_setting(
-            "templates.custom_path", "~/.project-creator/templates"
-        )).expanduser()
+        self.user_templates_dir = Path(
+            self.config_manager.get_setting(
+                "templates.custom_path", "~/.project-creator/templates"
+            )
+        ).expanduser()
         # For backward compatibility, also check old field names
         self.template_directories = self.config_manager.get_setting(
             "templates.directories", []

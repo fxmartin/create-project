@@ -13,6 +13,7 @@ from enum import Enum
 
 class PromptType(Enum):
     """Types of AI prompts supported by the response generator."""
+
     ERROR_HELP = "error_help"
     SUGGESTIONS = "suggestions"
     EXPLANATION = "explanation"

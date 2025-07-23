@@ -20,15 +20,15 @@ creation process with validation and helpful feedback at each step.
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .wizard import ProjectWizard
-    from .dialogs import SettingsDialog, ErrorDialog, AIHelpDialog
+    from .dialogs import AIHelpDialog, ErrorDialog, SettingsDialog
     from .widgets import (
-        ValidatedLineEdit,
         CollapsibleSection,
-        ProgressDialog,
         FilePathEdit,
-        LicensePreviewWidget
+        LicensePreviewWidget,
+        ProgressDialog,
+        ValidatedLineEdit,
     )
+    from .wizard import ProjectWizard
 
 # Import main function for easy access
 from .app import main
@@ -36,19 +36,16 @@ from .app import main
 __all__ = [
     # Main entry point
     "main",
-    
     # Main wizard
     "ProjectWizard",
-    
     # Dialogs
     "SettingsDialog",
-    "ErrorDialog", 
+    "ErrorDialog",
     "AIHelpDialog",
-    
     # Custom widgets
     "ValidatedLineEdit",
     "CollapsibleSection",
     "ProgressDialog",
     "FilePathEdit",
-    "LicensePreviewWidget"
+    "LicensePreviewWidget",
 ]

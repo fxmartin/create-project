@@ -7,19 +7,28 @@ Provides pre-configured Template objects that can be used in integration tests
 without loading and parsing actual YAML template files.
 """
 
-from typing import Dict, Any
+from typing import Any, Dict
+
 from create_project.templates.schema import (
-    Template, TemplateMetadata, TemplateConfiguration,
-    TemplateVariable, ProjectStructure, DirectoryItem, FileItem,
-    ValidationRule, ConditionalExpression, VariableType,
-    TemplateAction, ActionType, TemplateHooks
+    DirectoryItem,
+    FileItem,
+    ProjectStructure,
+    Template,
+    TemplateConfiguration,
+    TemplateMetadata,
+    TemplateVariable,
+    ValidationRule,
+    VariableType,
 )
 
 
 def create_mock_one_off_script_template() -> Template:
     """Create a mock one-off script template."""
-    from create_project.templates.schema.template import TemplateCompatibility, TemplateFiles
-    
+    from create_project.templates.schema.template import (
+        TemplateCompatibility,
+        TemplateFiles,
+    )
+
     return Template(
         metadata=TemplateMetadata(
             name="One-off Script",
@@ -27,11 +36,9 @@ def create_mock_one_off_script_template() -> Template:
             version="1.0.0",
             category="script",
             tags=["script", "automation", "utility"],
-            author="Test Author"
+            author="Test Author",
         ),
-        configuration=TemplateConfiguration(
-            schema_version="1.0.0"
-        ),
+        configuration=TemplateConfiguration(schema_version="1.0.0"),
         variables=[
             TemplateVariable(
                 name="project_name",
@@ -42,30 +49,30 @@ def create_mock_one_off_script_template() -> Template:
                     ValidationRule(
                         rule_type="pattern",
                         value="^[a-zA-Z][a-zA-Z0-9_-]*$",
-                        message="Must start with letter and contain only letters, numbers, underscores, and hyphens"
+                        message="Must start with letter and contain only letters, numbers, underscores, and hyphens",
                     )
-                ]
+                ],
             ),
             TemplateVariable(
                 name="description",
                 type=VariableType.STRING,
                 description="Brief description of the script",
                 required=False,
-                default="A simple Python script"
+                default="A simple Python script",
             ),
             TemplateVariable(
                 name="author",
                 type=VariableType.STRING,
                 description="Script author name",
                 required=False,
-                default="Unknown"
+                default="Unknown",
             ),
             TemplateVariable(
                 name="author_email",
                 type=VariableType.EMAIL,
                 description="Author email address",
-                required=False
-            )
+                required=False,
+            ),
         ],
         structure=ProjectStructure(
             root_directory=DirectoryItem(
@@ -73,32 +80,34 @@ def create_mock_one_off_script_template() -> Template:
                 files=[
                     FileItem(
                         name="{{project_name}}.py",
-                        content="#!/usr/bin/env python3\n\ndef main():\n    print('Hello from {{project_name}}!')\n\nif __name__ == '__main__':\n    main()\n"
+                        content="#!/usr/bin/env python3\n\ndef main():\n    print('Hello from {{project_name}}!')\n\nif __name__ == '__main__':\n    main()\n",
                     ),
                     FileItem(
                         name="README.md",
-                        content="# {{project_name}}\n\n{{description}}\n\nAuthor: {{author}}\n"
+                        content="# {{project_name}}\n\n{{description}}\n\nAuthor: {{author}}\n",
                     ),
                     FileItem(
                         name="requirements.txt",
-                        content="# Add your dependencies here\n"
-                    )
+                        content="# Add your dependencies here\n",
+                    ),
                 ],
-                directories=[]
+                directories=[],
             )
         ),
         template_files=TemplateFiles(files=[]),
         compatibility=TemplateCompatibility(
-            min_python_version="3.9.6",
-            supported_os=["macOS", "Linux", "Windows"]
-        )
+            min_python_version="3.9.6", supported_os=["macOS", "Linux", "Windows"]
+        ),
     )
 
 
 def create_mock_python_library_template() -> Template:
     """Create a mock Python library template."""
-    from create_project.templates.schema.template import TemplateCompatibility, TemplateFiles
-    
+    from create_project.templates.schema.template import (
+        TemplateCompatibility,
+        TemplateFiles,
+    )
+
     return Template(
         metadata=TemplateMetadata(
             name="Python Library/Package",
@@ -106,11 +115,9 @@ def create_mock_python_library_template() -> Template:
             version="1.0.0",
             category="library",
             tags=["library", "package", "pypi"],
-            author="Test Author"
+            author="Test Author",
         ),
-        configuration=TemplateConfiguration(
-            schema_version="1.0.0"
-        ),
+        configuration=TemplateConfiguration(schema_version="1.0.0"),
         variables=[
             TemplateVariable(
                 name="project_name",
@@ -121,28 +128,28 @@ def create_mock_python_library_template() -> Template:
                     ValidationRule(
                         rule_type="pattern",
                         value="^[a-zA-Z][a-zA-Z0-9_-]*$",
-                        message="Must be valid Python package name"
+                        message="Must be valid Python package name",
                     )
-                ]
+                ],
             ),
             TemplateVariable(
                 name="description",
                 type=VariableType.STRING,
                 description="Library description",
-                required=True
+                required=True,
             ),
             TemplateVariable(
                 name="author",
                 type=VariableType.STRING,
                 description="Author name",
-                required=True
+                required=True,
             ),
             TemplateVariable(
                 name="author_email",
                 type=VariableType.EMAIL,
                 description="Author email",
-                required=True
-            )
+                required=True,
+            ),
         ],
         structure=ProjectStructure(
             root_directory=DirectoryItem(
@@ -150,16 +157,16 @@ def create_mock_python_library_template() -> Template:
                 files=[
                     FileItem(
                         name="pyproject.toml",
-                        content="[build-system]\nrequires = [\"setuptools\"]\nbuild-backend = \"setuptools.build_meta\"\n\n[project]\nname = \"{{project_name}}\"\nversion = \"0.1.0\"\ndescription = \"{{description}}\"\nauthors = [{name = \"{{author}}\", email = \"{{author_email}}\"}]\n"
+                        content='[build-system]\nrequires = ["setuptools"]\nbuild-backend = "setuptools.build_meta"\n\n[project]\nname = "{{project_name}}"\nversion = "0.1.0"\ndescription = "{{description}}"\nauthors = [{name = "{{author}}", email = "{{author_email}}"}]\n',
                     ),
                     FileItem(
                         name="README.md",
-                        content="# {{project_name}}\n\n{{description}}\n\n## Installation\n\n```bash\npip install {{project_name}}\n```\n"
+                        content="# {{project_name}}\n\n{{description}}\n\n## Installation\n\n```bash\npip install {{project_name}}\n```\n",
                     ),
                     FileItem(
                         name=".gitignore",
-                        content="__pycache__/\n*.py[cod]\n*$py.class\n.Python\nbuild/\ndist/\n*.egg-info/\n.pytest_cache/\n.mypy_cache/\n.ruff_cache/\n.venv/\nvenv/\n"
-                    )
+                        content="__pycache__/\n*.py[cod]\n*$py.class\n.Python\nbuild/\ndist/\n*.egg-info/\n.pytest_cache/\n.mypy_cache/\n.ruff_cache/\n.venv/\nvenv/\n",
+                    ),
                 ],
                 directories=[
                     DirectoryItem(
@@ -171,40 +178,39 @@ def create_mock_python_library_template() -> Template:
                                 files=[
                                     FileItem(
                                         name="__init__.py",
-                                        content='"""{{project_name}} - {{description}}"""\n\n__version__ = "0.1.0"\n'
+                                        content='"""{{project_name}} - {{description}}"""\n\n__version__ = "0.1.0"\n',
                                     )
-                                ]
+                                ],
                             )
-                        ]
+                        ],
                     ),
                     DirectoryItem(
                         name="tests",
                         files=[
-                            FileItem(
-                                name="__init__.py",
-                                content=""
-                            ),
+                            FileItem(name="__init__.py", content=""),
                             FileItem(
                                 name="test_{{project_name}}.py",
-                                content="def test_import():\n    import {{project_name}}\n    assert {{project_name}}.__version__ == \"0.1.0\"\n"
-                            )
-                        ]
-                    )
-                ]
+                                content='def test_import():\n    import {{project_name}}\n    assert {{project_name}}.__version__ == "0.1.0"\n',
+                            ),
+                        ],
+                    ),
+                ],
             )
         ),
         template_files=TemplateFiles(files=[]),
         compatibility=TemplateCompatibility(
-            min_python_version="3.9.6",
-            supported_os=["macOS", "Linux", "Windows"]
-        )
+            min_python_version="3.9.6", supported_os=["macOS", "Linux", "Windows"]
+        ),
     )
 
 
 def create_mock_cli_template() -> Template:
     """Create a mock CLI application template."""
-    from create_project.templates.schema.template import TemplateCompatibility, TemplateFiles
-    
+    from create_project.templates.schema.template import (
+        TemplateCompatibility,
+        TemplateFiles,
+    )
+
     return Template(
         metadata=TemplateMetadata(
             name="CLI Application (Single Package)",
@@ -212,38 +218,36 @@ def create_mock_cli_template() -> Template:
             version="1.0.0",
             category="cli",
             tags=["cli", "command-line", "package"],
-            author="Test Author"
+            author="Test Author",
         ),
-        configuration=TemplateConfiguration(
-            schema_version="1.0.0"
-        ),
+        configuration=TemplateConfiguration(schema_version="1.0.0"),
         variables=[
             TemplateVariable(
                 name="project_name",
                 type=VariableType.STRING,
                 description="Name of the CLI project",
-                required=True
+                required=True,
             ),
             TemplateVariable(
                 name="cli_name",
                 type=VariableType.STRING,
                 description="Name of the CLI command",
-                required=True
+                required=True,
             ),
             TemplateVariable(
                 name="main_command",
                 type=VariableType.STRING,
                 description="Main command function name",
                 required=True,
-                default="main"
+                default="main",
             ),
             TemplateVariable(
                 name="description",
                 type=VariableType.STRING,
                 description="CLI description",
                 required=False,
-                default="A command-line tool"
-            )
+                default="A command-line tool",
+            ),
         ],
         structure=ProjectStructure(
             root_directory=DirectoryItem(
@@ -251,31 +255,27 @@ def create_mock_cli_template() -> Template:
                 files=[
                     FileItem(
                         name="pyproject.toml",
-                        content="[project]\nname = \"{{project_name}}\"\nversion = \"0.1.0\"\n\n[project.scripts]\n{{cli_name}} = \"{{project_name}}.cli:{{main_command}}\"\n"
+                        content='[project]\nname = "{{project_name}}"\nversion = "0.1.0"\n\n[project.scripts]\n{{cli_name}} = "{{project_name}}.cli:{{main_command}}"\n',
                     )
                 ],
                 directories=[
                     DirectoryItem(
                         name="{{project_name}}",
                         files=[
-                            FileItem(
-                                name="__init__.py",
-                                content=""
-                            ),
+                            FileItem(name="__init__.py", content=""),
                             FileItem(
                                 name="cli.py",
-                                content="def {{main_command}}():\n    print('{{cli_name}} CLI')\n"
-                            )
-                        ]
+                                content="def {{main_command}}():\n    print('{{cli_name}} CLI')\n",
+                            ),
+                        ],
                     )
-                ]
+                ],
             )
         ),
         template_files=TemplateFiles(files=[]),
         compatibility=TemplateCompatibility(
-            min_python_version="3.9.6",
-            supported_os=["macOS", "Linux", "Windows"]
-        )
+            min_python_version="3.9.6", supported_os=["macOS", "Linux", "Windows"]
+        ),
     )
 
 
@@ -283,23 +283,25 @@ def create_mock_cli_template() -> Template:
 MOCK_TEMPLATES: Dict[str, Any] = {
     "One-off Script": create_mock_one_off_script_template,
     "Python Library/Package": create_mock_python_library_template,
-    "CLI Application (Single Package)": create_mock_cli_template
+    "CLI Application (Single Package)": create_mock_cli_template,
 }
 
 
 def get_mock_template(name: str) -> Template:
     """Get a mock template by name.
-    
+
     Args:
         name: Template name
-        
+
     Returns:
         Mock Template object
-        
+
     Raises:
         ValueError: If template name not found
     """
     if name not in MOCK_TEMPLATES:
-        raise ValueError(f"Mock template '{name}' not found. Available: {list(MOCK_TEMPLATES.keys())}")
-    
+        raise ValueError(
+            f"Mock template '{name}' not found. Available: {list(MOCK_TEMPLATES.keys())}"
+        )
+
     return MOCK_TEMPLATES[name]()

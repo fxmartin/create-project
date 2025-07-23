@@ -28,7 +28,7 @@ Main Classes:
 Usage Example:
     ```python
     from create_project.ai.ollama_client import OllamaClient, RetryConfig
-    
+
     # Get singleton instance
     client = OllamaClient(
         base_url="http://localhost:11434",
@@ -39,7 +39,7 @@ Usage Example:
             exponential_base=2.0
         )
     )
-    
+
     # Synchronous API calls
     # List available models
     response = client.get_models()
@@ -47,7 +47,7 @@ Usage Example:
         models = response.data.get("models", [])
         for model in models:
             print(f"Model: {model['name']}")
-    
+
     # Generate completion
     response = client.generate_completion(
         model="llama2:7b",
@@ -57,10 +57,10 @@ Usage Example:
     )
     if response.success:
         print(response.content)
-    
+
     # Asynchronous API calls
     import asyncio
-    
+
     async def async_example():
         # Chat completion
         messages = [
@@ -72,10 +72,10 @@ Usage Example:
         )
         if response.success:
             print(response.content)
-        
+
         # Cleanup
         await client.close_async()
-    
+
     asyncio.run(async_example())
     ```
 
@@ -100,6 +100,7 @@ from .ollama_detector import OllamaDetector
 
 class RequestMethod(Enum):
     """HTTP request methods."""
+
     GET = "GET"
     POST = "POST"
     PUT = "PUT"
@@ -109,6 +110,7 @@ class RequestMethod(Enum):
 @dataclass
 class RetryConfig:
     """Configuration for retry behavior."""
+
     max_attempts: int = 3
     base_delay: float = 1.0  # seconds
     max_delay: float = 30.0  # seconds
@@ -119,6 +121,7 @@ class RetryConfig:
 @dataclass
 class OllamaResponse:
     """Standardized response from Ollama API."""
+
     success: bool
     status_code: int
     data: Optional[Dict[str, Any]]
@@ -166,11 +169,11 @@ class OllamaClient:
         self,
         base_url: Optional[str] = None,
         timeout: Optional[float] = None,
-        retry_config: Optional[RetryConfig] = None
+        retry_config: Optional[RetryConfig] = None,
     ):
         """
         Initialize Ollama HTTP client (singleton).
-        
+
         Args:
             base_url: Base URL for Ollama service
             timeout: Default request timeout in seconds
@@ -197,7 +200,7 @@ class OllamaClient:
             "Ollama client initialized",
             base_url=self.base_url,
             timeout=self.timeout,
-            max_attempts=self.retry_config.max_attempts
+            max_attempts=self.retry_config.max_attempts,
         )
 
     @property
@@ -210,9 +213,9 @@ class OllamaClient:
                     connect=self.CONNECTION_TIMEOUT,
                     read=self.timeout,
                     write=self.timeout,
-                    pool=self.timeout
+                    pool=self.timeout,
                 ),
-                headers={"Content-Type": "application/json"}
+                headers={"Content-Type": "application/json"},
             )
             self.logger.debug("Created synchronous HTTP client")
         return self._sync_client
@@ -227,9 +230,9 @@ class OllamaClient:
                     connect=self.CONNECTION_TIMEOUT,
                     read=self.timeout,
                     write=self.timeout,
-                    pool=self.timeout
+                    pool=self.timeout,
                 ),
-                headers={"Content-Type": "application/json"}
+                headers={"Content-Type": "application/json"},
             )
             self.logger.debug("Created asynchronous HTTP client")
         return self._async_client
@@ -237,21 +240,28 @@ class OllamaClient:
     def _calculate_delay(self, attempt: int) -> float:
         """Calculate delay for exponential backoff with jitter."""
         delay = min(
-            self.retry_config.base_delay * (self.retry_config.exponential_base ** attempt),
-            self.retry_config.max_delay
+            self.retry_config.base_delay
+            * (self.retry_config.exponential_base**attempt),
+            self.retry_config.max_delay,
         )
 
         if self.retry_config.jitter:
             import random
-            delay *= (0.5 + random.random() * 0.5)  # Add 0-50% jitter
+
+            delay *= 0.5 + random.random() * 0.5  # Add 0-50% jitter
 
         return delay
 
-    def _should_retry(self, response: Optional[httpx.Response], exception: Optional[Exception]) -> bool:
+    def _should_retry(
+        self, response: Optional[httpx.Response], exception: Optional[Exception]
+    ) -> bool:
         """Determine if request should be retried."""
         if exception:
             # Retry on connection errors and timeouts
-            return isinstance(exception, (httpx.ConnectError, httpx.TimeoutException, httpx.ReadTimeout))
+            return isinstance(
+                exception,
+                (httpx.ConnectError, httpx.TimeoutException, httpx.ReadTimeout),
+            )
 
         if response:
             # Retry on server errors (5xx) but not client errors (4xx)
@@ -265,18 +275,18 @@ class OllamaClient:
         endpoint: str,
         data: Optional[Dict[str, Any]] = None,
         params: Optional[Dict[str, Any]] = None,
-        timeout: Optional[float] = None
+        timeout: Optional[float] = None,
     ) -> OllamaResponse:
         """
         Make synchronous HTTP request with retry logic.
-        
+
         Args:
             method: HTTP method
             endpoint: API endpoint (without base URL)
             data: JSON data for request body
             params: URL parameters
             timeout: Request timeout override
-            
+
         Returns:
             OllamaResponse with results
         """
@@ -290,7 +300,7 @@ class OllamaClient:
             "Making synchronous request",
             method=method,
             endpoint=endpoint,
-            timeout=request_timeout
+            timeout=request_timeout,
         )
 
         last_exception = None
@@ -300,15 +310,23 @@ class OllamaClient:
             try:
                 # Make the request
                 if method.upper() == "GET":
-                    response = self.sync_client.get(url, params=params, timeout=request_timeout)
+                    response = self.sync_client.get(
+                        url, params=params, timeout=request_timeout
+                    )
                 elif method.upper() == "POST":
                     json_data = json.dumps(data) if data else None
-                    response = self.sync_client.post(url, content=json_data, params=params, timeout=request_timeout)
+                    response = self.sync_client.post(
+                        url, content=json_data, params=params, timeout=request_timeout
+                    )
                 elif method.upper() == "PUT":
                     json_data = json.dumps(data) if data else None
-                    response = self.sync_client.put(url, content=json_data, params=params, timeout=request_timeout)
+                    response = self.sync_client.put(
+                        url, content=json_data, params=params, timeout=request_timeout
+                    )
                 elif method.upper() == "DELETE":
-                    response = self.sync_client.delete(url, params=params, timeout=request_timeout)
+                    response = self.sync_client.delete(
+                        url, params=params, timeout=request_timeout
+                    )
                 else:
                     raise AIError(f"Unsupported HTTP method: {method}")
 
@@ -325,30 +343,34 @@ class OllamaClient:
                         "Request successful",
                         status_code=response.status_code,
                         response_time=response_time,
-                        attempt=attempt + 1
+                        attempt=attempt + 1,
                     )
 
                     return OllamaResponse(
                         success=True,
                         status_code=response.status_code,
                         data=response_data,
-                        response_time=response_time
+                        response_time=response_time,
                     )
 
                 # Handle client/server errors
                 if not self._should_retry(response, None):
                     error_msg = f"HTTP {response.status_code}: {response.text}"
-                    self.logger.warning("Request failed (not retryable)", error=error_msg)
+                    self.logger.warning(
+                        "Request failed (not retryable)", error=error_msg
+                    )
 
                     return OllamaResponse(
                         success=False,
                         status_code=response.status_code,
                         data=None,
                         error_message=error_msg,
-                        response_time=time.time() - start_time
+                        response_time=time.time() - start_time,
                     )
 
-                last_exception = AIError(f"HTTP {response.status_code}: {response.text}")
+                last_exception = AIError(
+                    f"HTTP {response.status_code}: {response.text}"
+                )
 
             except Exception as e:
                 last_exception = e
@@ -364,7 +386,7 @@ class OllamaClient:
                     attempt=attempt + 1,
                     max_attempts=self.retry_config.max_attempts,
                     delay=delay,
-                    error=str(last_exception)
+                    error=str(last_exception),
                 )
                 time.sleep(delay)
 
@@ -382,7 +404,7 @@ class OllamaClient:
             status_code=0,
             data=None,
             error_message=error_msg,
-            response_time=time.time() - start_time
+            response_time=time.time() - start_time,
         )
 
     async def request_async(
@@ -391,18 +413,18 @@ class OllamaClient:
         endpoint: str,
         data: Optional[Dict[str, Any]] = None,
         params: Optional[Dict[str, Any]] = None,
-        timeout: Optional[float] = None
+        timeout: Optional[float] = None,
     ) -> OllamaResponse:
         """
         Make asynchronous HTTP request with retry logic.
-        
+
         Args:
             method: HTTP method
             endpoint: API endpoint (without base URL)
             data: JSON data for request body
             params: URL parameters
             timeout: Request timeout override
-            
+
         Returns:
             OllamaResponse with results
         """
@@ -416,7 +438,7 @@ class OllamaClient:
             "Making asynchronous request",
             method=method,
             endpoint=endpoint,
-            timeout=request_timeout
+            timeout=request_timeout,
         )
 
         last_exception = None
@@ -426,15 +448,23 @@ class OllamaClient:
             try:
                 # Make the request
                 if method.upper() == "GET":
-                    response = await self.async_client.get(url, params=params, timeout=request_timeout)
+                    response = await self.async_client.get(
+                        url, params=params, timeout=request_timeout
+                    )
                 elif method.upper() == "POST":
                     json_data = json.dumps(data) if data else None
-                    response = await self.async_client.post(url, content=json_data, params=params, timeout=request_timeout)
+                    response = await self.async_client.post(
+                        url, content=json_data, params=params, timeout=request_timeout
+                    )
                 elif method.upper() == "PUT":
                     json_data = json.dumps(data) if data else None
-                    response = await self.async_client.put(url, content=json_data, params=params, timeout=request_timeout)
+                    response = await self.async_client.put(
+                        url, content=json_data, params=params, timeout=request_timeout
+                    )
                 elif method.upper() == "DELETE":
-                    response = await self.async_client.delete(url, params=params, timeout=request_timeout)
+                    response = await self.async_client.delete(
+                        url, params=params, timeout=request_timeout
+                    )
                 else:
                     raise AIError(f"Unsupported HTTP method: {method}")
 
@@ -451,30 +481,34 @@ class OllamaClient:
                         "Async request successful",
                         status_code=response.status_code,
                         response_time=response_time,
-                        attempt=attempt + 1
+                        attempt=attempt + 1,
                     )
 
                     return OllamaResponse(
                         success=True,
                         status_code=response.status_code,
                         data=response_data,
-                        response_time=response_time
+                        response_time=response_time,
                     )
 
                 # Handle client/server errors
                 if not self._should_retry(response, None):
                     error_msg = f"HTTP {response.status_code}: {response.text}"
-                    self.logger.warning("Async request failed (not retryable)", error=error_msg)
+                    self.logger.warning(
+                        "Async request failed (not retryable)", error=error_msg
+                    )
 
                     return OllamaResponse(
                         success=False,
                         status_code=response.status_code,
                         data=None,
                         error_message=error_msg,
-                        response_time=time.time() - start_time
+                        response_time=time.time() - start_time,
                     )
 
-                last_exception = AIError(f"HTTP {response.status_code}: {response.text}")
+                last_exception = AIError(
+                    f"HTTP {response.status_code}: {response.text}"
+                )
 
             except Exception as e:
                 last_exception = e
@@ -490,7 +524,7 @@ class OllamaClient:
                     attempt=attempt + 1,
                     max_attempts=self.retry_config.max_attempts,
                     delay=delay,
-                    error=str(last_exception)
+                    error=str(last_exception),
                 )
                 await asyncio.sleep(delay)
 
@@ -508,7 +542,7 @@ class OllamaClient:
             status_code=0,
             data=None,
             error_message=error_msg,
-            response_time=time.time() - start_time
+            response_time=time.time() - start_time,
         )
 
     def get_models(self) -> OllamaResponse:
@@ -520,114 +554,78 @@ class OllamaClient:
         return await self.request_async(RequestMethod.GET, "tags")
 
     def generate_completion(
-        self,
-        model: str,
-        prompt: str,
-        stream: bool = False,
-        **kwargs
+        self, model: str, prompt: str, stream: bool = False, **kwargs
     ) -> OllamaResponse:
         """
         Generate completion from model.
-        
+
         Args:
             model: Model name
             prompt: Input prompt
             stream: Whether to stream response
             **kwargs: Additional parameters for generation
-            
+
         Returns:
             OllamaResponse with completion
         """
-        data = {
-            "model": model,
-            "prompt": prompt,
-            "stream": stream,
-            **kwargs
-        }
+        data = {"model": model, "prompt": prompt, "stream": stream, **kwargs}
 
         return self.request(RequestMethod.POST, "generate", data=data)
 
     async def generate_completion_async(
-        self,
-        model: str,
-        prompt: str,
-        stream: bool = False,
-        **kwargs
+        self, model: str, prompt: str, stream: bool = False, **kwargs
     ) -> OllamaResponse:
         """
         Generate completion from model (async).
-        
+
         Args:
             model: Model name
             prompt: Input prompt
             stream: Whether to stream response
             **kwargs: Additional parameters for generation
-            
+
         Returns:
             OllamaResponse with completion
         """
-        data = {
-            "model": model,
-            "prompt": prompt,
-            "stream": stream,
-            **kwargs
-        }
+        data = {"model": model, "prompt": prompt, "stream": stream, **kwargs}
 
         return await self.request_async(RequestMethod.POST, "generate", data=data)
 
     def chat_completion(
-        self,
-        model: str,
-        messages: list,
-        stream: bool = False,
-        **kwargs
+        self, model: str, messages: list, stream: bool = False, **kwargs
     ) -> OllamaResponse:
         """
         Generate chat completion from model.
-        
+
         Args:
             model: Model name
             messages: List of chat messages
             stream: Whether to stream response
             **kwargs: Additional parameters
-            
+
         Returns:
             OllamaResponse with chat completion
         """
-        data = {
-            "model": model,
-            "messages": messages,
-            "stream": stream,
-            **kwargs
-        }
+        data = {"model": model, "messages": messages, "stream": stream, **kwargs}
 
         return self.request(RequestMethod.POST, "chat", data=data)
 
     async def chat_completion_async(
-        self,
-        model: str,
-        messages: list,
-        stream: bool = False,
-        **kwargs
+        self, model: str, messages: list, stream: bool = False, **kwargs
     ) -> OllamaResponse:
         """
         Generate chat completion from model (async).
-        
+
         Args:
             model: Model name
             messages: List of chat messages
             stream: Whether to stream response
             **kwargs: Additional parameters
-            
+
         Returns:
             OllamaResponse with chat completion
         """
-        data = {
-            "model": model,
-            "messages": messages,
-            "stream": stream,
-            **kwargs
-        }
+        data = {"model": model, "messages": messages, "stream": stream, **kwargs}
 
         return await self.request_async(RequestMethod.POST, "chat", data=data)
 

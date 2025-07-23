@@ -86,7 +86,9 @@ class TemplateAction(BaseModel):
 
         if action_type == ActionType.PYTHON:
             # Python code should be valid
-            if not command.strip().startswith(("import ", "from ", "print(", "subprocess.")):
+            if not command.strip().startswith(
+                ("import ", "from ", "print(", "subprocess.")
+            ):
                 # Basic validation - should look like Python code
                 pass
         elif action_type == ActionType.GIT:

@@ -14,18 +14,16 @@ This module contains individual wizard steps that guide users through:
 
 from typing import TYPE_CHECKING
 
-from .project_type import ProjectTypeStep
 from .basic_info import BasicInfoStep
 from .location import LocationStep
-
-if TYPE_CHECKING:
-    from .options import OptionsStep
-    from .review import ReviewStep
+from .options import OptionsStep
+from .project_type import ProjectTypeStep
+from .review import ReviewStep
 
 __all__ = [
     "ProjectTypeStep",
-    "BasicInfoStep", 
+    "BasicInfoStep",
     "LocationStep",
     "OptionsStep",
-    "ReviewStep"
+    "ReviewStep",
 ]

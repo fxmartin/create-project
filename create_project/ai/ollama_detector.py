@@ -22,7 +22,7 @@ Classes:
 Example:
     detector = OllamaDetector()
     status = detector.detect()
-    
+
     if status.is_installed:
         print(f"Ollama {status.version} found at {status.binary_path}")
         if status.is_running:
@@ -81,10 +81,10 @@ class OllamaDetector:
     def detect(self, force_refresh: bool = False) -> OllamaStatus:
         """
         Detect Ollama installation status with caching.
-        
+
         Args:
             force_refresh: If True, bypass cache and re-detect
-            
+
         Returns:
             OllamaStatus with detection results
         """
@@ -94,7 +94,9 @@ class OllamaDetector:
                 self.logger.debug("Using cached Ollama status")
                 return self._cache
 
-            self.logger.info("Detecting Ollama installation", service_url=self.service_url)
+            self.logger.info(
+                "Detecting Ollama installation", service_url=self.service_url
+            )
 
             # Perform fresh detection
             status = self._detect_ollama()
@@ -107,7 +109,7 @@ class OllamaDetector:
                 is_installed=status.is_installed,
                 is_running=status.is_running,
                 version=status.version,
-                binary_path=str(status.binary_path) if status.binary_path else None
+                binary_path=str(status.binary_path) if status.binary_path else None,
             )
 
             return status
@@ -147,7 +149,7 @@ class OllamaDetector:
             binary_path=binary_path,
             service_url=self.service_url,
             detected_at=datetime.now(),
-            error_message=error_message
+            error_message=error_message,
         )
 
     def _find_binary(self) -> Optional[Path]:
@@ -165,7 +167,9 @@ class OllamaDetector:
                 # Check if executable
                 try:
                     if path.stat().st_mode & 0o111:  # Has execute permission
-                        self.logger.debug("Found Ollama at common location", path=str(path))
+                        self.logger.debug(
+                            "Found Ollama at common location", path=str(path)
+                        )
                         return path
                 except OSError:
                     continue
@@ -180,7 +184,7 @@ class OllamaDetector:
                 [str(binary_path), "--version"],
                 capture_output=True,
                 text=True,
-                timeout=10  # 10 second timeout
+                timeout=10,  # 10 second timeout
             )
 
             if result.returncode == 0:
@@ -188,7 +192,11 @@ class OllamaDetector:
                 version_line = result.stdout.strip()
                 if version_line:
                     parts = version_line.split()
-                    if len(parts) >= 3 and parts[0] == "ollama" and parts[1] == "version":
+                    if (
+                        len(parts) >= 3
+                        and parts[0] == "ollama"
+                        and parts[1] == "version"
+                    ):
                         return parts[2]
                     # Fallback: return full line
                     return version_line
@@ -196,7 +204,7 @@ class OllamaDetector:
             self.logger.warning(
                 "Ollama version command failed",
                 returncode=result.returncode,
-                stderr=result.stderr
+                stderr=result.stderr,
             )
             return None
 
@@ -204,7 +212,9 @@ class OllamaDetector:
             self.logger.warning("Ollama version command timed out")
             return None
         except Exception as e:
-            self.logger.warning("Failed to execute Ollama version command", error=str(e))
+            self.logger.warning(
+                "Failed to execute Ollama version command", error=str(e)
+            )
             return None
 
     def _check_service_health(self) -> bool:
@@ -218,9 +228,14 @@ class OllamaDetector:
                 is_running = response.status_code in [200, 404]
 
                 if is_running:
-                    self.logger.debug("Ollama service is running", status_code=response.status_code)
+                    self.logger.debug(
+                        "Ollama service is running", status_code=response.status_code
+                    )
                 else:
-                    self.logger.debug("Ollama service returned unexpected status", status_code=response.status_code)
+                    self.logger.debug(
+                        "Ollama service returned unexpected status",
+                        status_code=response.status_code,
+                    )
 
                 return is_running
 
@@ -237,10 +252,10 @@ class OllamaDetector:
     def ensure_available(self) -> OllamaStatus:
         """
         Ensure Ollama is available, raising exception if not.
-        
+
         Returns:
             OllamaStatus if available
-            
+
         Raises:
             OllamaNotFoundError: If Ollama is not installed or not running
         """

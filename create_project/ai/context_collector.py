@@ -39,7 +39,7 @@ logger = get_logger(__name__)
 @dataclass
 class SystemContext:
     """System information for error context.
-    
+
     Attributes:
         os_name: Operating system name
         os_version: Operating system version
@@ -49,6 +49,7 @@ class SystemContext:
         working_directory: Current working directory (sanitized)
         environment_variables: Relevant environment variables (sanitized)
     """
+
     os_name: str
     os_version: str
     python_version: str
@@ -61,7 +62,7 @@ class SystemContext:
 @dataclass
 class ProjectContext:
     """Project generation parameters from failed attempts.
-    
+
     Attributes:
         template_name: Name of template being used
         target_path: Target path for project creation (sanitized)
@@ -70,6 +71,7 @@ class ProjectContext:
         attempted_operations: List of operations that were attempted
         partial_results: Partial results from failed generation
     """
+
     template_name: str
     target_path: str
     project_variables: Dict[str, Any]
@@ -81,7 +83,7 @@ class ProjectContext:
 @dataclass
 class ErrorContext:
     """Error information from failed generation attempts.
-    
+
     Attributes:
         error_type: Type of error that occurred
         error_message: Error message (sanitized)
@@ -90,6 +92,7 @@ class ErrorContext:
         original_error: Original underlying error if available
         validation_errors: Template validation errors if any
     """
+
     error_type: str
     error_message: str
     traceback_lines: List[str]
@@ -101,7 +104,7 @@ class ErrorContext:
 @dataclass
 class TemplateContext:
     """Template information for error context.
-    
+
     Attributes:
         template_name: Template name
         template_version: Template version
@@ -111,6 +114,7 @@ class TemplateContext:
         template_files: List of template files being processed
         validation_status: Template validation status
     """
+
     template_name: str
     template_version: str
     required_variables: List[str]
@@ -123,7 +127,7 @@ class TemplateContext:
 @dataclass
 class CompleteErrorContext:
     """Complete error context for AI assistance.
-    
+
     Attributes:
         timestamp: When context was collected
         context_version: Version of context collection format
@@ -134,6 +138,7 @@ class CompleteErrorContext:
         context_size_bytes: Total size of context data
         collection_duration_ms: Time taken to collect context
     """
+
     timestamp: str
     context_version: str
     system: SystemContext
@@ -146,11 +151,11 @@ class CompleteErrorContext:
 
 class ErrorContextCollector:
     """Collects comprehensive error context for AI assistance.
-    
+
     This class gathers system information, project parameters, error details,
     and template context when project generation failures occur. All sensitive
     information is sanitized before collection.
-    
+
     The collected context is structured to be under 4KB for efficiency while
     providing all necessary information for AI-powered assistance.
     """
@@ -183,10 +188,10 @@ class ErrorContextCollector:
         target_path: Optional[Path] = None,
         options: Optional[Dict[str, Any]] = None,
         attempted_operations: Optional[List[str]] = None,
-        partial_results: Optional[Dict[str, Any]] = None
+        partial_results: Optional[Dict[str, Any]] = None,
     ) -> CompleteErrorContext:
         """Collect complete error context for AI assistance.
-        
+
         Args:
             error: The exception that occurred
             template: Template being processed (if available)
@@ -195,10 +200,10 @@ class ErrorContextCollector:
             options: Project generation options
             attempted_operations: List of operations attempted
             partial_results: Partial results from failed generation
-            
+
         Returns:
             CompleteErrorContext with all collected information
-            
+
         Raises:
             ContextCollectionError: If context collection fails
         """
@@ -210,11 +215,17 @@ class ErrorContextCollector:
             # Collect all context components
             system_context = self._collect_system_context()
             project_context = self._collect_project_context(
-                template, project_variables, target_path, options,
-                attempted_operations, partial_results
+                template,
+                project_variables,
+                target_path,
+                options,
+                attempted_operations,
+                partial_results,
             )
             error_context = self._collect_error_context(error)
-            template_context = self._collect_template_context(template, project_variables)
+            template_context = self._collect_template_context(
+                template, project_variables
+            )
 
             # Create complete context
             end_time = datetime.now()
@@ -228,7 +239,7 @@ class ErrorContextCollector:
                 error=error_context,
                 template=template_context,
                 context_size_bytes=0,  # Will be calculated below
-                collection_duration_ms=duration_ms
+                collection_duration_ms=duration_ms,
             )
 
             # Calculate context size
@@ -241,38 +252,37 @@ class ErrorContextCollector:
                 self.logger.warning(
                     "Context size exceeds target",
                     size_bytes=context_size,
-                    target_bytes=self.MAX_CONTEXT_SIZE
+                    target_bytes=self.MAX_CONTEXT_SIZE,
                 )
 
             self.logger.info(
                 "Error context collection completed",
                 duration_ms=duration_ms,
-                size_bytes=context_size
+                size_bytes=context_size,
             )
 
             return complete_context
 
         except Exception as e:
-            self.logger.error(
-                "Failed to collect error context",
-                error=str(e)
-            )
+            self.logger.error("Failed to collect error context", error=str(e))
             raise ContextCollectionError(
                 f"Context collection failed: {str(e)}",
                 details={"original_error": str(error)},
-                original_error=e
+                original_error=e,
             ) from e
 
     def _collect_system_context(self) -> SystemContext:
         """Collect system information.
-        
+
         Returns:
             SystemContext with sanitized system information
         """
         try:
             # Get disk space for current directory
             disk_usage = shutil.disk_usage(".")
-            available_gb = disk_usage[2] / (1024 ** 3)  # disk_usage returns (total, used, free)
+            available_gb = disk_usage[2] / (
+                1024**3
+            )  # disk_usage returns (total, used, free)
 
             # Get relevant environment variables (sanitized)
             env_vars = {}
@@ -288,7 +298,7 @@ class ErrorContextCollector:
                 platform_machine=platform.machine(),
                 available_disk_space_gb=round(available_gb, 2),
                 working_directory=self._sanitize_text(str(Path.cwd())),
-                environment_variables=env_vars
+                environment_variables=env_vars,
             )
 
         except Exception as e:
@@ -321,7 +331,7 @@ class ErrorContextCollector:
                 platform_machine=machine,
                 available_disk_space_gb=0.0,
                 working_directory=working_dir,
-                environment_variables={}
+                environment_variables={},
             )
 
     def _collect_project_context(
@@ -331,10 +341,10 @@ class ErrorContextCollector:
         target_path: Optional[Path],
         options: Optional[Dict[str, Any]],
         attempted_operations: Optional[List[str]],
-        partial_results: Optional[Dict[str, Any]]
+        partial_results: Optional[Dict[str, Any]],
     ) -> ProjectContext:
         """Collect project generation context.
-        
+
         Args:
             template: Template being processed
             project_variables: Variables used for generation
@@ -342,7 +352,7 @@ class ErrorContextCollector:
             options: Generation options
             attempted_operations: Operations that were attempted
             partial_results: Partial results from generation
-            
+
         Returns:
             ProjectContext with sanitized project information
         """
@@ -366,19 +376,21 @@ class ErrorContextCollector:
 
         return ProjectContext(
             template_name=template.name if template else "unknown",
-            target_path=self._sanitize_text(str(target_path)) if target_path else "unknown",
+            target_path=self._sanitize_text(str(target_path))
+            if target_path
+            else "unknown",
             project_variables=sanitized_variables,
             options=sanitized_options,
             attempted_operations=attempted_operations or [],
-            partial_results=sanitized_results
+            partial_results=sanitized_results,
         )
 
     def _collect_error_context(self, error: Exception) -> ErrorContext:
         """Collect error information.
-        
+
         Args:
             error: The exception that occurred
-            
+
         Returns:
             ErrorContext with sanitized error information
         """
@@ -386,7 +398,9 @@ class ErrorContextCollector:
         tb_lines = []
         if hasattr(error, "__traceback__") and error.__traceback__:
             tb_lines = traceback.format_tb(error.__traceback__)
-            tb_lines = [self._sanitize_text(line.strip()) for line in tb_lines[-5:]]  # Last 5 lines
+            tb_lines = [
+                self._sanitize_text(line.strip()) for line in tb_lines[-5:]
+            ]  # Last 5 lines
 
         # Extract error location
         error_location = None
@@ -403,7 +417,11 @@ class ErrorContextCollector:
 
         # Get validation errors if available
         validation_errors = []
-        if hasattr(error, "details") and error.details and isinstance(error.details, dict):
+        if (
+            hasattr(error, "details")
+            and error.details
+            and isinstance(error.details, dict)
+        ):
             if "validation_errors" in error.details:
                 validation_errors = [
                     self._sanitize_text(str(ve))
@@ -416,20 +434,18 @@ class ErrorContextCollector:
             traceback_lines=tb_lines,
             error_location=error_location,
             original_error=original_error,
-            validation_errors=validation_errors
+            validation_errors=validation_errors,
         )
 
     def _collect_template_context(
-        self,
-        template: Optional[Template],
-        project_variables: Optional[Dict[str, Any]]
+        self, template: Optional[Template], project_variables: Optional[Dict[str, Any]]
     ) -> TemplateContext:
         """Collect template information.
-        
+
         Args:
             template: Template being processed
             project_variables: Variables provided for template
-            
+
         Returns:
             TemplateContext with template information
         """
@@ -441,7 +457,7 @@ class ErrorContextCollector:
                 available_variables=[],
                 missing_variables=[],
                 template_files=[],
-                validation_status="no_template"
+                validation_status="no_template",
             )
 
         # Get available variables
@@ -458,7 +474,9 @@ class ErrorContextCollector:
         # Get template files
         template_files = []
         if hasattr(template, "files") and template.files:
-            template_files = [f.source for f in template.files[:10]]  # Limit to 10 files
+            template_files = [
+                f.source for f in template.files[:10]
+            ]  # Limit to 10 files
 
         return TemplateContext(
             template_name=template.name,
@@ -467,15 +485,15 @@ class ErrorContextCollector:
             available_variables=available_vars,
             missing_variables=missing_vars,
             template_files=template_files,
-            validation_status="valid" if not missing_vars else "missing_variables"
+            validation_status="valid" if not missing_vars else "missing_variables",
         )
 
     def _sanitize_text(self, text: str) -> str:
         """Sanitize text by removing PII.
-        
+
         Args:
             text: Text to sanitize
-            
+
         Returns:
             Sanitized text with PII removed
         """
@@ -489,10 +507,10 @@ class ErrorContextCollector:
 
     def _sanitize_value(self, value: Any) -> Any:
         """Sanitize any value by removing PII.
-        
+
         Args:
             value: Value to sanitize
-            
+
         Returns:
             Sanitized value
         """

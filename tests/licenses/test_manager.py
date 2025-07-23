@@ -18,7 +18,12 @@ class TestLicenseManager:
         manager = LicenseManager()
 
         # Should set default path to package resources/licenses
-        expected_path = Path(__file__).parent.parent.parent / "create_project" / "resources" / "licenses"
+        expected_path = (
+            Path(__file__).parent.parent.parent
+            / "create_project"
+            / "resources"
+            / "licenses"
+        )
         assert manager.licenses_dir.resolve() == expected_path.resolve()
         assert not manager._loaded
 
@@ -86,13 +91,15 @@ Permission is hereby granted, free of charge..."""
                 name="Test License",
                 text=license_text,
                 url="https://example.com",
-                requires_fields=["author", "year"]
+                requires_fields=["author", "year"],
             )
             manager._licenses["test"] = license_obj
             manager._loaded = True
 
             # Test rendering
-            rendered = manager.render_license("test", {"author": "John Doe", "year": "2025"})
+            rendered = manager.render_license(
+                "test", {"author": "John Doe", "year": "2025"}
+            )
 
             assert "Copyright (c) 2025 John Doe" in rendered
             assert "{year}" not in rendered
@@ -109,13 +116,15 @@ Permission is hereby granted, free of charge..."""
                 name="Test License",
                 text="Test text with {author} and {year}",
                 url="https://example.com",
-                requires_fields=["author", "year"]
+                requires_fields=["author", "year"],
             )
             manager._licenses["test"] = license_obj
             manager._loaded = True
 
             # Test validation with complete variables
-            is_valid = manager.validate_license_variables("test", {"author": "John Doe", "year": "2025"})
+            is_valid = manager.validate_license_variables(
+                "test", {"author": "John Doe", "year": "2025"}
+            )
             assert is_valid
 
     def test_validate_license_variables_missing(self):
@@ -129,13 +138,15 @@ Permission is hereby granted, free of charge..."""
                 name="Test License",
                 text="Test text with {author} and {year}",
                 url="https://example.com",
-                requires_fields=["author", "year"]
+                requires_fields=["author", "year"],
             )
             manager._licenses["test"] = license_obj
             manager._loaded = True
 
             # Test validation with missing variables
-            is_valid = manager.validate_license_variables("test", {"author": "John Doe"})
+            is_valid = manager.validate_license_variables(
+                "test", {"author": "John Doe"}
+            )
             assert not is_valid
 
     def test_validate_license_variables_no_requirements(self):
@@ -149,7 +160,7 @@ Permission is hereby granted, free of charge..."""
                 name="The Unlicense",
                 text="This is free and unencumbered software...",
                 url="https://unlicense.org/",
-                requires_fields=[]
+                requires_fields=[],
             )
             manager._licenses["unlicense"] = license_obj
             manager._loaded = True
