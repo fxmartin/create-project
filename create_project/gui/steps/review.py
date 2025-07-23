@@ -7,7 +7,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from PyQt6.QtCore import QPropertyAnimation, QRect, pyqtSignal
+from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
     QFrame,
     QGroupBox,
@@ -24,6 +24,7 @@ from PyQt6.QtWidgets import (
     QWizardPage,
 )
 
+from create_project.gui.widgets.collapsible_section import CollapsibleSection
 from create_project.utils.logger import get_logger
 
 if TYPE_CHECKING:
@@ -31,74 +32,6 @@ if TYPE_CHECKING:
     from create_project.templates import TemplateEngine
 
 logger = get_logger(__name__)
-
-
-class CollapsibleSection(QWidget):
-    """A collapsible section widget with title and content."""
-
-    def __init__(self, title: str, parent: Optional[QWidget] = None) -> None:
-        """Initialize the collapsible section.
-
-        Args:
-            title: Section title
-            parent: Parent widget
-        """
-        super().__init__(parent)
-        self._is_collapsed = False
-        self._animation = QPropertyAnimation(self, b"minimumHeight")
-        self._animation.setDuration(200)
-
-        # Main layout
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-
-        # Header
-        self._header = QPushButton(title)
-        self._header.setCheckable(True)
-        self._header.setChecked(True)
-        self._header.setStyleSheet("""
-            QPushButton {
-                text-align: left;
-                padding: 8px;
-                border: 1px solid #ccc;
-                background-color: #f0f0f0;
-                font-weight: bold;
-            }
-            QPushButton:checked {
-                border-bottom: none;
-            }
-        """)
-        self._header.toggled.connect(self._toggle_content)
-        layout.addWidget(self._header)
-
-        # Content frame
-        self._content_frame = QFrame()
-        self._content_frame.setFrameStyle(QFrame.Shape.Box)
-        self._content_frame.setStyleSheet("border: 1px solid #ccc; border-top: none;")
-        self._content_layout = QVBoxLayout(self._content_frame)
-        self._content_layout.setContentsMargins(8, 8, 8, 8)
-        layout.addWidget(self._content_frame)
-
-    def add_content(self, widget: QWidget) -> None:
-        """Add content widget to the section.
-
-        Args:
-            widget: Widget to add to content area
-        """
-        self._content_layout.addWidget(widget)
-
-    def _toggle_content(self, checked: bool) -> None:
-        """Toggle content visibility.
-
-        Args:
-            checked: Whether section is expanded
-        """
-        self._is_collapsed = not checked
-        if self._is_collapsed:
-            self._content_frame.hide()
-        else:
-            self._content_frame.show()
 
 
 class ReviewStep(QWizardPage):

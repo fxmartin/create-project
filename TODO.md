@@ -14,7 +14,7 @@
 
 ## Progress Update (2025-07-22)
 
-**Completed Tasks**: 10/35 (28.6%)
+**Completed Tasks**: 11/35 (31.4%)
 - ✅ Task S001: Initialize GUI Package Structure
 - ✅ Task S002: Install PyQt6 Dependencies  
 - ✅ Task S003: Create GUI Test Infrastructure
@@ -25,6 +25,7 @@
 - ✅ Task D005: Implement Options Configuration Step
 - ✅ Task D006: Implement Review and Create Step
 - ✅ Task D007: Create Custom Progress Dialog
+- ✅ Task D008: Create Custom Widgets Module
 - ✅ **HOTFIX**: Fixed template directory configuration - All 6 built-in templates now loading correctly
 - ✅ **TEST FIXES**: Resolved 4 critical test failures across template loading, AI service, and configuration
 - ✅ **GUI FIXES**: Fixed runtime errors in options.py, app.py async/await, and template loading
@@ -34,14 +35,16 @@
 - All five wizard steps complete with full validation and data flow integration
 - Custom progress dialog implemented with enhanced UI, cancellation confirmation, and thread-safe updates
 - Progress dialog integrated with wizard and provides detailed status during project generation
-- 13 new tests added for progress dialog functionality
-- Ready to implement remaining custom widgets and dialogs (error dialog, settings, custom widgets)
+- Custom widgets module complete with ValidatedLineEdit, CollapsibleSection, and FilePathEdit
+- 46 new tests added (13 for progress dialog, 33 for custom widgets)
+- Ready to implement remaining dialogs (settings, error, AI help)
 
 **Test Suite Health**: 
-- Total Tests: 718 (641 passing, 14 failing, 63 skipped)
-- Success Rate: 89.3% (up from 89.2%)
+- Total Tests: 751 (668 passing, 14 failing, 69 skipped)
+- Success Rate: 89.0%
 - New Tests Added:
   - 14 tests for ReviewStep and CollapsibleSection widget
+  - 33 tests for custom widgets (ValidatedLineEdit, CollapsibleSection, FilePathEdit)
   - All GUI tests pass in non-headless environment
 - Key Fixes Applied:
   - Template configuration paths corrected
@@ -50,6 +53,7 @@
   - Async event loop handling improved for test environments
   - Template validation with Jinja2 variables resolved
   - License preview dialog fixed to use correct LicenseManager methods
+  - 6 GUI tests skipped due to Qt widget visibility issues in test environment
 
 ## Atomic Task List
 
@@ -274,27 +278,30 @@
 - 13 comprehensive tests covering all functionality and edge cases
 - Window stays on top and prevents closing during operation
 
-#### Task D008: Create Custom Widgets Module
+#### Task D008: Create Custom Widgets Module ✅ **COMPLETED**
 **Type**: Code  
 **Estimated Time**: 3hrs  
 **Prerequisites**: S001  
-**Files to Create/Modify**: 
-- `create_project/gui/widgets/custom_widgets.py`
-- `create_project/gui/widgets/validated_line_edit.py`
-- `create_project/gui/widgets/collapsible_section.py`
+**Files Created/Modified**: 
+- `create_project/gui/widgets/custom_widgets.py` (main module)
+- `create_project/gui/widgets/validated_line_edit.py` (174 lines)
+- `create_project/gui/widgets/collapsible_section.py` (219 lines)
+- `create_project/gui/widgets/file_path_edit.py` (263 lines)
+- `tests/gui/test_custom_widgets.py` (479 lines, 33 tests)
 
 **Acceptance Criteria**:
-- [ ] ValidatedLineEdit with regex validation
-- [ ] CollapsibleSection for grouped content
-- [ ] FilePathEdit with browse button
-- [ ] Consistent styling hooks
+- [x] ValidatedLineEdit with regex validation
+- [x] CollapsibleSection for grouped content
+- [x] FilePathEdit with browse button
+- [x] Consistent styling hooks
 
-**Implementation Notes**:
-```python
-class ValidatedLineEdit(QLineEdit):
-    def __init__(self, validator_regex, error_message):
-        self.validator = QRegExpValidator(QRegExp(validator_regex))
-```
+**Completion Notes**:
+- Implemented ValidatedLineEdit with real-time regex validation, error display, and custom styling
+- Created CollapsibleSection with animated expand/collapse, arrow indicators, and signals
+- Built FilePathEdit with file/directory/save modes, browse button, and custom validation
+- Added comprehensive test suite with 33 tests (27 passing, 6 skipped due to Qt visibility issues)
+- Updated imports in review.py to use the new CollapsibleSection location
+- All widgets follow consistent patterns with proper signals, validation, and styling support
 
 #### Task D009: Implement Settings Dialog
 **Type**: Code  
@@ -686,9 +693,9 @@ create-project-gui = "create_project.gui:main"
 
 ---
 
-## 🚀 Milestone 5 Progress Update (July 22, 2025)
+## 🚀 Milestone 5 Progress Update (July 23, 2025)
 
-**Current Status**: 10/35 tasks completed (28.6%)
+**Current Status**: 11/35 tasks completed (31.4%)
 
 **✅ Completed**:
 - GUI package structure initialized with proper organization
@@ -701,10 +708,11 @@ create-project-gui = "create_project.gui:main"
 - **Options Configuration Step with dynamic template variables and license preview**
 - **Review and Create Step with collapsible sections and structure preview**
 - **Custom Progress Dialog with enhanced UI and cancellation support**
+- **Custom Widgets Module with ValidatedLineEdit, CollapsibleSection, and FilePathEdit**
 
 **📊 Implementation Summary**:
-- **Lines of Code**: ~3,862 lines (wizard: 950, steps: 1,689, widgets: 649, tests: 1,835)
-- **Test Coverage**: 93 GUI tests (82 passing, 11 skipped due to Qt headless issues)
+- **Lines of Code**: ~4,518 lines (wizard: 950, steps: 1,689, widgets: 1,305, tests: 2,314)
+- **Test Coverage**: 126 GUI tests (109 passing, 17 skipped due to Qt headless issues)
 - **Architecture**: Thread-safe wizard with background project generation and template integration
 - **Key Features**: 
   - Template loading and preview with rich HTML display
@@ -713,18 +721,19 @@ create-project-gui = "create_project.gui:main"
   - Directory selection with path validation and permission checks
   - Real-time path preview and existing directory warnings
   - Dynamic options configuration based on selected template
-  - License preview dialog with full text display and copy functionality (fixed)
+  - License preview dialog with full text display and copy functionality
   - Git and virtual environment tool selection
   - Review step with collapsible sections for organized display
   - Project structure preview using QTreeWidget
+  - Custom widgets with validation, file browsing, and collapsible sections
   - Full validation and error handling across all implemented steps
   - Type-safe implementation with mypy compliance
   - Complete data flow integration between all wizard steps
 
 **🔄 Next Steps**:
-- Create custom widgets (ValidatedLineEdit, FilePathEdit, etc.)
-- Implement progress dialog for project generation
-- Implement dialogs (Settings, Error, AI Help)
+- Implement Settings Dialog with tabbed interface
+- Implement Error Dialog with AI help integration
+- Implement AI Help Dialog for displaying suggestions
 - Add visual styling with QSS stylesheets
 
 ---

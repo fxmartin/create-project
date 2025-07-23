@@ -11,20 +11,17 @@ This module contains reusable custom widgets that provide enhanced functionality
 - FilePathEdit for path selection
 """
 
-from typing import TYPE_CHECKING
-
+from .collapsible_section import CollapsibleSection
+from .file_path_edit import FilePathEdit, SelectionMode
 from .license_preview import LicensePreviewDialog
-
-if TYPE_CHECKING:
-    from .collapsible_section import CollapsibleSection
-    from .custom_widgets import FilePathEdit
-    from .progress_dialog import ProgressDialog
-    from .validated_line_edit import ValidatedLineEdit
+from .progress_dialog import ProgressDialog
+from .validated_line_edit import ValidatedLineEdit
 
 __all__ = [
-    "FilePathEdit",
-    "ValidatedLineEdit",
     "CollapsibleSection",
-    "ProgressDialog",
+    "FilePathEdit",
     "LicensePreviewDialog",
+    "ProgressDialog",
+    "SelectionMode",
+    "ValidatedLineEdit",
 ]
