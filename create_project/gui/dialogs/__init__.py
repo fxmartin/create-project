@@ -14,9 +14,9 @@ from typing import TYPE_CHECKING
 
 # Import implemented components
 from .settings import SettingsDialog
+from .error import ErrorDialog
 
 if TYPE_CHECKING:
     from .ai_help import AIHelpDialog
-    from .error import ErrorDialog
 
 __all__ = ["SettingsDialog", "ErrorDialog", "AIHelpDialog"]
