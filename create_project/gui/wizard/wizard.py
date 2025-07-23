@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, pyqtSlot
-from PyQt6.QtWidgets import QMessageBox, QProgressDialog, QWizard, QWizardPage
+from PyQt6.QtWidgets import QMessageBox, QWizard, QWizardPage
 
 from create_project.ai.ai_service import AIService
 from create_project.config.config_manager import ConfigManager
@@ -32,6 +32,7 @@ from ..steps.location import LocationStep
 from ..steps.options import OptionsStep
 from ..steps.project_type import ProjectTypeStep
 from ..steps.review import ReviewStep
+from ..widgets.progress_dialog import ProgressDialog
 from .base_step import WizardStep
 
 logger = get_logger(__name__)
@@ -115,7 +116,10 @@ class ProjectGenerationThread(QThread):
             if self._cancelled:
                 return
 
-            self.progress.emit(20, "Creating project structure...")
+            self.progress.emit(10, "Loading template configuration...")
+            
+            if self._cancelled:
+                return
 
             # Use the async API directly with required parameters
             from create_project.core.project_generator import ProjectGenerator
@@ -127,8 +131,13 @@ class ProjectGenerationThread(QThread):
             )
             
             # Get template
+            self.progress.emit(20, "Loading template...")
             template = self.template_engine.load_template(self.wizard.wizard_data.template_path)
             
+            if self._cancelled:
+                return
+            
+            self.progress.emit(30, "Preparing project variables...")
             # Collect variables
             variables = {
                 "project_name": self.wizard.wizard_data.project_name,
@@ -141,6 +150,10 @@ class ProjectGenerationThread(QThread):
             if self.wizard.wizard_data.additional_options:
                 variables.update(self.wizard.wizard_data.additional_options)
             
+            if self._cancelled:
+                return
+            
+            self.progress.emit(40, "Starting project generation...")
             # Generate project
             result = generator.generate_project(
                 template=template,
@@ -163,8 +176,13 @@ class ProjectGenerationThread(QThread):
 
     def _progress_callback(self, message: str, percentage: Optional[int] = None):
         """Handle progress updates from generator."""
+        # Map internal progress to 40-90% range since we use 0-40% for setup
         if percentage is not None:
-            self.progress.emit(percentage, message)
+            scaled_percentage = 40 + int((percentage / 100.0) * 50)
+            self.progress.emit(scaled_percentage, message)
+        else:
+            # If no percentage, just emit the message with current progress
+            self.progress.emit(50, message)
 
     def cancel(self):
         """Cancel the generation process."""
@@ -338,14 +356,9 @@ class ProjectWizard(QWizard):
             project_path: Path where project will be created
             options: Project generation options
         """
-        # Create progress dialog
-        self.progress_dialog = QProgressDialog(
-            "Creating project...", "Cancel", 0, 100, self
-        )
-        self.progress_dialog.setWindowTitle("Project Generation")
-        self.progress_dialog.setWindowModality(Qt.WindowModality.WindowModal)
-        self.progress_dialog.setMinimumDuration(0)
-        self.progress_dialog.setValue(0)
+        # Create custom progress dialog
+        self.progress_dialog = ProgressDialog(self)
+        self.progress_dialog.show()
 
         # Create and start generation thread
         self.generation_thread = ProjectGenerationThread(
@@ -355,7 +368,7 @@ class ProjectWizard(QWizard):
         # Connect signals
         self.generation_thread.progress.connect(self._on_generation_progress)
         self.generation_thread.finished.connect(self._on_generation_finished)
-        self.progress_dialog.canceled.connect(self._on_generation_cancelled)
+        self.progress_dialog.cancelled.connect(self._on_generation_cancelled)
 
         # Start generation
         self.generation_thread.start()
@@ -364,21 +377,18 @@ class ProjectWizard(QWizard):
     def _on_generation_progress(self, percentage: int, message: str) -> None:
         """Handle generation progress updates."""
         if self.progress_dialog:
-            self.progress_dialog.setValue(percentage)
-            self.progress_dialog.setLabelText(message)
+            self.progress_dialog.update_progress(percentage, message)
 
     @pyqtSlot(bool, str)
     def _on_generation_finished(self, success: bool, message: str) -> None:
         """Handle generation completion."""
         if self.progress_dialog:
-            self.progress_dialog.close()
-            self.progress_dialog = None
-
-        if success:
-            QMessageBox.information(self, "Success", message)
-            if self.wizard_data.target_path:
+            self.progress_dialog.set_finished(success, message)
+            
+            if success and self.wizard_data.target_path:
                 self.project_created.emit(self.wizard_data.target_path)
-        else:
+        
+        if not success:
             # Show error with AI help if available
             if self.ai_service and self.ai_service.is_available():
                 from ..dialogs.error import ErrorDialog
@@ -403,6 +413,10 @@ class ProjectWizard(QWizard):
         if self.generation_thread:
             self.generation_thread.cancel()
             logger.info("Project generation cancelled by user")
+            
+            # Update progress dialog to show cancelled state
+            if self.progress_dialog:
+                self.progress_dialog.set_cancelled()
 
     def collect_data(self) -> Dict[str, Any]:
         """
