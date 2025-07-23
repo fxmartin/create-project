@@ -60,7 +60,7 @@ class OptionsStep(WizardStep):
 
         # Option widgets mapping
         self.option_widgets: Dict[str, QWidget] = {}
-        
+
         super().__init__(
             title="Configuration Options",
             subtitle="Configure project options",
@@ -150,7 +150,7 @@ class OptionsStep(WizardStep):
 
             # Get available license IDs
             license_ids = self.license_manager.get_available_licenses()
-            
+
             # Add available licenses
             for license_id in license_ids:
                 license = self.license_manager.get_license(license_id)
@@ -183,7 +183,7 @@ class OptionsStep(WizardStep):
         if not wizard or not hasattr(wizard, "data"):
             logger.error("No wizard or data available")
             return
-            
+
         template_id = wizard.data.template_id
         if not template_id:
             logger.error("No template selected")
@@ -192,7 +192,7 @@ class OptionsStep(WizardStep):
         # Load template to get options
         try:
             template = self._load_template(template_id)
-            if template and hasattr(template, 'variables') and template.variables:
+            if template and hasattr(template, "variables") and template.variables:
                 self._populate_template_options(template.variables)
             else:
                 self.template_group.hide()
@@ -230,7 +230,7 @@ class OptionsStep(WizardStep):
                     template_path = wizard.data.template_path
                     if template_path:
                         return self.wizard().template_engine.load_template(template_path)
-                
+
                 # Fallback: Try to find template by name in the builtin directory
                 from pathlib import Path
                 builtin_dir = Path("create_project/templates/builtin")
@@ -241,7 +241,7 @@ class OptionsStep(WizardStep):
                             return self.wizard().template_engine.load_template(yaml_file)
                     except:
                         pass
-                
+
                 logger.error(f"Template {template_id} not found")
             except Exception as e:
                 logger.error(f"Failed to load template {template_id}: {e}")
@@ -299,7 +299,7 @@ class OptionsStep(WizardStep):
         """
         try:
             from create_project.templates.schema.variables import VariableType
-            
+
             if option.type in [VariableType.STRING, VariableType.EMAIL, VariableType.URL, VariableType.PATH]:
                 widget = QLineEdit()
                 if option.default:
@@ -368,7 +368,7 @@ class OptionsStep(WizardStep):
             if template_id:
                 try:
                     template = self._load_template(template_id)
-                    if template and hasattr(template, 'variables') and template.variables:
+                    if template and hasattr(template, "variables") and template.variables:
                         for option in template.variables:
                             if option.required and option.name in self.option_widgets:
                                 widget = self.option_widgets[option.name]
@@ -431,10 +431,10 @@ class OptionsStep(WizardStep):
             wizard.data.init_git = options.get("git_init", True)
             wizard.data.create_venv = options.get("venv_tool") is not None
             wizard.data.venv_tool = options.get("venv_tool")
-            
+
             # Store template-specific options
             wizard.data.additional_options = {
-                k: v for k, v in options.items() 
+                k: v for k, v in options.items()
                 if k not in ["license", "git_init", "venv_tool"]
             }
 
@@ -455,7 +455,7 @@ class OptionsStep(WizardStep):
         options["license"] = license_id
         options["git_init"] = self.git_checkbox.isChecked()
 
-        # Virtual environment tool 
+        # Virtual environment tool
         venv_text = self.venv_combo.currentText()
         if "uv" in venv_text:
             options["venv_tool"] = "uv"

@@ -2,12 +2,9 @@
 # ABOUTME: Verifies summary display, project structure preview, and creation trigger
 
 """Tests for the Review and Create wizard step."""
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QApplication, QTreeWidgetItem
 
 from create_project.gui.steps.review import CollapsibleSection, ReviewStep
 from create_project.templates.schema.base_template import TemplateMetadata

@@ -18,7 +18,6 @@ import logging
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
-from PyQt6.QtCore import QSize
 from PyQt6.QtGui import QIcon, QPixmap
 
 logger = logging.getLogger(__name__)
@@ -67,10 +66,10 @@ class IconManager:
         self._icon_dir = ICON_DIR
         self._fallback_icon_name = FALLBACK_ICON
         self._theme = "default"
-        
+
         # Create icon directory if it doesn't exist
         self._icon_dir.mkdir(parents=True, exist_ok=True)
-        
+
         logger.debug(f"Icon manager initialized with directory: {self._icon_dir}")
 
     def get_icon(
@@ -93,14 +92,14 @@ class IconManager:
         """
         # Build cache key
         cache_key = f"{theme or self._theme}/{category or ''}/{name}"
-        
+
         # Check cache
         if cache_key in self._cache:
             return self._cache[cache_key]
 
         # Try to load icon
         icon = self._load_icon(name, category, theme)
-        
+
         # Cache and return
         self._cache[cache_key] = icon
         return icon
@@ -123,29 +122,29 @@ class IconManager:
         """
         # Build search paths
         search_paths = []
-        
+
         # Theme-specific paths
         if theme or self._theme != "default":
             theme_name = theme or self._theme
             if category:
                 search_paths.append(self._icon_dir / theme_name / category / name)
             search_paths.append(self._icon_dir / theme_name / name)
-        
+
         # Default paths
         if category:
             search_paths.append(self._icon_dir / category / name)
         search_paths.append(self._icon_dir / name)
-        
+
         # Try each extension
         extensions = [".png", ".svg", ".ico", ""]
-        
+
         for base_path in search_paths:
             for ext in extensions:
                 icon_path = Path(str(base_path) + ext) if ext else base_path
                 if icon_path.exists() and icon_path.is_file():
                     logger.debug(f"Loading icon: {icon_path}")
                     return QIcon(str(icon_path))
-        
+
         # Try fallback icon
         logger.warning(f"Icon not found: {name}, using fallback")
         return self._load_fallback_icon()
@@ -161,7 +160,7 @@ class IconManager:
             fallback_path = self._icon_dir / f"{self._fallback_icon_name}{ext}"
             if fallback_path.exists():
                 return QIcon(str(fallback_path))
-        
+
         # Create empty icon if no fallback exists
         logger.warning("Fallback icon not found, using empty icon")
         return self._create_empty_icon()
@@ -209,10 +208,10 @@ class IconManager:
             else:
                 category = None
                 icon_name = parts[0]
-            
+
             # Load icon to cache it
             self.get_icon(icon_name, category)
-        
+
         logger.debug(f"Preloaded {len(icon_names)} icons")
 
 
@@ -262,31 +261,31 @@ def preload_common_icons() -> None:
         "actions/folder-open",
         "actions/refresh",
         "actions/copy",
-        
+
         # Status
         "status/success",
         "status/error",
         "status/warning",
         "status/info",
         "status/loading",
-        
+
         # Dialogs
         "dialogs/question",
         "dialogs/information",
         "dialogs/warning",
         "dialogs/error",
-        
+
         # Wizard
         "wizard/project-type",
         "wizard/basic-info",
         "wizard/location",
         "wizard/options",
         "wizard/review",
-        
+
         # Tools
         "tools/git",
         "tools/python",
         "tools/ai",
     ]
-    
+
     _manager.preload_icons(common_icons)

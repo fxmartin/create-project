@@ -104,10 +104,10 @@ class ProjectTypeStep(WizardStep):
                     template_id = template_data.get("template_id", "unknown")
                     template_name = template_data.get("name", "Unknown Template")
                     template_path = template_data.get("file_path")
-                    
+
                     # Store template data with template_id as key
                     self.templates[template_id] = template_data
-                    
+
                     # Create list item
                     item = QListWidgetItem(template_name)
                     item.setData(Qt.ItemDataRole.UserRole, template_id)
@@ -138,7 +138,7 @@ class ProjectTypeStep(WizardStep):
                         "structure": "Simple script structure",
                     },
                 ]
-                
+
                 for i, template_data in enumerate(sample_templates):
                     template_id = f"sample_{i}"
                     template_name = template_data["name"]
@@ -268,20 +268,20 @@ class ProjectTypeStep(WizardStep):
 
         return "\n".join(lines)
 
-    def validate_page(self) -> bool:
+    def validate(self) -> Optional[str]:
         """Validate that a template has been selected."""
         if not self.template_list.currentItem():
-            self.show_error("Please select a project template")
-            return False
+            return "Please select a project template"
 
         # Ensure template is stored in wizard data
         wizard = self.wizard()
-        if wizard and hasattr(wizard, "data") and not wizard.data.template_id:
+        if wizard and hasattr(wizard, "wizard_data") and not wizard.wizard_data.template_id:
             current_item = self.template_list.currentItem()
             if current_item:
-                wizard.data.template_id = current_item.data(Qt.ItemDataRole.UserRole)
+                wizard.wizard_data.template_id = current_item.data(Qt.ItemDataRole.UserRole)
+                wizard.wizard_data.template_name = current_item.text()
 
-        return True
+        return None
 
     def initializePage(self) -> None:
         """Called when the page is shown."""

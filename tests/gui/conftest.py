@@ -44,6 +44,18 @@ def mock_config_manager():
     config = MagicMock()
 
     # Set up default configuration values
+    config.get_setting.side_effect = lambda key, default=None: {
+        "defaults.author": "Test Author",
+        "defaults.location": str(Path.home() / "projects"),
+        "ai.enabled": True,
+        "ai.ollama_url": "http://localhost:11434",
+        "ai.model": "llama2",
+        "templates.builtin_path": "templates/builtin",
+        "templates.directories": [],
+        "templates.user_path": str(Path.home() / ".create-project" / "templates"),
+    }.get(key, default)
+
+    # Also set up the old get method for backward compatibility
     config.get.side_effect = lambda key, default=None: {
         "default_author": "Test Author",
         "default_location": str(Path.home() / "projects"),

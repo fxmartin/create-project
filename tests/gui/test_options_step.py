@@ -11,10 +11,10 @@ from PyQt6.QtWidgets import QCheckBox, QComboBox, QLineEdit
 from create_project.gui.steps.options import OptionsStep
 from create_project.gui.wizard.wizard import WizardData
 from create_project.templates.schema import (
+    ChoiceItem,
     Template,
     TemplateVariable,
     VariableType,
-    ChoiceItem,
 )
 from create_project.templates.schema.structure import ProjectStructure, TemplateFile
 
@@ -310,9 +310,9 @@ class TestOptionsStep:
             structure=ProjectStructure(directories=[], files=[]),
             variables=[
                 TemplateVariable(
-                    name="author", 
+                    name="author",
                     type=VariableType.STRING,
-                    description="Author", 
+                    description="Author",
                     required=True
                 )
             ],

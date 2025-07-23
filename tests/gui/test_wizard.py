@@ -126,39 +126,133 @@ class TestProjectWizard:
             assert page is not None
             assert page.title() == expected_title
 
-    @pytest.mark.skip(reason="ProjectWizard not yet implemented")
     def test_navigation_forward(
         self, qtbot, qt_bot_helper, mock_config_manager, mock_template_engine
     ):
         """Test forward navigation through wizard steps."""
-        pass
+        wizard = ProjectWizard(
+            mock_config_manager, mock_template_engine, None, None
+        )
+        qtbot.addWidget(wizard)
 
-    @pytest.mark.skip(reason="ProjectWizard not yet implemented")
+        # Show the wizard to initialize pages
+        wizard.show()
+        qtbot.waitForWindowShown(wizard)
+
+        # Should start at first page
+        assert wizard.currentId() == 0
+
+        # Mock valid selection for project type step
+        project_type_step = wizard.page(0)
+        if hasattr(project_type_step, "template_list"):
+            # Add a mock template item for testing
+            from PyQt6.QtCore import Qt
+            from PyQt6.QtWidgets import QListWidgetItem
+
+            item = QListWidgetItem("Test Template")
+            item.setData(Qt.ItemDataRole.UserRole, "test_template_id")
+            project_type_step.template_list.addItem(item)
+            project_type_step.template_list.setCurrentItem(item)
+
+        # Should be able to navigate to next page
+        wizard.next()
+        assert wizard.currentId() == 1
+
     def test_navigation_backward(
         self, qtbot, qt_bot_helper, mock_config_manager, mock_template_engine
     ):
         """Test backward navigation through wizard steps."""
-        pass
+        wizard = ProjectWizard(
+            mock_config_manager, mock_template_engine, None, None
+        )
+        qtbot.addWidget(wizard)
 
-    @pytest.mark.skip(reason="ProjectWizard not yet implemented")
+        # Show the wizard to initialize pages
+        wizard.show()
+        qtbot.waitForWindowShown(wizard)
+
+        # Navigate to second page first
+        project_type_step = wizard.page(0)
+        if hasattr(project_type_step, "template_list"):
+            # Add a mock template item for testing
+            from PyQt6.QtCore import Qt
+            from PyQt6.QtWidgets import QListWidgetItem
+
+            item = QListWidgetItem("Test Template")
+            item.setData(Qt.ItemDataRole.UserRole, "test_template_id")
+            project_type_step.template_list.addItem(item)
+            project_type_step.template_list.setCurrentItem(item)
+        wizard.next()
+        assert wizard.currentId() == 1
+
+        # Test backward navigation
+        wizard.back()
+        assert wizard.currentId() == 0
+
     def test_validation_blocks_navigation(
         self, qtbot, qt_bot_helper, mock_config_manager, mock_template_engine
     ):
         """Test that validation errors prevent forward navigation."""
-        pass
+        wizard = ProjectWizard(
+            mock_config_manager, mock_template_engine, None, None
+        )
+        qtbot.addWidget(wizard)
 
-    @pytest.mark.skip(reason="ProjectWizard not yet implemented")
+        # Show the wizard to initialize pages
+        wizard.show()
+        qtbot.waitForWindowShown(wizard)
+
+        # Should start at first page
+        assert wizard.currentId() == 0
+
+        # Without selecting a template, should not be able to proceed
+        current_page = wizard.currentId()
+        wizard.next()
+        # Should still be on same page due to validation failure
+        assert wizard.currentId() == current_page
+
+        # After selecting template, should be able to proceed
+        project_type_step = wizard.page(0)
+        if hasattr(project_type_step, "template_list"):
+            # Add a mock template item for testing
+            from PyQt6.QtCore import Qt
+            from PyQt6.QtWidgets import QListWidgetItem
+
+            item = QListWidgetItem("Test Template")
+            item.setData(Qt.ItemDataRole.UserRole, "test_template_id")
+            project_type_step.template_list.addItem(item)
+            project_type_step.template_list.setCurrentItem(item)
+
+        wizard.next()
+        assert wizard.currentId() == 1
+
     def test_cancel_confirmation(
         self, qtbot, qt_bot_helper, mock_config_manager, mock_template_engine
     ):
         """Test that canceling the wizard shows confirmation dialog."""
-        pass
+        wizard = ProjectWizard(
+            mock_config_manager, mock_template_engine, None, None
+        )
+        qtbot.addWidget(wizard)
 
-    @pytest.mark.skip(reason="ProjectWizard not yet implemented")
+        # Show the wizard to initialize pages
+        wizard.show()
+        qtbot.waitForWindowShown(wizard)
+
+        # Test that wizard can be rejected (cancelled)
+        # Note: In headless testing, we can't easily test the confirmation dialog
+        # but we can test that the wizard handles rejection properly
+        wizard.reject()  # Simulate cancel/close
+        assert wizard.result() == wizard.DialogCode.Rejected
+
+    @pytest.mark.skip(reason="Help button functionality not implemented in current wizard")
     def test_help_button_functionality(
         self, qtbot, qt_bot_helper, mock_config_manager, mock_template_engine
     ):
         """Test that the help button provides context-sensitive help."""
+        # This test is skipped because the current wizard implementation
+        # doesn't have a help button - help is provided through AI assistance
+        # in error dialogs instead
         pass
 
     @pytest.mark.skip(reason="ProjectWizard not yet implemented")

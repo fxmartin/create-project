@@ -17,13 +17,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, pyqtSlot
-from PyQt6.QtWidgets import QMessageBox, QWizard, QWizardPage
+from PyQt6.QtCore import QThread, pyqtSignal, pyqtSlot
+from PyQt6.QtWidgets import QMessageBox, QWizard
 
 from create_project.ai.ai_service import AIService
 from create_project.config.config_manager import ConfigManager
-from create_project.core.api import create_project_async
-from create_project.core.project_generator import ProjectOptions, ProjectGenerator
+from create_project.core.project_generator import ProjectOptions
 from create_project.templates.engine import TemplateEngine
 from create_project.utils.logger import get_logger
 
@@ -91,6 +90,7 @@ class ProjectGenerationThread(QThread):
 
     progress = pyqtSignal(int, str)  # Progress percentage and message
     finished = pyqtSignal(bool, str)  # Success and message/error
+    error_occurred = pyqtSignal(object, dict)  # Exception and context for AI help
 
     def __init__(
         self,
@@ -119,41 +119,41 @@ class ProjectGenerationThread(QThread):
                 return
 
             self.progress.emit(10, "Loading template configuration...")
-            
+
             if self._cancelled:
                 return
 
             # Use the async API directly with required parameters
             from create_project.core.project_generator import ProjectGenerator
-            
+
             # Create generator
             generator = ProjectGenerator(
-                template_loader=self.template_engine.template_loader if hasattr(self.template_engine, 'template_loader') else None,
+                template_loader=self.template_engine.template_loader if hasattr(self.template_engine, "template_loader") else None,
                 ai_service=self.ai_service
             )
-            
+
             # Find template file path first
             template_path = None
             templates = self.template_loader.list_templates()
             for template_info in templates:
-                if template_info.get('template_id') == self.wizard_data.template_id:
-                    template_path = template_info.get('file_path')
+                if template_info.get("template_id") == self.wizard_data.template_id:
+                    template_path = template_info.get("file_path")
                     break
-            
+
             if not template_path:
                 self.finished.emit(False, f"Template '{self.wizard_data.template_id}' not found")
                 return
-            
+
             # Load the template
             try:
                 template = self.template_engine.load_template(template_path)
             except Exception as e:
                 self.finished.emit(False, f"Failed to load template: {str(e)}")
                 return
-            
+
             if self._cancelled:
                 return
-            
+
             self.progress.emit(30, "Preparing project variables...")
             # Collect variables
             variables = {
@@ -166,10 +166,10 @@ class ProjectGenerationThread(QThread):
             # Add any additional template variables
             if self.wizard_data.additional_options:
                 variables.update(self.wizard_data.additional_options)
-            
+
             if self._cancelled:
                 return
-            
+
             # Create project options
             options = ProjectOptions(
                 create_git_repo=self.wizard_data.init_git,
@@ -177,7 +177,7 @@ class ProjectGenerationThread(QThread):
                 execute_post_commands=True,
                 enable_ai_assistance=self.ai_service is not None
             )
-            
+
             self.progress.emit(40, "Starting project generation...")
             # Generate project
             result = generator.generate_project(
@@ -193,10 +193,36 @@ class ProjectGenerationThread(QThread):
                 self.finished.emit(True, message)
             else:
                 error_msg = "\n".join(result.errors) if result.errors else "Unknown error occurred"
+
+                # Create a generic error for AI assistance
+                generation_error = RuntimeError(error_msg)
+                context = {
+                    "operation": "project_generation",
+                    "template_name": getattr(template, "name", "unknown") if "template" in locals() else "unknown",
+                    "target_path": str(self.project_path),
+                    "project_name": self.wizard_data.project_name,
+                    "errors": result.errors if result.errors else [],
+                    "timestamp": logger.get_timestamp() if hasattr(logger, "get_timestamp") else None,
+                }
+
+                # Emit both signals
+                self.error_occurred.emit(generation_error, context)
                 self.finished.emit(False, error_msg)
 
         except Exception as e:
             logger.exception("Project generation failed")
+
+            # Create error context for AI assistance
+            context = {
+                "operation": "project_generation",
+                "template_name": getattr(template, "name", "unknown") if "template" in locals() else "unknown",
+                "target_path": str(self.project_path),
+                "project_name": self.wizard_data.project_name,
+                "timestamp": logger.get_timestamp() if hasattr(logger, "get_timestamp") else None,
+            }
+
+            # Emit both signals for different handling
+            self.error_occurred.emit(e, context)
             self.finished.emit(False, str(e))
 
     def _progress_callback(self, message: str, percentage: Optional[int] = None):
@@ -267,6 +293,10 @@ class ProjectWizard(QWizard):
         # Generation thread
         self.generation_thread: Optional[ProjectGenerationThread] = None
         self.progress_dialog: Optional[QProgressDialog] = None
+
+        # Error tracking for AI assistance
+        self._last_error: Optional[Exception] = None
+        self._last_error_context: Optional[dict] = None
 
         # Set up wizard
         self._setup_wizard()
@@ -392,6 +422,7 @@ class ProjectWizard(QWizard):
         # Connect signals
         self.generation_thread.progress.connect(self._on_generation_progress)
         self.generation_thread.finished.connect(self._on_generation_finished)
+        self.generation_thread.error_occurred.connect(self._on_generation_error)
         self.progress_dialog.cancelled.connect(self._on_generation_cancelled)
 
         # Start generation
@@ -408,19 +439,29 @@ class ProjectWizard(QWizard):
         """Handle generation completion."""
         if self.progress_dialog:
             self.progress_dialog.set_finished(success, message)
-            
+
             if success and self.wizard_data.target_path:
                 self.project_created.emit(self.wizard_data.target_path)
-        
+
         if not success:
             # Show error with AI help if available
-            if self.ai_service and self.ai_service.is_available():
+            if hasattr(self, "_last_error") and self._last_error:
                 from ..dialogs.error import ErrorDialog
 
                 error_dialog = ErrorDialog(
-                    message, details=None, ai_service=self.ai_service, parent=self
+                    self._last_error,
+                    self._last_error_context,
+                    self.config_manager,
+                    parent=self
                 )
+
+                # Connect AI help signal
+                error_dialog.help_requested.connect(self._show_ai_help)
                 error_dialog.exec()
+
+                # Clear stored error
+                self._last_error = None
+                self._last_error_context = None
             else:
                 QMessageBox.critical(
                     self, "Error", f"Failed to create project:\n\n{message}"
@@ -437,10 +478,31 @@ class ProjectWizard(QWizard):
         if self.generation_thread:
             self.generation_thread.cancel()
             logger.info("Project generation cancelled by user")
-            
+
             # Update progress dialog to show cancelled state
             if self.progress_dialog:
                 self.progress_dialog.set_cancelled()
+
+    @pyqtSlot(object, dict)
+    def _on_generation_error(self, error: Exception, context: dict) -> None:
+        """Handle generation errors with AI assistance."""
+        # Store error for showing in AI help dialog
+        self._last_error = error
+        self._last_error_context = context
+
+    @pyqtSlot(object, dict)
+    def _show_ai_help(self, error: Exception, context: dict) -> None:
+        """Show AI help dialog for the given error."""
+        if self.ai_service and self.ai_service.is_available():
+            from ..dialogs.ai_help import AIHelpDialog
+
+            ai_dialog = AIHelpDialog(
+                self.ai_service,
+                error,
+                context,
+                parent=self
+            )
+            ai_dialog.exec()
 
     def collect_data(self) -> Dict[str, Any]:
         """
@@ -450,24 +512,24 @@ class ProjectWizard(QWizard):
             Dictionary with all collected information
         """
         data = {}
-        
+
         # Get fields from wizard
         data["project_name"] = self.field("projectName")
         data["author"] = self.field("author")
         data["version"] = self.field("version")
         data["description"] = self.field("description")
         data["base_path"] = self.field("location")
-        
-        # Get template from wizard data 
+
+        # Get template from wizard data
         data["template_type"] = self.wizard_data.template_path
-        
+
         # Get additional options from options step
         options_page = self.page(3)  # Options is the 4th page (0-indexed)
-        if hasattr(options_page, 'get_options'):
+        if hasattr(options_page, "get_options"):
             data["additional_options"] = options_page.get_options()
         else:
             data["additional_options"] = {}
-            
+
         return data
 
     def done(self, result: int) -> None:
@@ -509,16 +571,16 @@ class ProjectWizard(QWizard):
     def _on_create_project(self) -> None:
         """Handle project creation request from review step."""
         logger.info("Project creation requested")
-        
+
         # Collect all data
         data = self.collect_data()
-        
+
         # Create project options
         project_path = Path(data["base_path"]) / data["project_name"]
-        
+
         # Get additional options
         additional = data.get("additional_options", {})
-        
+
         # Create ProjectOptions
         options = ProjectOptions(
             create_git_repo=additional.get("git_init", True),
@@ -528,6 +590,6 @@ class ProjectWizard(QWizard):
             execute_post_commands=True,
             enable_ai_assistance=self.ai_service is not None,
         )
-        
+
         # Start generation in thread
         self._start_generation(project_path, options)

@@ -10,10 +10,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
     QFrame,
-    QGroupBox,
     QHBoxLayout,
-    QLabel,
-    QMessageBox,
     QPushButton,
     QScrollArea,
     QTextEdit,
@@ -66,7 +63,7 @@ class ReviewStep(QWizardPage):
         # Set wizard page properties
         self.setTitle("Review and Create")
         self.setSubTitle("Review your project settings. Click 'Create Project' when ready.")
-        
+
         layout = QVBoxLayout(self)
 
         # Scroll area for content
@@ -185,7 +182,7 @@ class ReviewStep(QWizardPage):
 
         # Update options
         options_text = []
-        
+
         # Template type
         if "template_type" in self._wizard_data:
             # Load template to get its name

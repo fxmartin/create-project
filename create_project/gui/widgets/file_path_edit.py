@@ -9,8 +9,9 @@ files or directories, with built-in validation support.
 
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Callable, List
+from typing import Callable, Optional
 
+from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
@@ -18,7 +19,6 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QWidget,
 )
-from PyQt6.QtCore import Qt, pyqtSignal
 
 
 class SelectionMode(Enum):
@@ -38,10 +38,10 @@ class FilePathEdit(QWidget):
         pathChanged: Emitted when the path changes (str)
         validationChanged: Emitted when validation state changes (bool)
     """
-    
+
     pathChanged = pyqtSignal(str)
     validationChanged = pyqtSignal(bool)
-    
+
     def __init__(
         self,
         parent: Optional[QWidget] = None,
@@ -64,30 +64,30 @@ class FilePathEdit(QWidget):
             validator: Optional validation function
         """
         super().__init__(parent)
-        
+
         self.mode = mode
         self.caption = caption
         self.filter = filter
         self.start_dir = start_dir or str(Path.home())
         self.validator = validator
         self._is_valid = True
-        
+
         # Create layout
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(4)
-        
+
         # Path input
         self._path_edit = QLineEdit()
         self._path_edit.setPlaceholderText(placeholder)
         self._path_edit.textChanged.connect(self._on_path_changed)
         layout.addWidget(self._path_edit, 1)
-        
+
         # Browse button
         self._browse_button = QPushButton("Browse...")
         self._browse_button.clicked.connect(self._browse)
         layout.addWidget(self._browse_button)
-        
+
     def get_path(self) -> str:
         """Get the current path.
         
@@ -95,7 +95,7 @@ class FilePathEdit(QWidget):
             The current path as a string
         """
         return self._path_edit.text()
-        
+
     def set_path(self, path: str) -> None:
         """Set the path.
         
@@ -103,7 +103,7 @@ class FilePathEdit(QWidget):
             path: Path to set
         """
         self._path_edit.setText(path)
-        
+
     def is_valid(self) -> bool:
         """Check if the current path is valid.
         
@@ -111,7 +111,7 @@ class FilePathEdit(QWidget):
             True if path is valid or no validator is set
         """
         return self._is_valid
-        
+
     def set_enabled(self, enabled: bool) -> None:
         """Enable/disable the widget.
         
@@ -120,7 +120,7 @@ class FilePathEdit(QWidget):
         """
         self._path_edit.setEnabled(enabled)
         self._browse_button.setEnabled(enabled)
-        
+
     def set_read_only(self, read_only: bool) -> None:
         """Set read-only mode.
         
@@ -129,7 +129,7 @@ class FilePathEdit(QWidget):
         """
         self._path_edit.setReadOnly(read_only)
         self._browse_button.setEnabled(not read_only)
-        
+
     def set_filter(self, filter: str) -> None:
         """Update the file filter.
         
@@ -137,7 +137,7 @@ class FilePathEdit(QWidget):
             filter: New file filter string
         """
         self.filter = filter
-        
+
     def set_start_dir(self, start_dir: str) -> None:
         """Update the starting directory.
         
@@ -145,7 +145,7 @@ class FilePathEdit(QWidget):
             start_dir: New starting directory path
         """
         self.start_dir = start_dir
-        
+
     def set_validator(self, validator: Optional[Callable[[str], bool]]) -> None:
         """Set a custom validation function.
         
@@ -154,12 +154,12 @@ class FilePathEdit(QWidget):
         """
         self.validator = validator
         self._validate_current_path()
-        
+
     def _browse(self) -> None:
         """Open file dialog for path selection."""
         current_path = self._path_edit.text()
         start_dir = current_path if current_path and Path(current_path).exists() else self.start_dir
-        
+
         if self.mode == SelectionMode.DIRECTORY:
             path = QFileDialog.getExistingDirectory(
                 self,
@@ -181,10 +181,10 @@ class FilePathEdit(QWidget):
                 start_dir,
                 self.filter
             )
-            
+
         if path:
             self.set_path(path)
-            
+
     def _on_path_changed(self, text: str) -> None:
         """Handle path text changes.
         
@@ -193,12 +193,12 @@ class FilePathEdit(QWidget):
         """
         self._validate_current_path()
         self.pathChanged.emit(text)
-        
+
     def _validate_current_path(self) -> None:
         """Validate the current path."""
         old_state = self._is_valid
         path = self._path_edit.text()
-        
+
         if not path:
             # Empty path - consider valid if no validator
             self._is_valid = self.validator is None
@@ -215,14 +215,14 @@ class FilePathEdit(QWidget):
             else:  # SAVE_FILE
                 # For save mode, parent directory must exist
                 self._is_valid = path_obj.parent.is_dir()
-                
+
         # Update styling
         self._update_style()
-        
+
         # Emit signal if state changed
         if old_state != self._is_valid:
             self.validationChanged.emit(self._is_valid)
-            
+
     def _update_style(self) -> None:
         """Update the widget style based on validation state."""
         if self._is_valid or not self._path_edit.text():

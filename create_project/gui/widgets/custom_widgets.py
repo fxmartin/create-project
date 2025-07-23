@@ -7,12 +7,12 @@ This module provides reusable custom widgets that extend PyQt6 functionality
 with additional features like validation, collapsibility, and file browsing.
 """
 
-from .validated_line_edit import ValidatedLineEdit
 from .collapsible_section import CollapsibleSection
 from .file_path_edit import FilePathEdit
+from .validated_line_edit import ValidatedLineEdit
 
 __all__ = [
     "ValidatedLineEdit",
-    "CollapsibleSection", 
+    "CollapsibleSection",
     "FilePathEdit",
 ]

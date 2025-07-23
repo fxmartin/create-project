@@ -32,18 +32,18 @@ COLORS = {
         "primary": "#2196F3",
         "primary_dark": "#1976D2",
         "primary_light": "#64B5F6",
-        
+
         # Secondary colors
         "secondary": "#FFC107",
         "secondary_dark": "#FFA000",
         "secondary_light": "#FFD54F",
-        
+
         # Status colors
         "success": "#4CAF50",
         "warning": "#FF9800",
         "error": "#F44336",
         "info": "#2196F3",
-        
+
         # Neutral colors
         "background": "#FAFAFA",
         "surface": "#FFFFFF",
@@ -59,18 +59,18 @@ COLORS = {
         "primary": "#2196F3",
         "primary_dark": "#1565C0",
         "primary_light": "#42A5F5",
-        
+
         # Secondary colors
         "secondary": "#FFC107",
         "secondary_dark": "#F57C00",
         "secondary_light": "#FFB300",
-        
+
         # Status colors
         "success": "#66BB6A",
         "warning": "#FFA726",
         "error": "#EF5350",
         "info": "#42A5F5",
-        
+
         # Neutral colors
         "background": "#121212",
         "surface": "#1E1E1E",
@@ -152,10 +152,10 @@ class StyleManager:
         self._initialized = True
         self._theme = "light"
         self._custom_styles = {}
-        
+
         # Create style directory if it doesn't exist
         STYLE_DIR.mkdir(parents=True, exist_ok=True)
-        
+
         logger.debug(f"Style manager initialized with theme: {self._theme}")
 
     def get_color(self, name: str, theme: Optional[str] = None) -> str:
@@ -220,17 +220,30 @@ class StyleManager:
             QSS stylesheet string
         """
         cache_key = f"{self._theme}/{component or 'global'}"
-        
+
         # Check cache
         if cache_key in self._cache:
             return self._cache[cache_key]
-        
+
         # Generate stylesheet
         if component:
             stylesheet = self._generate_component_stylesheet(component)
         else:
-            stylesheet = self._generate_global_stylesheet()
-        
+            # Generate global stylesheet with all components
+            global_style = self._generate_global_stylesheet()
+
+            # Add all component styles to global stylesheet
+            component_styles = []
+            for comp in ["wizard", "error_dialog", "progress_dialog"]:
+                comp_style = self._generate_component_stylesheet(comp)
+                if comp_style:
+                    component_styles.append(comp_style)
+
+            if component_styles:
+                stylesheet = global_style + "\n\n" + "\n\n".join(component_styles)
+            else:
+                stylesheet = global_style
+
         # Cache and return
         self._cache[cache_key] = stylesheet
         return stylesheet
@@ -242,7 +255,7 @@ class StyleManager:
             QSS stylesheet string
         """
         colors = COLORS[self._theme]
-        
+
         return f"""
 /* Global Application Stylesheet */
 QWidget {{
@@ -402,6 +415,39 @@ QDialog {{
 QMessageBox {{
     background-color: {colors['background']};
 }}
+
+/* Splitters */
+QSplitter::handle {{
+    background-color: {colors['border']};
+}}
+
+QSplitter::handle:horizontal {{
+    width: 3px;
+}}
+
+QSplitter::handle:vertical {{
+    height: 3px;
+}}
+
+/* Wizard-specific QSplitter styling */
+QSplitter::handle:hover {{
+    background-color: {colors['primary']};
+}}
+
+/* Status bar */
+QStatusBar {{
+    background-color: {colors['surface']};
+    border-top: 1px solid {colors['border']};
+}}
+
+/* Tool tips */
+QToolTip {{
+    background-color: {colors['surface']};
+    border: 1px solid {colors['border']};
+    border-radius: {SIZES['border_radius']}px;
+    padding: {SPACING['small']}px;
+    color: {colors['text_primary']};
+}}
         """.strip()
 
     def _generate_component_stylesheet(self, component: str) -> str:
@@ -413,7 +459,99 @@ QMessageBox {{
         Returns:
             QSS stylesheet string
         """
-        # Add component-specific styles here
+        colors = COLORS[self._theme]
+
+        if component == "wizard":
+            return f"""
+/* Wizard-specific Styles */
+QWizard {{
+    background-color: {colors['background']};
+    border: 1px solid {colors['border']};
+}}
+
+QWizard QFrame[class="intro"] {{
+    background-color: {colors['surface']};
+    border: 1px solid {colors['border']};
+    border-radius: {SIZES['border_radius']}px;
+    padding: {SPACING['large']}px;
+    margin: {SPACING['medium']}px;
+}}
+
+/* Wizard buttons */
+QWizard QPushButton {{
+    min-width: 80px;
+    padding: {SPACING['small']}px {SPACING['large']}px;
+}}
+
+/* Step indicator/title */
+QWizard QLabel[class="title"] {{
+    font-size: {FONTS['heading']['size']}pt;
+    font-weight: {FONTS['heading']['weight']};
+    color: {colors['primary']};
+    margin-bottom: {SPACING['medium']}px;
+}}
+
+QWizard QLabel[class="subtitle"] {{
+    color: {colors['text_secondary']};
+    margin-bottom: {SPACING['large']}px;
+}}
+""".strip()
+
+        elif component == "error_dialog":
+            return f"""
+/* Error Dialog Styles */
+QDialog[class="error"] {{
+    background-color: {colors['surface']};
+    border: 2px solid {colors['error']};
+    border-radius: {SIZES['border_radius']}px;
+}}
+
+QDialog[class="error"] QLabel[class="error-title"] {{
+    color: {colors['error']};
+    font-weight: bold;
+    font-size: {FONTS['heading']['size']}pt;
+}}
+
+QDialog[class="error"] QLabel[class="error-message"] {{
+    color: {colors['text_primary']};
+    background-color: {colors['background']};
+    border: 1px solid {colors['border']};
+    border-radius: {SIZES['border_radius']}px;
+    padding: {SPACING['medium']}px;
+}}
+""".strip()
+
+        elif component == "progress_dialog":
+            return f"""
+/* Progress Dialog Styles */
+QDialog[class="progress"] {{
+    background-color: {colors['surface']};
+    border: 1px solid {colors['border']};
+    border-radius: {SIZES['border_radius']}px;
+}}
+
+QDialog[class="progress"] QProgressBar {{
+    border: 1px solid {colors['border']};
+    border-radius: {SIZES['border_radius']}px;
+    text-align: center;
+    background-color: {colors['background']};
+    color: {colors['text_primary']};
+}}
+
+QDialog[class="progress"] QProgressBar::chunk {{
+    background-color: {colors['primary']};
+    border-radius: {SIZES['border_radius']}px;
+}}
+
+QDialog[class="progress"] QProgressBar[state="success"]::chunk {{
+    background-color: {colors['success']};
+}}
+
+QDialog[class="progress"] QProgressBar[state="error"]::chunk {{
+    background-color: {colors['error']};
+}}
+""".strip()
+
         return ""
 
     def set_theme(self, theme: str) -> None:
@@ -436,27 +574,27 @@ QMessageBox {{
         """
         colors = COLORS[self._theme]
         palette = QPalette()
-        
+
         # Window colors
         palette.setColor(QPalette.ColorRole.Window, QColor(colors["background"]))
         palette.setColor(QPalette.ColorRole.WindowText, QColor(colors["text_primary"]))
-        
+
         # Base colors (for input widgets)
         palette.setColor(QPalette.ColorRole.Base, QColor(colors["surface"]))
         palette.setColor(QPalette.ColorRole.AlternateBase, QColor(colors["hover"]))
-        
+
         # Text colors
         palette.setColor(QPalette.ColorRole.Text, QColor(colors["text_primary"]))
         palette.setColor(QPalette.ColorRole.PlaceholderText, QColor(colors["text_secondary"]))
-        
+
         # Button colors
         palette.setColor(QPalette.ColorRole.Button, QColor(colors["surface"]))
         palette.setColor(QPalette.ColorRole.ButtonText, QColor(colors["text_primary"]))
-        
+
         # Highlight colors
         palette.setColor(QPalette.ColorRole.Highlight, QColor(colors["primary"]))
         palette.setColor(QPalette.ColorRole.HighlightedText, QColor("#FFFFFF"))
-        
+
         app.setPalette(palette)
 
 

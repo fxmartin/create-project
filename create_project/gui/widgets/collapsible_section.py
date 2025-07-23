@@ -28,12 +28,12 @@ class CollapsibleSection(QWidget):
     Signals:
         toggled: Emitted when section is expanded/collapsed (bool)
     """
-    
+
     toggled = pyqtSignal(bool)  # True = expanded, False = collapsed
-    
+
     def __init__(
-        self, 
-        title: str, 
+        self,
+        title: str,
         parent: Optional[QWidget] = None,
         collapsed: bool = False
     ) -> None:
@@ -48,12 +48,12 @@ class CollapsibleSection(QWidget):
         self._is_collapsed = collapsed
         self._animation = QPropertyAnimation(self, b"minimumHeight")
         self._animation.setDuration(200)
-        
+
         # Main layout
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
-        
+
         # Header button
         self._header = QPushButton(title)
         self._header.setCheckable(True)
@@ -77,12 +77,12 @@ class CollapsibleSection(QWidget):
                 height: 0;
             }
         """)
-        
+
         # Add arrow indicator to text
         self._update_header_text(title)
         self._header.toggled.connect(self._toggle_content)
         layout.addWidget(self._header)
-        
+
         # Content frame
         self._content_frame = QFrame()
         self._content_frame.setFrameStyle(QFrame.Shape.Box)
@@ -90,11 +90,11 @@ class CollapsibleSection(QWidget):
         self._content_layout = QVBoxLayout(self._content_frame)
         self._content_layout.setContentsMargins(8, 8, 8, 8)
         layout.addWidget(self._content_frame)
-        
+
         # Apply initial state
         if collapsed:
             self._content_frame.hide()
-            
+
     def add_content(self, widget: QWidget) -> None:
         """Add a widget to the content area.
         
@@ -102,7 +102,7 @@ class CollapsibleSection(QWidget):
             widget: Widget to add to content area
         """
         self._content_layout.addWidget(widget)
-        
+
     def add_layout(self, layout: QVBoxLayout) -> None:
         """Add a layout to the content area.
         
@@ -110,7 +110,7 @@ class CollapsibleSection(QWidget):
             layout: Layout to add to content area
         """
         self._content_layout.addLayout(layout)
-        
+
     def set_content_layout(self, layout: QVBoxLayout) -> None:
         """Replace the content layout.
         
@@ -122,11 +122,11 @@ class CollapsibleSection(QWidget):
             item = self._content_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
-                
+
         # Set new layout
         self._content_layout = layout
         self._content_frame.setLayout(layout)
-        
+
     def is_collapsed(self) -> bool:
         """Check if the section is collapsed.
         
@@ -134,7 +134,7 @@ class CollapsibleSection(QWidget):
             True if section is collapsed
         """
         return self._is_collapsed
-        
+
     def set_collapsed(self, collapsed: bool) -> None:
         """Set the collapsed state.
         
@@ -143,7 +143,7 @@ class CollapsibleSection(QWidget):
         """
         if self._is_collapsed != collapsed:
             self._header.setChecked(not collapsed)
-            
+
     def set_title(self, title: str) -> None:
         """Update the section title.
         
@@ -151,7 +151,7 @@ class CollapsibleSection(QWidget):
             title: New title for the section
         """
         self._update_header_text(title)
-        
+
     def _update_header_text(self, title: str) -> None:
         """Update header text with arrow indicator.
         
@@ -160,7 +160,7 @@ class CollapsibleSection(QWidget):
         """
         arrow = "▼" if not self._is_collapsed else "▶"
         self._header.setText(f"{arrow} {title}")
-        
+
     def _toggle_content(self, checked: bool) -> None:
         """Toggle content visibility.
         
@@ -168,20 +168,20 @@ class CollapsibleSection(QWidget):
             checked: Whether section is expanded
         """
         self._is_collapsed = not checked
-        
+
         # Update arrow
         title = self._header.text()[2:]  # Remove old arrow
         self._update_header_text(title)
-        
+
         # Show/hide content
         if self._is_collapsed:
             self._content_frame.hide()
         else:
             self._content_frame.show()
-            
+
         # Emit signal
         self.toggled.emit(not self._is_collapsed)
-        
+
     def clear_content(self) -> None:
         """Remove all widgets from the content area."""
         while self._content_layout.count():

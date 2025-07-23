@@ -9,8 +9,8 @@ This script provides a cross-platform way to launch the Create Project
 application in GUI mode with proper environment setup.
 """
 
-import sys
 import os
+import sys
 from pathlib import Path
 
 # Add the project root to Python path
