@@ -27,7 +27,12 @@
       "Bash(git push:*)",
       "Bash(gh pr create:*)",
       "Bash(QT_QPA_PLATFORM=offscreen uv run pytest tests/gui/test_location_step.py -v)",
-      "Bash(QT_QPA_PLATFORM=offscreen uv run pytest tests/gui/test_custom_widgets.py -v)"
+      "Bash(QT_QPA_PLATFORM=offscreen uv run pytest tests/gui/test_custom_widgets.py -v)",
+      "Bash(gh issue comment:*)",
+      "Bash(QT_QPA_PLATFORM=offscreen uv run pytest tests/gui/test_settings_dialog.py -xvs)",
+      "Bash(QT_QPA_PLATFORM=offscreen uv run pytest tests/gui/test_settings_dialog.py::TestSettingsDialog::test_validation_invalid_url -xvs)",
+      "Bash(QT_QPA_PLATFORM=offscreen uv run pytest tests/gui/test_settings_dialog.py::TestSettingsDialog::test_cancel_button -xvs)",
+      "Bash(QT_QPA_PLATFORM=offscreen uv run pytest tests/gui/test_settings_dialog.py -v)"
     ],
     "deny": []
   }

@@ -12,9 +12,11 @@ This module contains various dialog windows used throughout the application:
 
 from typing import TYPE_CHECKING
 
+# Import implemented components
+from .settings import SettingsDialog
+
 if TYPE_CHECKING:
     from .ai_help import AIHelpDialog
     from .error import ErrorDialog
-    from .settings import SettingsDialog
 
 __all__ = ["SettingsDialog", "ErrorDialog", "AIHelpDialog"]
