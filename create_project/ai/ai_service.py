@@ -34,6 +34,7 @@ from .model_manager import ModelInfo, ModelManager
 from .ollama_client import OllamaClient
 from .ollama_detector import OllamaDetector, OllamaStatus
 from .response_generator import GenerationConfig, ResponseGenerator
+from .types import PromptType
 
 logger = get_logger(__name__)
 
@@ -230,10 +231,9 @@ class AIService:
             # Initialize cache manager if enabled
             if self.config.cache_enabled:
                 self._cache_manager = ResponseCacheManager(
-                    max_entries=self.config.max_cache_entries,
+                    max_size=self.config.max_cache_entries,
                     default_ttl_hours=self.config.cache_ttl_hours,
                 )
-                await self._cache_manager.load_cache()
 
             # Initialize context collector if enabled
             if self.config.context_collection_enabled:
@@ -385,7 +385,7 @@ class AIService:
                     "template_name": template.name if template else None,
                     "context_hash": hash(str(context)) if context else None,
                 }
-                cache_key = self._cache_manager.generate_key(cache_params)
+                cache_key = self._cache_manager.generate_key(**cache_params)
                 cached_response = self._cache_manager.get(cache_key)
 
                 if cached_response:
@@ -395,7 +395,7 @@ class AIService:
             # Generate response using AI
             generation_config = config or GenerationConfig()
             response = await self._response_generator.generate_response(
-                prompt_type="error_help",
+                prompt_type=PromptType.ERROR_HELP,
                 context={
                     "error": error,
                     "error_context": context,
@@ -493,7 +493,7 @@ class AIService:
             full_response = ""
 
             async for chunk in self._response_generator.stream_response(
-                prompt_type="error_help",
+                prompt_type=PromptType.ERROR_HELP,
                 context={
                     "error": error,
                     "error_context": context,
@@ -517,7 +517,7 @@ class AIService:
                     "template_name": template.name if template else None,
                     "context_hash": hash(str(context)) if context else None,
                 }
-                cache_key = self._cache_manager.generate_key(cache_params)
+                cache_key = self._cache_manager.generate_key(**cache_params)
                 self._cache_manager.put(cache_key, full_response)
 
             self.logger.info(
@@ -562,7 +562,7 @@ class AIService:
         try:
             generation_config = config or GenerationConfig()
             response = await self._response_generator.generate_response(
-                prompt_type="suggestions",
+                prompt_type=PromptType.SUGGESTIONS,
                 context={"suggestion_type": suggestion_type, **context},
                 config=generation_config,
             )
@@ -599,11 +599,11 @@ class AIService:
         try:
             # Persist cache if enabled
             if self._cache_manager and self.config.cache_enabled:
-                await self._cache_manager.persist_cache()
+                self._cache_manager.persist()
 
             # Close HTTP clients
             if self._client:
-                self._client.close_clients()
+                self._client.close()
 
             self.logger.info("AI service cleanup completed")
 

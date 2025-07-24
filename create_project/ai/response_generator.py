@@ -354,7 +354,7 @@ class ResponseGenerator:
     async def _select_model(self, preference: Optional[str]) -> str:
         """Select the best available model for text generation."""
         try:
-            models = await self._model_manager.get_available_models()
+            models = self._model_manager.get_models()
 
             # Use preference if specified and available
             if preference and any(model.name == preference for model in models):

@@ -337,7 +337,7 @@ class ProjectGenerator:
                 target_path=target_path,
                 template_name=template.name,
                 files_created=files_created,
-                errors=[],
+                errors=self.generation_errors.copy(),
                 duration=duration,
                 git_initialized=git_initialized,
                 venv_created=venv_created,

@@ -204,6 +204,12 @@ class OllamaClient:
         )
 
     @property
+    def is_available(self) -> bool:
+        """Check if Ollama service is available."""
+        status = self.detector.detect()
+        return status.is_installed and status.is_running
+
+    @property
     def sync_client(self) -> httpx.Client:
         """Get or create synchronous HTTP client."""
         if self._sync_client is None:
@@ -590,6 +596,23 @@ class OllamaClient:
         data = {"model": model, "prompt": prompt, "stream": stream, **kwargs}
 
         return await self.request_async(RequestMethod.POST, "generate", data=data)
+
+    async def generate(
+        self, model: str, prompt: str, stream: bool = False, **kwargs
+    ) -> OllamaResponse:
+        """
+        Generate completion from model (async) - alias for generate_completion_async.
+
+        Args:
+            model: Model name
+            prompt: Prompt text
+            stream: Whether to stream response
+            **kwargs: Additional generation parameters
+
+        Returns:
+            OllamaResponse with completion
+        """
+        return await self.generate_completion_async(model, prompt, stream, **kwargs)
 
     def chat_completion(
         self, model: str, messages: list, stream: bool = False, **kwargs

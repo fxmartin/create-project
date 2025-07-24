@@ -32,7 +32,13 @@
       "Bash(QT_QPA_PLATFORM=offscreen uv run pytest tests/gui/test_settings_dialog.py -xvs)",
       "Bash(QT_QPA_PLATFORM=offscreen uv run pytest tests/gui/test_settings_dialog.py::TestSettingsDialog::test_validation_invalid_url -xvs)",
       "Bash(QT_QPA_PLATFORM=offscreen uv run pytest tests/gui/test_settings_dialog.py::TestSettingsDialog::test_cancel_button -xvs)",
-      "Bash(QT_QPA_PLATFORM=offscreen uv run pytest tests/gui/test_settings_dialog.py -v)"
+      "Bash(QT_QPA_PLATFORM=offscreen uv run pytest tests/gui/test_settings_dialog.py -v)",
+      "mcp__memory__retrieve_memory",
+      "mcp__memory__store_memory",
+      "Bash(ls:*)",
+      "Bash(pkill:*)",
+      "Bash(git merge:*)",
+      "Bash(git branch:*)"
     ],
     "deny": []
   }
