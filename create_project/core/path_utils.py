@@ -289,8 +289,17 @@ class PathHandler:
             raise PathError(f"Filename '{filename}' is reserved on Windows")
 
         # Check for names that start or end with spaces or dots (Windows issue)
-        if filename.startswith((" ", ".")) or filename.endswith((" ", ".")):
-            raise PathError("Filename cannot start or end with spaces or dots")
+        # But allow common dotfiles like .gitignore, .env, etc.
+        if filename.startswith(" ") or filename.endswith((" ", ".")):
+            raise PathError("Filename cannot start or end with spaces or end with dots")
+        
+        # Dotfiles are allowed, but not just "." or ".."
+        if filename in (".", ".."):
+            raise PathError("Filename cannot be '.' or '..'")
+        
+        # Don't allow empty filenames after removing the dot
+        if filename.startswith(".") and len(filename) == 1:
+            raise PathError("Filename cannot be just a dot")
 
         self.logger.debug("Filename validated", filename=filename)
 

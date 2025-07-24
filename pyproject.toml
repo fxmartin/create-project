@@ -73,3 +73,12 @@ exclude = ["create_project/templates/builtin/template_files/.*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
+markers = [
+    "integration: mark test as an integration test",
+    "slow: mark test as slow running",
+    "requires_network: mark test as requiring network access",
+]
+addopts = [
+    "--strict-markers",
+    "-ra",
+]

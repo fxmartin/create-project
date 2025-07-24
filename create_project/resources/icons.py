@@ -91,7 +91,9 @@ class IconManager:
             QIcon instance
         """
         # Build cache key
-        cache_key = f"{theme or self._theme}/{category or ''}/{name}"
+        theme_part = theme or self._theme
+        category_part = f"{category}/" if category else ""
+        cache_key = f"{theme_part}/{category_part}{name}"
 
         # Check cache
         if cache_key in self._cache:
@@ -172,8 +174,9 @@ class IconManager:
             Empty QIcon
         """
         # Create a transparent pixmap
+        from PyQt6.QtCore import Qt
         pixmap = QPixmap(24, 24)
-        pixmap.fill(pixmap.fill())  # Transparent
+        pixmap.fill(Qt.GlobalColor.transparent)  # Transparent
         return QIcon(pixmap)
 
     def set_theme(self, theme: str) -> None:

@@ -227,7 +227,26 @@ class FileRenderer:
                 current_template_path = current_template_path / current_path
                 current_target_path = current_target_path / current_path
 
-            if isinstance(content, dict):
+            if isinstance(content, dict) and "content" in content:
+                # This is inline content - render directly
+                target_file = current_target_path / name
+
+                # Remove .j2 extension if present in target
+                if target_file.suffix == ".j2":
+                    target_file = target_file.with_suffix("")
+
+                # Check if file should be executable
+                executable = self._should_be_executable(name, content)
+
+                # Render inline content
+                self._render_inline_content(
+                    content["content"],
+                    target_file,
+                    variables,
+                    executable=executable,
+                    progress_callback=progress_callback,
+                )
+            elif isinstance(content, dict):
                 # This is a directory - recurse into it
                 new_path = f"{current_path}/{name}" if current_path else name
                 self._render_structure_recursive(
@@ -240,7 +259,6 @@ class FileRenderer:
                 )
             elif content is None or isinstance(content, str):
                 # This is a file to render
-                template_file = current_template_path / name
                 target_file = current_target_path / name
 
                 # Remove .j2 extension if present in target
@@ -249,6 +267,13 @@ class FileRenderer:
 
                 # Check if file should be executable
                 executable = self._should_be_executable(name, content)
+
+                if isinstance(content, str):
+                    # This is a template file reference - always relative to base
+                    template_file = template_base / content
+                else:
+                    # This is a direct file reference
+                    template_file = current_template_path / name
 
                 self.render_file(
                     template_file,
@@ -344,6 +369,55 @@ class FileRenderer:
         except Exception as e:
             raise TemplateError(
                 f"Failed to copy binary file '{template_path}': {e}"
+            ) from e
+
+    def _render_inline_content(
+        self,
+        content: str,
+        target_path: Path,
+        variables: Dict[str, Any],
+        executable: bool = False,
+        progress_callback: Optional[Callable[[str], None]] = None,
+    ) -> None:
+        """Render inline content directly to a file.
+
+        Args:
+            content: Template content string
+            target_path: Target file path
+            variables: Template variables
+            executable: Whether to make file executable
+            progress_callback: Optional progress callback
+        """
+        try:
+            if progress_callback:
+                progress_callback(f"Rendering: {target_path.name}")
+
+            # Use template engine to render content
+            rendered_content = self.template_engine.render_template_string(
+                content, variables
+            )
+
+            # Ensure target directory exists
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Write rendered content
+            target_path.write_text(rendered_content, encoding="utf-8")
+
+            # Set file permissions
+            self._set_file_permissions(target_path, executable)
+
+            # Track the rendered file
+            self.rendered_files.append(target_path)
+
+            self.logger.debug(
+                "Inline content rendered",
+                target_path=str(target_path),
+                size=len(rendered_content),
+            )
+
+        except Exception as e:
+            raise TemplateError(
+                f"Failed to render inline content to '{target_path}': {e}"
             ) from e
 
     def _is_binary_file(self, file_path: Path) -> bool:

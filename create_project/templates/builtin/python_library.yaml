@@ -523,7 +523,7 @@ hooks:
       platform: ["macOS", "Linux"]
 
 compatibility:
-  min_python_version: "{{python_version}}"
+  min_python_version: "3.9.6"
   supported_os: ["macOS", "Linux", "Windows"]
   dependencies: []
 

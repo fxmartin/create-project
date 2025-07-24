@@ -14,6 +14,7 @@ from typing import Any, Callable, Dict, Optional, Union
 
 from ..config.config_manager import ConfigManager
 from ..templates.loader import TemplateLoader
+from ..templates.engine import TemplateEngine
 from .project_generator import (
     GenerationResult,
     ProjectGenerator,
@@ -56,11 +57,23 @@ def create_project(
     """
     # Initialize components
     config_manager = config_manager or ConfigManager()
-    template_loader = TemplateLoader()
+    template_loader = TemplateLoader(config_manager=config_manager)
+    template_engine = TemplateEngine(config_manager=config_manager)
     generator = ProjectGenerator(config_manager=config_manager)
 
+    # Find template file
+    template_path = template_loader.find_template_by_name(template_name)
+    if not template_path:
+        return GenerationResult(
+            success=False,
+            target_path=Path(target_directory) / project_name,
+            template_name=template_name,
+            files_created=[],
+            errors=[f"Template '{template_name}' not found"],
+        )
+    
     # Load template
-    template = template_loader.load_template(template_name)
+    template = template_engine.load_template(template_path)
 
     # Prepare variables
     final_variables = variables or {}
@@ -120,12 +133,18 @@ def create_project_async(
     """
     # Initialize components
     config_manager = config_manager or ConfigManager()
-    template_loader = TemplateLoader()
+    template_loader = TemplateLoader(config_manager=config_manager)
+    template_engine = TemplateEngine(config_manager=config_manager)
     generator = ProjectGenerator(config_manager=config_manager)
     threading_model = threading_model or ThreadingModel()
 
+    # Find template file
+    template_path = template_loader.find_template_by_name(template_name)
+    if not template_path:
+        raise ValueError(f"Template '{template_name}' not found")
+    
     # Load template
-    template = template_loader.load_template(template_name)
+    template = template_engine.load_template(template_path)
 
     # Prepare variables
     final_variables = variables or {}

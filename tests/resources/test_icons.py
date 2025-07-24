@@ -30,6 +30,7 @@ class TestIconManager:
         manager._icon_dir = tmp_path / "icons"
         manager._icon_dir.mkdir(parents=True, exist_ok=True)
         manager._cache.clear()
+        manager._theme = "default"  # Reset theme to default
         return manager
 
     def test_singleton_instance(self) -> None:

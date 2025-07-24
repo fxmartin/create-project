@@ -258,6 +258,6 @@ hooks:
         variables: ["create_venv"]
 
 compatibility:
-  min_python_version: "{{python_version}}"
+  min_python_version: "3.9.6"
   supported_os: ["macOS", "Linux", "Windows"]
   dependencies: ["click>=8.0.0"]

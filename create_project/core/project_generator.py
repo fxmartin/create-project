@@ -284,7 +284,7 @@ class ProjectGenerator:
 
             if not dry_run:
                 report_progress("Creating directory structure...")
-                self._create_directories(template, target_path, report_progress)
+                self._create_directories(template, target_path, prepared_variables, report_progress)
 
                 report_progress("Rendering template files...")
                 self._render_files(
@@ -501,6 +501,33 @@ class ProjectGenerator:
                 }
             )
 
+            # Add license classifier mapping
+            license_classifiers = {
+                "MIT": "MIT License",
+                "Apache-2.0": "Apache Software License",
+                "GPL-3.0": "GNU General Public License v3 (GPLv3)",
+                "BSD-3-Clause": "BSD License",
+            }
+            
+            if "license" in prepared_vars:
+                prepared_vars["license_classifier"] = license_classifiers.get(
+                    prepared_vars["license"], "Other/Proprietary License"
+                )
+                
+                # Add license text
+                # For now, we'll add a simple placeholder - in a real implementation,
+                # this would load the actual license text from a file
+                license_texts = {
+                    "MIT": "MIT License\n\nCopyright (c) {year} {author}\n\nPermission is hereby granted...",
+                    "Apache-2.0": "Apache License 2.0...",
+                    "GPL-3.0": "GNU General Public License v3...",
+                    "BSD-3-Clause": "BSD 3-Clause License...",
+                }
+                prepared_vars["license_text"] = license_texts.get(
+                    prepared_vars["license"], 
+                    f"{prepared_vars['license']} License\n\nCopyright (c) {prepared_vars.get('current_year', '')} {prepared_vars.get('author', '')}"
+                )
+
             # Validate required variables
             if hasattr(template, "variables"):
                 for var_def in template.variables:
@@ -532,6 +559,7 @@ class ProjectGenerator:
         self,
         template: Template,
         target_path: Path,
+        variables: Dict[str, Any],
         progress_callback: Optional[Callable[[str], None]] = None,
     ) -> None:
         """Create directory structure from template.
@@ -539,6 +567,7 @@ class ProjectGenerator:
         Args:
             template: Template with directory structure
             target_path: Base path for creation
+            variables: Template variables for name rendering
             progress_callback: Optional progress callback
         """
         try:
@@ -551,17 +580,26 @@ class ProjectGenerator:
 
             # Extract directory structure from template
             structure = {}
-            if hasattr(template, "structure") and hasattr(
-                template.structure, "directories"
-            ):
-                for directory in template.structure.directories:
-                    # Convert flat directory list to nested structure
-                    parts = Path(directory).parts
-                    current = structure
-                    for part in parts:
-                        if part not in current:
-                            current[part] = {}
-                        current = current[part]
+            
+            # Handle root_directory structure
+            if hasattr(template, "structure"):
+                if hasattr(template.structure, "root_directory"):
+                    root_dir = template.structure.root_directory
+                    # Process directories from root_directory
+                    if hasattr(root_dir, "directories"):
+                        self._extract_directories_recursive(
+                            root_dir.directories, structure, variables
+                        )
+                # Fallback to direct directories attribute
+                elif hasattr(template.structure, "directories"):
+                    for directory in template.structure.directories:
+                        # Convert flat directory list to nested structure
+                        parts = Path(directory).parts
+                        current = structure
+                        for part in parts:
+                            if part not in current:
+                                current[part] = {}
+                            current = current[part]
 
             # Create directories using DirectoryCreator
             self.directory_creator.create_structure(
@@ -600,10 +638,10 @@ class ProjectGenerator:
             if progress_callback:
                 progress_callback("Rendering template files...")
 
-            # Get template files structure
-            file_structure = {}
-            if hasattr(template, "structure") and hasattr(template.structure, "files"):
-                file_structure = template.structure.files
+            # Build file structure from template
+            file_structure = self._build_file_structure_from_template(
+                template, variables
+            )
 
             if not file_structure:
                 self.logger.info("No files to render in template")
@@ -643,6 +681,149 @@ class ProjectGenerator:
         except Exception as e:
             self.generation_errors.append(f"File rendering failed: {e}")
             raise TemplateError(f"Failed to render template files: {e}") from e
+
+    def _build_file_structure_from_template(
+        self, template: Template, variables: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Build a file structure from template definition.
+
+        Args:
+            template: Template with structure definition
+            variables: Template variables for conditional evaluation
+
+        Returns:
+            File structure dictionary suitable for FileRenderer
+        """
+        file_structure = {}
+
+        if not hasattr(template, "structure") or not template.structure:
+            return file_structure
+
+        # Process root directory
+        if hasattr(template.structure, "root_directory"):
+            root_dir = template.structure.root_directory
+            self._process_directory_structure(root_dir, file_structure, variables)
+
+        # Also check for direct files attribute (backward compatibility)
+        elif hasattr(template.structure, "files"):
+            file_structure = template.structure.files
+
+        return file_structure
+
+    def _process_directory_structure(
+        self,
+        directory: Any,
+        structure: Dict[str, Any],
+        variables: Dict[str, Any],
+        current_path: str = "",
+    ) -> None:
+        """Process a directory structure recursively.
+
+        Args:
+            directory: Directory definition from template
+            structure: Structure dictionary to populate
+            variables: Template variables for conditionals
+            current_path: Current path in the structure
+        """
+        # Process files in this directory
+        if hasattr(directory, "files") and directory.files:
+            for file_def in directory.files:
+                if not self._should_include_item(file_def, variables):
+                    continue
+
+                # Get the file name (may contain template variables)
+                file_name = self.file_renderer.template_engine.render_template_string(
+                    file_def.name, variables
+                )
+
+                # Add file to structure
+                if hasattr(file_def, "template_file") and file_def.template_file:
+                    # This is a reference to a template file
+                    structure[file_name] = file_def.template_file
+                elif hasattr(file_def, "content") and file_def.content is not None:
+                    # This has inline content - create a temporary file
+                    # For now, we'll use a special marker
+                    structure[file_name] = {"content": file_def.content}
+                else:
+                    # Empty file
+                    structure[file_name] = {"content": ""}
+
+        # Process subdirectories
+        if hasattr(directory, "directories") and directory.directories:
+            for subdir in directory.directories:
+                if not self._should_include_item(subdir, variables):
+                    continue
+
+                # Get the directory name (may contain template variables)
+                dir_name = self.file_renderer.template_engine.render_template_string(
+                    subdir.name, variables
+                )
+
+                # Create subdirectory in structure
+                structure[dir_name] = {}
+
+                # Process subdirectory recursively
+                new_path = f"{current_path}/{dir_name}" if current_path else dir_name
+                self._process_directory_structure(
+                    subdir, structure[dir_name], variables, new_path
+                )
+
+    def _should_include_item(self, item: Any, variables: Dict[str, Any]) -> bool:
+        """Check if an item should be included based on conditions.
+
+        Args:
+            item: File or directory definition
+            variables: Template variables
+
+        Returns:
+            True if item should be included
+        """
+        if not hasattr(item, "condition") or not item.condition:
+            return True
+
+        if hasattr(item.condition, "expression"):
+            try:
+                # Render the condition expression
+                result_str = self.file_renderer.template_engine.render_template_string(
+                    item.condition.expression, variables
+                )
+                # Evaluate as boolean
+                return result_str.lower() in ("true", "yes", "1")
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to evaluate condition: {e}, including item by default"
+                )
+                return True
+
+        return True
+
+    def _extract_directories_recursive(
+        self, directories: List[Any], structure: Dict[str, Any], variables: Dict[str, Any]
+    ) -> None:
+        """Extract directory structure recursively.
+
+        Args:
+            directories: List of directory definitions
+            structure: Structure dictionary to populate
+            variables: Template variables for name rendering
+        """
+        for directory in directories:
+            if not self._should_include_item(directory, variables):
+                continue
+
+            # Render directory name
+            dir_name = self.file_renderer.template_engine.render_template_string(
+                directory.name, variables
+            )
+
+            # Add to structure
+            structure[dir_name] = {}
+
+            # Process subdirectories if any
+            if hasattr(directory, "directories") and directory.directories:
+                self._extract_directories_recursive(
+                    directory.directories, structure[dir_name], variables
+                )
 
     def _get_ai_assistance(
         self,

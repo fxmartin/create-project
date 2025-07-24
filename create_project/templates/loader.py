@@ -191,10 +191,10 @@ class TemplateLoader:
         return templates
 
     def find_template_by_name(self, name: str) -> Optional[Path]:
-        """Find a template by name.
+        """Find a template by name, template_id, or file basename.
 
         Args:
-            name: Template name to search for
+            name: Template name, ID, or file basename to search for
 
         Returns:
             Path to template file if found, None otherwise
@@ -202,10 +202,26 @@ class TemplateLoader:
         template_files = self.discover_templates()
 
         for template_file in template_files:
+            # Check by file basename first (without extension)
+            basename = template_file.stem
+            if basename == name:
+                self.logger.debug(f"Found template '{name}' by filename at: {template_file}")
+                return template_file
+                
             try:
                 metadata = self.load_template_metadata(template_file)
+                # Check by metadata name
                 if metadata.get("name") == name:
                     self.logger.debug(f"Found template '{name}' at: {template_file}")
+                    return template_file
+                # Check by template_id  
+                if metadata.get("template_id") == name:
+                    self.logger.debug(f"Found template '{name}' by ID at: {template_file}")
+                    return template_file
+                # Check by removing "builtin_" prefix from template_id
+                template_id = metadata.get("template_id", "")
+                if template_id.startswith("builtin_") and template_id[8:] == name:
+                    self.logger.debug(f"Found template '{name}' by short ID at: {template_file}")
                     return template_file
             except TemplateLoadError:
                 continue

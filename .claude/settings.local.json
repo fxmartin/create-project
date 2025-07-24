@@ -38,7 +38,12 @@
       "Bash(ls:*)",
       "Bash(pkill:*)",
       "Bash(git merge:*)",
-      "Bash(git branch:*)"
+      "Bash(git branch:*)",
+      "mcp__memory__recall_memory",
+      "Bash(for file in create_project/templates/builtin/*.yaml)",
+      "Bash(do)",
+      "Bash(echo:*)",
+      "Bash(awk:*)"
     ],
     "deny": []
   }

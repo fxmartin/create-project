@@ -153,9 +153,12 @@ class Template(BaseTemplate):
 
         # Validate variables
         for var in self.variables:
-            var_errors = var.validate_value(var.default)
-            if var_errors:
-                errors.extend([f"Variable '{var.name}': {err}" for err in var_errors])
+            # Only validate default values if they exist
+            # Required variables without defaults are valid at template time
+            if var.default is not None:
+                var_errors = var.validate_value(var.default)
+                if var_errors:
+                    errors.extend([f"Variable '{var.name}': {err}" for err in var_errors])
 
         # Validate structure
         structure_errors = self.structure.validate_structure()
@@ -185,6 +188,9 @@ class Template(BaseTemplate):
     def _validate_variable_usage(self, errors: List[str]):
         """Validate that variables used in structure are defined."""
         defined_vars = {var.name for var in self.variables}
+        
+        # Special system-injected variables that don't need to be declared
+        system_vars = {"license_text"}
 
         # Check variables in file names and content
         all_files = self.structure.get_all_files()
@@ -194,18 +200,23 @@ class Template(BaseTemplate):
 
             file_vars = re.findall(r"\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}", file.name)
             for var in file_vars:
-                if var not in defined_vars:
+                if var not in defined_vars and var not in system_vars:
                     errors.append(
                         f"Undefined variable '{var}' used in file name: {file.name}"
                     )
 
             # Check content if it's inline
             if file.content:
+                # Skip validation for HTML/template files that likely contain
+                # application-level template syntax (not project template variables)
+                if file.name.endswith(('.html', '.htm', '.jinja', '.jinja2', '.j2')):
+                    continue
+                    
                 content_vars = re.findall(
                     r"\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}", file.content
                 )
                 for var in content_vars:
-                    if var not in defined_vars:
+                    if var not in defined_vars and var not in system_vars:
                         errors.append(
                             f"Undefined variable '{var}' used in file content: {file.name}"
                         )

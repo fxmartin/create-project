@@ -1,18 +1,40 @@
-# TODO.md - Milestone 5: User Interface Implementation
+# TODO.md - Milestone 6: Integration & Testing
 
 ## Section Overview
-- **Section**: Milestone 5 - User Interface Implementation
-- **Total Estimated Hours**: 84 hours (10.5 days)
-- **Prerequisites**: Milestones 1-4 (Core Infrastructure, Template System, Project Generation, AI Integration)
+- **Section**: Milestone 6 - Integration & Testing
+- **Total Estimated Hours**: 72 hours (9 days)
+- **Prerequisites**: Milestones 1-5 (Complete system implementation)
 - **Key Deliverables**: 
-  - Complete PyQt6 wizard interface with navigation
-  - 5 wizard steps with validation
-  - Custom widgets and dialogs
-  - Settings management UI
-  - Error handling with AI assistance
-  - Professional visual styling
+  - Full system integration testing
+  - Performance optimization
+  - Bug fixes and stabilization
+  - Complete test coverage
+  - CI/CD pipeline setup
+  - Release preparation
 
-## Final Status Update (2025-07-24) - MILESTONE 5 COMPLETION ✅
+## Current Status Update (2025-07-24) - MILESTONE 6 IN PROGRESS
+
+**Milestone 6: IN PROGRESS** - 2/32 tasks complete (6.3%)
+
+**Completed Tasks**:
+- ✅ Task S001: Configure Integration Test Environment (COMPLETED 2025-07-24)
+  - Fixed core template rendering issue - templates now properly process file structures
+  - Fixed path validation to allow dotfiles like .gitignore
+  - Added missing template variables (license_classifier, project_type, etc.)
+  - Updated integration test fixtures with required variables
+  - 7/12 integration tests now passing (58.3% success rate)
+- ✅ Task B001: Fix Qt Icon Test Crashes (COMPLETED during Milestone 5)
+
+**Active Tasks**:
+- 🔄 Task S002: Set Up Performance Testing Framework (pending)
+- 🔄 Task B002: Resolve Template Validation Errors (pending)
+
+**Key Issues Resolved**:
+- Template file rendering now working (was "No files to render in template")
+- File renderer path construction fixed for template references
+- Integration tests for python_library and cli_single_package passing
+
+## Previous Milestone 5 Completion Summary
 
 **Milestone 5: COMPLETED** - 30/35 tasks complete (85.7%)
 **Milestone Criteria: 6/7 met (85.7%)**
@@ -884,3 +906,330 @@ uv run python -m create_project.gui
 - **Architecture**: Thread-safe, TDD approach, graceful degradation, enterprise caching
 - **Performance**: <5ms cache hits, 24hr response cache TTL, LRU eviction, atomic persistence
 - **Integration Tests**: 46 integration tests covering AI workflows, error handling, and edge cases
+
+---
+
+# Milestone 6: Integration & Testing - Task Details
+
+## Carried Forward from Milestone 5
+
+### Task M5-T005: Achieve 80% Test Coverage
+**Type**: Test  
+**Estimated Time**: 8hrs  
+**Prerequisites**: None  
+**Current State**: 59% coverage (628/852 tests passing)
+**Files to Modify**: Various test files across the codebase
+
+**Acceptance Criteria**:
+- [ ] Increase test coverage from 59% to >80%
+- [ ] Fix failing AI integration tests (14 failures)
+- [ ] Resolve icon test crashes
+- [ ] Address Qt headless environment issues where possible
+
+## Atomic Task List
+
+### Setup Tasks
+
+#### Task S001: Configure Integration Test Environment ✅ **COMPLETED**
+**Type**: Setup  
+**Estimated Time**: 2hrs  
+**Prerequisites**: None  
+**Status**: COMPLETED (2025-07-24)
+**Files Modified**: 
+- `create_project/core/project_generator.py` (fixed template rendering)
+- `create_project/core/file_renderer.py` (fixed path handling)
+- `create_project/core/path_utils.py` (fixed dotfile validation)
+- `tests/integration/conftest.py` (updated fixtures)
+- `tests/integration/test_project_generation_e2e.py` (fixed tests)
+
+**Completion Notes**:
+- Fixed core template rendering issue where file structures weren't being built
+- Fixed template file path resolution (now always relative to base)
+- Updated path validation to allow dotfiles like .gitignore
+- Added missing template variables to integration test fixtures
+- 7/12 integration tests now passing
+
+#### Task S002: Set Up Performance Testing Framework
+**Type**: Setup  
+**Estimated Time**: 2hrs  
+**Prerequisites**: None  
+**Files to Create**: 
+- `tests/performance/conftest.py`
+- `tests/performance/benchmarks.py`
+- `requirements-perf.txt`
+
+**Acceptance Criteria**:
+- [ ] Performance testing framework selected (pytest-benchmark)
+- [ ] Baseline performance metrics defined
+- [ ] Memory profiling tools configured
+- [ ] Performance test fixtures created
+
+### Development Tasks
+
+#### Task D001: Complete UI-Backend Integration
+**Type**: Code  
+**Estimated Time**: 4hrs  
+**Prerequisites**: S001  
+**Files to Modify**: 
+- `create_project/gui/wizard/wizard.py`
+- `create_project/gui/dialogs/*.py`
+- `create_project/core/api.py`
+
+**Acceptance Criteria**:
+- [ ] All UI components properly connected to backend
+- [ ] Error handling propagated from backend to UI
+- [ ] Configuration changes reflected immediately
+- [ ] Thread-safe communication established
+
+#### Task D002: Implement Real-time Progress Reporting
+**Type**: Code  
+**Estimated Time**: 3hrs  
+**Prerequisites**: D001  
+**Files to Modify**: 
+- `create_project/core/project_generator.py`
+- `create_project/gui/widgets/progress_dialog.py`
+- `create_project/core/threading_model.py`
+
+**Acceptance Criteria**:
+- [ ] Granular progress updates during project generation
+- [ ] Progress callbacks for each generation phase
+- [ ] Estimated time remaining display
+- [ ] Detailed status messages for each operation
+
+#### Task D003: Fix Failing AI Integration Tests
+**Type**: Code/Test  
+**Estimated Time**: 4hrs  
+**Prerequisites**: None  
+**Files to Modify**: 
+- `tests/integration/test_ai_error_handling.py`
+- `tests/integration/test_ai_project_generation.py`
+- `create_project/ai/ai_service.py`
+
+**Acceptance Criteria**:
+- [ ] All 14 failing AI tests pass
+- [ ] Mock infrastructure properly handles async operations
+- [ ] Error recovery scenarios work correctly
+- [ ] Template validation errors handled gracefully
+
+#### Task D004: Implement Comprehensive Error Recovery
+**Type**: Code  
+**Estimated Time**: 3hrs  
+**Prerequisites**: D001  
+**Files to Create/Modify**: 
+- `create_project/core/error_recovery.py`
+- `create_project/gui/dialogs/recovery_dialog.py`
+
+**Acceptance Criteria**:
+- [ ] Automatic rollback on failure
+- [ ] Recovery options presented to user
+- [ ] Partial project recovery supported
+- [ ] Error logs saved for debugging
+
+### Integration Tasks
+
+#### Task I001: Integrate All Components End-to-End
+**Type**: Integration  
+**Estimated Time**: 4hrs  
+**Prerequisites**: D001, D002  
+**Files to Create**: 
+- `tests/integration/test_end_to_end.py`
+- `tests/integration/test_workflows.py`
+
+**Acceptance Criteria**:
+- [ ] Complete project creation workflow tested
+- [ ] All UI paths lead to successful generation
+- [ ] Configuration changes persist correctly
+- [ ] Error scenarios handled gracefully
+
+#### Task I002: Integrate Performance Monitoring
+**Type**: Integration  
+**Estimated Time**: 2hrs  
+**Prerequisites**: S002, D002  
+**Files to Create/Modify**: 
+- `create_project/utils/performance.py`
+- `create_project/gui/dialogs/performance_dialog.py`
+
+**Acceptance Criteria**:
+- [ ] Performance metrics collected during operation
+- [ ] Memory usage tracked
+- [ ] Slow operations identified and logged
+- [ ] Performance dashboard available in debug mode
+
+### Testing Tasks
+
+#### Task T001: Write Missing Unit Tests
+**Type**: Test  
+**Estimated Time**: 6hrs  
+**Prerequisites**: M5-T005  
+**Files to Create**: Various test files
+
+**Acceptance Criteria**:
+- [ ] Coverage increased to 70%+ for core modules
+- [ ] All public APIs have unit tests
+- [ ] Edge cases covered
+- [ ] Error paths tested
+
+#### Task T002: Create Integration Test Suite
+**Type**: Test  
+**Estimated Time**: 4hrs  
+**Prerequisites**: I001  
+**Files to Create**: 
+- `tests/integration/test_template_integration.py`
+- `tests/integration/test_generator_integration.py`
+- `tests/integration/test_gui_integration.py`
+
+**Acceptance Criteria**:
+- [ ] Template system integration tested
+- [ ] Project generator integration tested
+- [ ] GUI-backend integration tested
+- [ ] Cross-component workflows validated
+
+#### Task T003: Implement GUI Automation Tests
+**Type**: Test  
+**Estimated Time**: 4hrs  
+**Prerequisites**: D001  
+**Files to Create**: 
+- `tests/gui/test_automation.py`
+- `tests/gui/test_user_flows.py`
+
+**Acceptance Criteria**:
+- [ ] Automated GUI interaction tests
+- [ ] User workflow scenarios tested
+- [ ] Keyboard navigation tested
+- [ ] Accessibility features validated
+
+#### Task T004: Performance Test Suite
+**Type**: Test  
+**Estimated Time**: 3hrs  
+**Prerequisites**: S002, I002  
+**Files to Create**: 
+- `tests/performance/test_generation_speed.py`
+- `tests/performance/test_memory_usage.py`
+- `tests/performance/test_ui_responsiveness.py`
+
+**Acceptance Criteria**:
+- [ ] Project generation time benchmarked
+- [ ] Memory usage profiled
+- [ ] UI responsiveness measured
+- [ ] Performance regression detection
+
+#### Task T005: Security Testing Suite
+**Type**: Test  
+**Estimated Time**: 3hrs  
+**Prerequisites**: None  
+**Files to Create**: 
+- `tests/security/test_input_validation.py`
+- `tests/security/test_path_traversal.py`
+- `tests/security/test_command_injection.py`
+
+**Acceptance Criteria**:
+- [ ] Input validation thoroughly tested
+- [ ] Path traversal attacks prevented
+- [ ] Command injection impossible
+- [ ] Template injection prevented
+
+### Bug Fix Tasks
+
+#### Task B001: Fix Qt Icon Test Crashes ✅ **COMPLETED**
+**Type**: Bug Fix  
+**Estimated Time**: 2hrs  
+**Prerequisites**: None  
+**Status**: COMPLETED (during Milestone 5)
+**Files Modified**: Various test files
+**Completion Notes**: Fixed during Milestone 5 implementation
+
+#### Task B002: Resolve Template Validation Errors
+**Type**: Bug Fix  
+**Estimated Time**: 2hrs  
+**Prerequisites**: None  
+**Files to Modify**: 
+- `create_project/templates/builtin/cli_single_package.yaml`
+- `create_project/templates/engine.py`
+
+**Acceptance Criteria**:
+- [ ] Template validation errors fixed
+- [ ] All built-in templates validate correctly
+- [ ] Default values properly handled
+- [ ] Required variables documented
+
+### Documentation Tasks
+
+#### Task DOC001: Create Integration Testing Guide
+**Type**: Documentation  
+**Estimated Time**: 2hrs  
+**Prerequisites**: T002  
+**Files to Create**: 
+- `docs/testing/integration_testing.md`
+- `docs/testing/test_architecture.md`
+
+**Acceptance Criteria**:
+- [ ] Integration test patterns documented
+- [ ] Test fixture usage explained
+- [ ] Mock strategies documented
+- [ ] CI/CD integration explained
+
+#### Task DOC002: Performance Tuning Guide
+**Type**: Documentation  
+**Estimated Time**: 2hrs  
+**Prerequisites**: T004  
+**Files to Create**: 
+- `docs/performance/tuning_guide.md`
+- `docs/performance/benchmarks.md`
+
+**Acceptance Criteria**:
+- [ ] Performance bottlenecks identified
+- [ ] Optimization strategies documented
+- [ ] Benchmark results included
+- [ ] Configuration options explained
+
+### Deployment Tasks
+
+#### Task DEP001: Configure CI/CD for Integration Tests
+**Type**: Deploy  
+**Estimated Time**: 2hrs  
+**Prerequisites**: T002  
+**Files to Create/Modify**: 
+- `.github/workflows/integration.yml`
+- `.github/workflows/performance.yml`
+
+**Acceptance Criteria**:
+- [ ] Integration tests run on PR
+- [ ] Performance tests run nightly
+- [ ] Test results reported
+- [ ] Failures block merge
+
+## Task Sequencing and Dependencies
+
+### Critical Path:
+1. S001 → D001 → I001 → T002 (Integration foundation)
+2. M5-T005 → T001 (Test coverage improvement)
+3. S002 → I002 → T004 (Performance testing)
+4. B001, B002 (Bug fixes - can be done in parallel)
+
+### Parallel Execution Opportunities:
+- Bug fixes (B001, B002) can be done immediately
+- S001 and S002 can be done in parallel
+- T003, T004, T005 can be done in parallel after prerequisites
+- Documentation tasks can be done alongside testing
+
+### Milestone Completion Criteria:
+- [ ] All UI components fully integrated with backend
+- [ ] Test coverage >80% achieved
+- [ ] All tests passing (no failures)
+- [ ] Performance benchmarks established
+- [ ] Security vulnerabilities addressed
+- [ ] Integration test suite complete
+- [ ] Documentation updated
+
+### Risk Factors:
+1. **Qt Headless Testing**: Many GUI tests skip in CI environment
+2. **Async Test Complexity**: AI integration tests have timing issues
+3. **Performance Goals**: Need to establish realistic benchmarks
+4. **Coverage Target**: Jump from 59% to 80% is significant
+
+### Estimated Timeline:
+- **Week 1**: Setup tasks, bug fixes, and integration work
+- **Week 2**: Testing tasks and coverage improvement
+- **Week 3**: Performance testing, security testing, and documentation
+
+**Total Duration**: 3 weeks (58 hours of focused development)

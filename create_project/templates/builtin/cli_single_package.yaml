@@ -193,6 +193,7 @@ structure:
           variables: ["include_tests"]
         files:
           - name: "__init__.py"
+            content: ""
             description: "Test package initialization"
 
           - name: "test_{{main_module}}.py"
