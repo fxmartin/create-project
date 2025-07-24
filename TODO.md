@@ -14,7 +14,7 @@
 
 ## Final Status Update (2025-07-23) - ALL BRANCHES MERGED ✅
 
-**Milestone 5: COMPLETED** - 28/35 tasks complete (80.0%)
+**Milestone 5: COMPLETED** - 30/35 tasks complete (85.7%)
 - ✅ **ALL BRANCHES SUCCESSFULLY MERGED**: 17 branches consolidated into main
 - ✅ **CORE FUNCTIONALITY**: Complete PyQt6 wizard with all 5 steps implemented
 - ✅ **INTEGRATION**: Full template system and project generator integration
@@ -27,7 +27,7 @@
 - ✅ All merge conflicts resolved
 - ✅ Local branches cleaned up and pushed to origin
 
-**Completed Tasks**: 28/35 (80.0%)
+**Completed Tasks**: 30/35 (85.7%)
 - ✅ Task S001: Initialize GUI Package Structure
 - ✅ Task S002: Install PyQt6 Dependencies  
 - ✅ Task S003: Create GUI Test Infrastructure
@@ -52,8 +52,10 @@
 - ✅ Task T001: Write Wizard Navigation Tests
 - ✅ Task T002: Write Step Validation Tests
 - ✅ Task T003: Write Integration Tests
+- ✅ Task T004: Write Custom Widget Tests
 - ✅ Task DOC001: Create GUI Architecture Documentation
 - ✅ Task DOC002: Create User Guide with Screenshots
+- ✅ Task DEP001: Create GUI Launch Script
 - ✅ Task DEP002: Update Package Entry Points
 - ✅ **MERGE SUCCESS**: All 17 development branches consolidated
 - ✅ **RESOURCE FIXES**: Fixed import conflicts (icons/styles modules)
@@ -623,18 +625,24 @@ self.generator.progress.connect(self.update_progress)
 - End-to-end workflow testing with proper mocking
 - Integration test helper utilities for complex scenarios
 
-#### Task T004: Write Custom Widget Tests
+#### Task T004: Write Custom Widget Tests ✅ **COMPLETED**
 **Type**: Test  
 **Estimated Time**: 2hrs  
 **Prerequisites**: D008  
-**Files to Create/Modify**: 
-- `tests/gui/test_custom_widgets.py`
+**Files Created**: 
+- `tests/gui/test_custom_widgets.py` (479 lines, 33 tests)
 
 **Acceptance Criteria**:
-- [ ] Test ValidatedLineEdit validation
-- [ ] Test CollapsibleSection behavior
-- [ ] Test FilePathEdit browsing
-- [ ] Test widget state changes
+- [x] Test ValidatedLineEdit validation
+- [x] Test CollapsibleSection behavior
+- [x] Test FilePathEdit browsing
+- [x] Test widget state changes
+
+**Completion Notes**:
+- Comprehensive test suite already implemented with 33 tests
+- Tests cover all three custom widgets with full functionality
+- Some tests skipped in headless environment due to Qt visibility issues
+- All acceptance criteria met with thorough coverage
 
 **Implementation Notes**:
 ```python
@@ -696,20 +704,29 @@ def test_validated_line_edit(qtbot):
 
 ### Deployment Tasks
 
-#### Task DEP001: Create GUI Launch Script
+#### Task DEP001: Create GUI Launch Script ✅ **COMPLETED**
 **Type**: Deploy  
 **Estimated Time**: 1hr  
 **Prerequisites**: D013  
-**Files to Create/Modify**: 
-- `scripts/run-gui.py`
-- `scripts/run-gui.sh`
-- `scripts/run-gui.ps1`
+**Files Created**: 
+- `scripts/run-gui.py` (36 lines)
+- `scripts/run-gui.sh` (50 lines)
+- `scripts/run-gui.ps1` (50 lines)
 
 **Acceptance Criteria**:
-- [ ] Cross-platform launch scripts
-- [ ] Environment detection
-- [ ] Error handling for missing deps
-- [ ] Debug mode support
+- [x] Cross-platform launch scripts
+- [x] Environment detection
+- [x] Error handling for missing deps
+- [x] Debug mode support
+
+**Completion Notes**:
+- Python script for cross-platform compatibility
+- Bash script for macOS/Linux with color output
+- PowerShell script for Windows with proper error handling
+- All scripts check for uv, virtual environment, and PyQt6
+- Support for --debug flag and DEBUG environment variable
+- Automatic installation of missing dependencies
+- GUI successfully launches with all scripts
 
 **Implementation Notes**:
 ```bash
