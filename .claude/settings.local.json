@@ -46,7 +46,8 @@
       "Bash(awk:*)",
       "mcp__memory__search_by_tag",
       "Bash(uv add:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "mcp__sequential-thinking__sequentialthinking"
     ],
     "deny": []
   }
