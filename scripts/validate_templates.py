@@ -14,13 +14,14 @@ from pathlib import Path
 from typing import Any, Dict
 
 import yaml
+from pydantic import ValidationError
 
 # Add the project root to the path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from create_project.templates.schema.template import Template
-from create_project.templates.validator import TemplateValidator
+from create_project.templates.validator import TemplateValidator, TemplateValidationError
 
 
 def validate_template_file(template_path: Path) -> Dict[str, Any]:
@@ -49,20 +50,34 @@ def validate_template_file(template_path: Path) -> Dict[str, Any]:
 
         # Validate against Pydantic schema
         template = Template(**template_data)
-        result["valid_schema"] = True
-
+        
         # Use template validator for additional checks
         validator = TemplateValidator()
-        validation_result = validator.validate_template_data(template_data)
-
-        if not validation_result.is_valid:
-            result["errors"].extend(validation_result.errors)
-            result["warnings"].extend(validation_result.warnings)
+        try:
+            # validate_template_data returns a Template object if successful
+            # or raises TemplateValidationError if validation fails
+            validated_template = validator.validate_template_data(template_data)
+            # If we get here, both Pydantic and custom validation were successful
+            result["valid_schema"] = True
+        except TemplateValidationError as e:
+            result["valid_schema"] = False
+            result["errors"].append(str(e))
+            if hasattr(e, 'errors') and e.errors:
+                for error in e.errors:
+                    if isinstance(error, dict):
+                        result["errors"].append(f"{error.get('field', 'unknown')}: {error.get('message', str(error))}")
+                    else:
+                        result["errors"].append(str(error))
 
     except yaml.YAMLError as e:
         result["errors"].append(f"YAML parsing error: {e}")
+    except ValidationError as e:
+        result["valid_schema"] = False
+        for error in e.errors():
+            field = ".".join(str(x) for x in error["loc"])
+            result["errors"].append(f"{field}: {error['msg']}")
     except Exception as e:
-        result["errors"].append(f"Schema validation error: {e}")
+        result["errors"].append(f"Unexpected error: {type(e).__name__}: {e}")
 
     return result
 
