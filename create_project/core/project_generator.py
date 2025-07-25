@@ -32,6 +32,7 @@ from .file_renderer import FileRenderer
 from .git_manager import GitConfig, GitManager
 from .path_utils import PathHandler
 from .venv_manager import VenvManager
+from .progress import DetailedProgress, ProgressTracker, StepTracker
 
 
 @dataclass
@@ -220,7 +221,7 @@ class ProjectGenerator:
         target_path: Union[str, Path],
         options: Optional[ProjectOptions] = None,
         dry_run: bool = False,
-        progress_callback: Optional[Callable[[str], None]] = None,
+        progress_callback: Optional[Callable[[str, Optional[int]], None]] = None,
     ) -> GenerationResult:
         """Generate a project from template.
 
@@ -270,60 +271,107 @@ class ProjectGenerator:
         )
 
         try:
-            # Progress reporting helper
-            def report_progress(message: str) -> None:
+            # Initialize progress tracker
+            progress_tracker = ProgressTracker()
+            
+            # Progress reporting helper that includes percentage
+            def report_progress(message: str, increment: bool = True) -> None:
+                nonlocal current_step
+                if increment:
+                    current_step += 1
+                percentage = int((current_step / total_steps) * 100)
                 if progress_callback:
-                    progress_callback(message)
-                self.logger.debug("Generation progress", message=message)
+                    progress_callback(message, percentage)
+                self.logger.debug("Generation progress", message=message, percentage=percentage)
+            
+            # Enhanced progress callback for ProgressTracker
+            def detailed_progress_callback(progress: DetailedProgress) -> None:
+                if progress_callback:
+                    progress_callback(progress.message, progress.percentage)
+                self.logger.debug(
+                    "Detailed progress",
+                    phase=progress.phase,
+                    percentage=progress.percentage,
+                    message=progress.message,
+                    elapsed=progress.time_elapsed,
+                    remaining=progress.estimated_remaining,
+                )
+            
+            progress_tracker.progress_callback = detailed_progress_callback
+            
+            # Calculate total steps for basic progress tracking
+            total_steps = 6  # Base steps
+            if hasattr(template, "structure"):
+                if hasattr(template.structure, "root_directory"):
+                    root = template.structure.root_directory
+                    if hasattr(root, "directories"):
+                        total_steps += len(root.directories)
+                    if hasattr(root, "files"):
+                        total_steps += len(root.files)
+            
+            current_step = 0
 
-            report_progress("Validating template and target path...")
+            # Start validation phase
+            progress_tracker.start_phase("validation")
             self._validate_target_path(target_path)
+            progress_tracker.complete_phase("validation")
 
-            report_progress("Preparing template variables...")
+            progress_tracker.update_phase_progress(0.5, "Preparing template variables...")
             prepared_variables = self._prepare_template_variables(template, variables)
+            progress_tracker.complete_phase("validation")
 
             if not dry_run:
-                report_progress("Creating directory structure...")
-                self._create_directories(template, target_path, prepared_variables, report_progress)
+                # Directory creation phase
+                progress_tracker.start_phase("directory_creation")
+                self._create_directories(template, target_path, prepared_variables, progress_tracker)
+                progress_tracker.complete_phase("directory_creation")
 
-                report_progress("Rendering template files...")
+                # File rendering phase
+                progress_tracker.start_phase("file_rendering")
                 self._render_files(
-                    template, prepared_variables, target_path, report_progress
+                    template, prepared_variables, target_path, progress_tracker
                 )
+                progress_tracker.complete_phase("file_rendering")
 
                 # Post-creation steps
                 if options.create_git_repo:
-                    report_progress("Initializing git repository...")
+                    progress_tracker.start_phase("git_initialization")
                     git_initialized = self._initialize_git_repository(
-                        target_path, options.git_config, report_progress
+                        target_path, options.git_config, progress_tracker
                     )
+                    progress_tracker.complete_phase("git_initialization")
 
                 if options.create_venv:
-                    report_progress("Creating virtual environment...")
+                    progress_tracker.start_phase("venv_creation")
                     venv_created = self._create_virtual_environment(
-                        target_path, options, report_progress
+                        target_path, options, progress_tracker
                     )
+                    progress_tracker.complete_phase("venv_creation")
 
                 if (
                     options.execute_post_commands
                     and hasattr(template, "hooks")
                     and hasattr(template.hooks, "post_generation")
                 ):
-                    report_progress("Executing post-creation commands...")
+                    progress_tracker.start_phase("post_commands")
                     commands_executed = self._execute_post_commands(
-                        template, target_path, report_progress
+                        template, target_path, progress_tracker
                     )
+                    progress_tracker.complete_phase("post_commands")
 
                 # Create initial git commit if git was initialized
                 if git_initialized:
-                    report_progress("Creating initial git commit...")
+                    progress_tracker.update_phase_progress(0.9, "Creating initial git commit...")
                     self._create_initial_commit(target_path, options.git_config)
             else:
                 self.logger.info(
                     "Dry-run mode: Skipping actual file creation and post-creation steps"
                 )
 
-            report_progress("Project generation completed successfully")
+            # Final progress update
+            final_progress = progress_tracker.get_overall_progress()
+            if progress_callback:
+                progress_callback("Project generation completed successfully", 100)
 
             # Collect files created (for reporting)
             files_created = []
@@ -560,7 +608,7 @@ class ProjectGenerator:
         template: Template,
         target_path: Path,
         variables: Dict[str, Any],
-        progress_callback: Optional[Callable[[str], None]] = None,
+        progress_tracker: Optional[ProgressTracker] = None,
     ) -> None:
         """Create directory structure from template.
 
@@ -571,15 +619,13 @@ class ProjectGenerator:
             progress_callback: Optional progress callback
         """
         try:
-            if progress_callback:
-                progress_callback("Creating directory structure...")
-
             # Initialize DirectoryCreator for this project if not provided
             if self.directory_creator is None:
                 self.directory_creator = DirectoryCreator(base_path=target_path)
 
             # Extract directory structure from template
             structure = {}
+            dir_count = 0
             
             # Handle root_directory structure
             if hasattr(template, "structure"):
@@ -587,12 +633,14 @@ class ProjectGenerator:
                     root_dir = template.structure.root_directory
                     # Process directories from root_directory
                     if hasattr(root_dir, "directories"):
+                        dir_count = self._count_directories_recursive(root_dir.directories)
                         self._extract_directories_recursive(
                             root_dir.directories, structure, variables
                         )
                 # Fallback to direct directories attribute
                 elif hasattr(template.structure, "directories"):
                     for directory in template.structure.directories:
+                        dir_count += 1
                         # Convert flat directory list to nested structure
                         parts = Path(directory).parts
                         current = structure
@@ -600,10 +648,23 @@ class ProjectGenerator:
                             if part not in current:
                                 current[part] = {}
                             current = current[part]
+            
+            # Create step tracker for directory creation
+            step_tracker = StepTracker(
+                total_items=max(1, dir_count),
+                phase_name="directory_creation",
+                progress_tracker=progress_tracker
+            )
+            
+            # Progress callback for DirectoryCreator
+            def dir_progress_callback(message: str) -> None:
+                if "Creating directory:" in message:
+                    dir_name = message.replace("Creating directory:", "").strip()
+                    step_tracker.complete_item(dir_name)
 
             # Create directories using DirectoryCreator
             self.directory_creator.create_structure(
-                structure=structure, progress_callback=progress_callback
+                structure=structure, progress_callback=dir_progress_callback
             )
 
             # Add rollback handler
@@ -624,7 +685,7 @@ class ProjectGenerator:
         template: Template,
         variables: Dict[str, Any],
         target_path: Path,
-        progress_callback: Optional[Callable[[str], None]] = None,
+        progress_tracker: Optional[ProgressTracker] = None,
     ) -> None:
         """Render template files.
 
@@ -635,9 +696,6 @@ class ProjectGenerator:
             progress_callback: Optional progress callback
         """
         try:
-            if progress_callback:
-                progress_callback("Rendering template files...")
-
             # Build file structure from template
             file_structure = self._build_file_structure_from_template(
                 template, variables
@@ -646,6 +704,16 @@ class ProjectGenerator:
             if not file_structure:
                 self.logger.info("No files to render in template")
                 return
+
+            # Count total files for progress tracking
+            file_count = self._count_files_in_structure(file_structure)
+            
+            # Create step tracker for file rendering
+            step_tracker = StepTracker(
+                total_items=max(1, file_count),
+                phase_name="file_rendering",
+                progress_tracker=progress_tracker
+            )
 
             # Determine template base path
             # Built-in templates are in templates/builtin/template_files/{template_name}/
@@ -657,6 +725,12 @@ class ProjectGenerator:
             template_base_path = (
                 package_root / "templates" / "builtin" / "template_files"
             )
+            
+            # Progress callback for FileRenderer
+            def file_progress_callback(message: str) -> None:
+                if "Rendering file:" in message or "Creating file:" in message:
+                    file_name = message.split(":")[-1].strip()
+                    step_tracker.complete_item(file_name)
 
             # Render files using FileRenderer
             self.file_renderer.render_files_from_structure(
@@ -664,7 +738,7 @@ class ProjectGenerator:
                 base_target_path=target_path,
                 file_structure=file_structure,
                 variables=variables,
-                progress_callback=progress_callback,
+                progress_callback=file_progress_callback,
             )
 
             # Add rollback handler
@@ -682,6 +756,29 @@ class ProjectGenerator:
             self.generation_errors.append(f"File rendering failed: {e}")
             raise TemplateError(f"Failed to render template files: {e}") from e
 
+    def _count_files_in_structure(self, structure: Dict[str, Any]) -> int:
+        """Count total number of files in a nested structure.
+        
+        Args:
+            structure: Nested file structure dictionary
+            
+        Returns:
+            Total file count
+        """
+        count = 0
+        for key, value in structure.items():
+            if isinstance(value, dict):
+                # It's a directory, recurse
+                if "content" in value:
+                    # It's actually a file with content
+                    count += 1
+                else:
+                    count += self._count_files_in_structure(value)
+            else:
+                # It's a file
+                count += 1
+        return count
+    
     def _build_file_structure_from_template(
         self, template: Template, variables: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -797,6 +894,22 @@ class ProjectGenerator:
 
         return True
 
+    def _count_directories_recursive(self, directories: List[Any]) -> int:
+        """Count total number of directories recursively.
+        
+        Args:
+            directories: List of directory definitions
+            
+        Returns:
+            Total directory count
+        """
+        count = 0
+        for directory in directories:
+            count += 1
+            if hasattr(directory, "directories") and directory.directories:
+                count += self._count_directories_recursive(directory.directories)
+        return count
+    
     def _extract_directories_recursive(
         self, directories: List[Any], structure: Dict[str, Any], variables: Dict[str, Any]
     ) -> None:
@@ -940,7 +1053,7 @@ class ProjectGenerator:
         self,
         target_path: Path,
         git_config: Optional[GitConfig],
-        progress_callback: Optional[Callable[[str], None]] = None,
+        progress_tracker: Optional[ProgressTracker] = None,
     ) -> bool:
         """Initialize git repository in project directory.
 
@@ -953,6 +1066,9 @@ class ProjectGenerator:
             True if git repository was initialized successfully
         """
         try:
+            if progress_tracker:
+                progress_tracker.update_phase_progress(0.5, "Initializing git repository...")
+                
             self.git_manager.init_repository(target_path, git_config)
 
             self.logger.info("Git repository initialized", target_path=str(target_path))
@@ -987,7 +1103,7 @@ class ProjectGenerator:
         self,
         target_path: Path,
         options: ProjectOptions,
-        progress_callback: Optional[Callable[[str], None]] = None,
+        progress_tracker: Optional[ProgressTracker] = None,
     ) -> bool:
         """Create virtual environment in project directory.
 
@@ -1000,6 +1116,9 @@ class ProjectGenerator:
             True if virtual environment was created successfully
         """
         try:
+            if progress_tracker:
+                progress_tracker.update_phase_progress(0.1, "Looking for requirements file...")
+                
             # Look for requirements file
             requirements_file = None
             for req_name in ["requirements.txt", "pyproject.toml", "Pipfile"]:
@@ -1008,6 +1127,9 @@ class ProjectGenerator:
                     requirements_file = req_path
                     break
 
+            if progress_tracker:
+                progress_tracker.update_phase_progress(0.3, "Creating virtual environment...")
+                
             result = self.venv_manager.create_venv(
                 project_path=target_path,
                 venv_name=options.venv_name,
@@ -1066,7 +1188,7 @@ class ProjectGenerator:
         self,
         template: Template,
         target_path: Path,
-        progress_callback: Optional[Callable[[str], None]] = None,
+        progress_tracker: Optional[ProgressTracker] = None,
     ) -> int:
         """Execute post-creation commands from template.
 
@@ -1105,10 +1227,16 @@ class ProjectGenerator:
                 target_path=str(target_path),
                 command_count=len(commands),
             )
+            
+            # Create step tracker for commands
+            command_tracker = StepTracker(
+                total_items=len(commands),
+                phase_name="post_commands",
+                progress_tracker=progress_tracker
+            )
 
             def command_progress(message: str, current: int, total: int) -> None:
-                if progress_callback:
-                    progress_callback(f"Command {current + 1}/{total}: {message}")
+                command_tracker.complete_item(f"Command {current + 1}/{total}")
 
             results = self.command_executor.execute_commands(
                 commands=commands,

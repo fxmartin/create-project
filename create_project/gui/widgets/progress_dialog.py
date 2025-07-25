@@ -9,7 +9,10 @@ progress during project generation, with support for status updates,
 cancellation with confirmation, and thread-safe operations.
 """
 
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from create_project.core.progress import DetailedProgress
 
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, pyqtSlot
 from PyQt6.QtGui import QFont
@@ -103,6 +106,28 @@ class ProgressDialog(QDialog):
         self.progress_bar.setValue(0)
         self.progress_bar.setTextVisible(True)
         layout.addWidget(self.progress_bar)
+        
+        # Time and phase information
+        info_layout = QHBoxLayout()
+        
+        # Phase label
+        self.phase_label = QLabel("Phase: Initializing")
+        self.phase_label.setStyleSheet("color: #666; font-size: 11px;")
+        info_layout.addWidget(self.phase_label)
+        
+        info_layout.addStretch()
+        
+        # Time elapsed label
+        self.time_label = QLabel("Time elapsed: 0:00")
+        self.time_label.setStyleSheet("color: #666; font-size: 11px;")
+        info_layout.addWidget(self.time_label)
+        
+        # Time remaining label
+        self.remaining_label = QLabel("Estimated remaining: --:--")
+        self.remaining_label.setStyleSheet("color: #666; font-size: 11px;")
+        info_layout.addWidget(self.remaining_label)
+        
+        layout.addLayout(info_layout)
 
         # Details section
         details_label = QLabel("Details:")
@@ -227,6 +252,54 @@ class ProgressDialog(QDialog):
         self.add_log_entry(f"[{percentage}%] {message}")
 
         logger.debug("Progress updated", percentage=percentage, message=message)
+    
+    def update_detailed_progress(self, progress: "DetailedProgress") -> None:
+        """Update progress with detailed information.
+        
+        Thread-safe method to update all progress indicators.
+        
+        Args:
+            progress: DetailedProgress object with full status
+        """
+        if self._cancelled:
+            return
+        
+        # Update basic progress
+        self.progress_bar.setValue(progress.percentage)
+        self.status_label.setText(progress.message)
+        
+        # Update phase
+        phase_text = progress.phase.replace("_", " ").title()
+        self.phase_label.setText(f"Phase: {phase_text}")
+        
+        # Update time information
+        elapsed_mins = int(progress.time_elapsed // 60)
+        elapsed_secs = int(progress.time_elapsed % 60)
+        self.time_label.setText(f"Time elapsed: {elapsed_mins}:{elapsed_secs:02d}")
+        
+        if progress.estimated_remaining is not None:
+            remaining_mins = int(progress.estimated_remaining // 60)
+            remaining_secs = int(progress.estimated_remaining % 60)
+            self.remaining_label.setText(f"Estimated remaining: {remaining_mins}:{remaining_secs:02d}")
+        else:
+            self.remaining_label.setText("Estimated remaining: --:--")
+        
+        # Update window title with percentage
+        self.setWindowTitle(f"Creating Project ({progress.percentage}%)")
+        
+        # Add to log if sub-progress available
+        if progress.sub_progress:
+            self.add_log_entry(f"  → {progress.sub_progress}")
+        else:
+            self.add_log_entry(f"[{progress.percentage}%] {progress.message}")
+        
+        logger.debug(
+            "Detailed progress updated",
+            percentage=progress.percentage,
+            phase=progress.phase,
+            elapsed=progress.time_elapsed,
+            remaining=progress.estimated_remaining
+        )
 
     def add_log_entry(self, entry: str) -> None:
         """Add entry to the log display.
