@@ -83,6 +83,9 @@ markers = [
     "benchmark: mark test as a performance benchmark",
     "memory: mark test as a memory usage test",
     "stress: mark test as a stress test",
+    "gui: mark test as a GUI test",
+    "automation: mark test as an automation test",
+    "workflow: mark test as a workflow test",
 ]
 addopts = [
     "--strict-markers",
