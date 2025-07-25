@@ -25,6 +25,7 @@ from create_project.config.config_manager import ConfigManager
 from create_project.core.project_generator import ProjectOptions
 from create_project.templates.engine import TemplateEngine
 from create_project.utils.logger import get_logger
+from create_project.utils.performance import measure_operation
 
 from ..steps.basic_info import BasicInfoStep
 from ..steps.location import LocationStep
@@ -179,14 +180,29 @@ class ProjectGenerationThread(QThread):
             )
 
             self.progress.emit(40, "Starting project generation...")
-            # Generate project
-            result = generator.generate_project(
-                template=template,
-                variables=variables,
-                target_path=self.project_path,
-                options=options,
-                progress_callback=self._progress_callback,
-            )
+            
+            # Performance monitoring metadata
+            perf_metadata = {
+                'template_name': getattr(template, 'name', 'unknown'),
+                'project_name': self.wizard_data.project_name,
+                'target_path': str(self.project_path),
+                'variables_count': len(variables),
+                'options': {
+                    'git': options.create_git_repo,
+                    'venv': options.create_venv,
+                    'commands': options.execute_post_commands,
+                }
+            }
+            
+            # Generate project with performance monitoring
+            with measure_operation("gui_project_generation", perf_metadata):
+                result = generator.generate_project(
+                    template=template,
+                    variables=variables,
+                    target_path=self.project_path,
+                    options=options,
+                    progress_callback=self._progress_callback,
+                )
 
             if result.success:
                 message = f"Project created successfully at {result.project_path}"

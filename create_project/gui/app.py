@@ -23,6 +23,8 @@ from create_project.resources.styles import StyleManager
 from create_project.templates.engine import TemplateEngine
 from create_project.templates.loader import TemplateLoader
 from create_project.utils.logger import get_logger
+from create_project.utils.performance import get_monitor, enable_monitoring
+from create_project.gui.dialogs.performance_dialog import PerformanceDialog
 
 from .wizard.wizard import ProjectWizard
 
@@ -196,6 +198,11 @@ def main(args=None) -> int:
         if hasattr(parsed_args, "no_ai") and parsed_args.no_ai:
             config_manager.set_setting("ai.enabled", False)
 
+        # Enable performance monitoring in debug mode
+        if hasattr(parsed_args, "debug") and parsed_args.debug:
+            enable_monitoring()
+            logger.info("Performance monitoring enabled for debug mode")
+
         # Initialize services
         template_engine, template_loader, ai_service = initialize_services(
             config_manager
@@ -221,11 +228,26 @@ def main(args=None) -> int:
 
         wizard.project_created.connect(on_project_created)
 
+        # Show performance dialog in debug mode
+        performance_dialog = None
+        if hasattr(parsed_args, "debug") and parsed_args.debug:
+            performance_dialog = PerformanceDialog()
+            performance_dialog.setWindowTitle("Performance Dashboard - Debug Mode")
+            performance_dialog.show()
+            logger.info("Performance dashboard opened for debug mode")
+
         # Show wizard
         wizard.show()
 
         # Run event loop
-        return app.exec()
+        result = app.exec()
+        
+        # Log performance summary if monitoring was enabled
+        if hasattr(parsed_args, "debug") and parsed_args.debug:
+            from create_project.utils.performance import log_performance_summary
+            log_performance_summary()
+        
+        return result
 
     except Exception as e:
         logger.exception("Unhandled exception in GUI application")

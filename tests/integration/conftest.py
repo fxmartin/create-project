@@ -24,6 +24,9 @@ from create_project.core.api import create_project
 from create_project.templates.engine import TemplateEngine
 from create_project.templates.loader import TemplateLoader
 
+# Import GUI fixtures to make them available in integration tests
+from tests.gui.conftest import mock_config_manager
+
 
 @pytest.fixture(scope="session")
 def integration_app() -> Dict[str, Any]:
