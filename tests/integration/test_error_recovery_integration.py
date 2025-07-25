@@ -16,7 +16,7 @@ from create_project.core.error_recovery import RecoveryContext, RecoveryManager,
 from create_project.core.exceptions import PathError, ProjectGenerationError, TemplateError
 from create_project.core.project_generator import ProjectGenerator, ProjectOptions
 from create_project.templates.loader import TemplateLoader
-from create_project.templates.schema import Template, TemplateFile
+from create_project.templates.schema import Template
 
 
 @pytest.fixture

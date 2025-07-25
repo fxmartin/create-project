@@ -34,6 +34,7 @@ class TestResponseGenerator:
         """Mock model manager."""
         manager = Mock()
         manager.get_available_models = AsyncMock()
+        manager.get_models = Mock()  # This is what _select_model actually calls
         return manager
 
     @pytest.fixture
@@ -153,7 +154,7 @@ class TestResponseGenerator:
         self, generator, mock_model_manager, sample_models
     ):
         """Test model selection with user preference."""
-        mock_model_manager.get_available_models.return_value = sample_models
+        mock_model_manager.get_models.return_value = sample_models
 
         model = await generator._select_model("llama3.2:3b")
 
@@ -164,7 +165,7 @@ class TestResponseGenerator:
         self, generator, mock_model_manager, sample_models
     ):
         """Test model selection choosing best available."""
-        mock_model_manager.get_available_models.return_value = sample_models
+        mock_model_manager.get_models.return_value = sample_models
 
         model = await generator._select_model(None)
 
@@ -339,7 +340,7 @@ class TestResponseGenerator:
     ):
         """Test complete successful response generation."""
         # Setup mocks
-        mock_model_manager.get_available_models.return_value = sample_models
+        mock_model_manager.get_models.return_value = sample_models
         mock_response = OllamaResponse(
             success=True,
             status_code=200,
@@ -375,7 +376,7 @@ class TestResponseGenerator:
     ):
         """Test fallback when AI response fails quality check."""
         # Setup mocks
-        mock_model_manager.get_available_models.return_value = sample_models
+        mock_model_manager.get_models.return_value = sample_models
         mock_response = OllamaResponse(
             success=True,
             status_code=200,
@@ -399,7 +400,7 @@ class TestResponseGenerator:
     ):
         """Test response generation with retry on failure."""
         # Setup mocks - first call fails, it will retry with streaming
-        mock_model_manager.get_available_models.return_value = sample_models
+        mock_model_manager.get_models.return_value = sample_models
 
         # First attempt fails
         mock_client.generate = AsyncMock(side_effect=Exception("Temporary failure"))
@@ -424,7 +425,7 @@ class TestResponseGenerator:
     ):
         """Test streaming response generation."""
         # Setup mocks
-        mock_model_manager.get_available_models.return_value = sample_models
+        mock_model_manager.get_models.return_value = sample_models
 
         # Since the implementation has issues with the task creation, let's test
         # the fallback behavior which always happens due to the error

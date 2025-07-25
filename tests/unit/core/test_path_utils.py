@@ -217,12 +217,11 @@ class TestPathHandler:
                 handler.validate_filename(name.lower())
 
     def test_validate_filename_spaces_and_dots(self, handler):
-        """Test filename validation rejects names starting/ending with spaces or dots."""
+        """Test filename validation rejects names starting/ending with spaces or ending with dots."""
         invalid_names = [
-            " filename.txt",
-            "filename.txt ",
-            ".filename.txt",
-            "filename.txt.",
+            " filename.txt",  # Can't start with space
+            "filename.txt ",  # Can't end with space
+            "filename.txt.",  # Can't end with dot
         ]
 
         for name in invalid_names:
@@ -232,6 +231,11 @@ class TestPathHandler:
                 "start" in str(exc_info.value).lower()
                 or "end" in str(exc_info.value).lower()
             )
+        
+        # Dotfiles like .gitignore should be allowed
+        handler.validate_filename(".gitignore")
+        handler.validate_filename(".env")
+        handler.validate_filename(".filename.txt")
 
     def test_ensure_directory_creates_directory(self, handler, temp_dir):
         """Test ensure_directory creates missing directory."""

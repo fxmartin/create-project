@@ -206,10 +206,7 @@ def mock_external_services():
             }
 
 
-# Markers for categorizing integration tests
-pytest.mark.integration = pytest.mark.mark(name="integration")
-pytest.mark.slow = pytest.mark.mark(name="slow")
-pytest.mark.requires_network = pytest.mark.mark(name="requires_network")
+# Markers are already defined in pyproject.toml, no need to redefine them here
 
 
 @pytest.fixture
