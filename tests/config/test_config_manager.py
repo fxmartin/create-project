@@ -471,5 +471,293 @@ class TestEnvironmentVariableConversion:
                 assert config.ollama.preferred_model is None
 
 
+class TestSaveConfigAdvanced:
+    """Advanced test cases for save_config method."""
+
+    def test_save_current_config_without_parameter(self):
+        """Test saving current loaded config without passing config parameter."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manager = ConfigManager(temp_dir)
+            config = manager.load_config()
+            
+            # Modify config
+            config.ui.theme = "dark"
+            
+            # Save without passing config parameter (should save current loaded config)
+            success = manager.save_config()
+            assert success
+            
+            # Verify file was created and contains correct data
+            settings_file = Path(temp_dir) / "settings.json"
+            assert settings_file.exists()
+            
+            with open(settings_file) as f:
+                saved_data = json.load(f)
+            
+            assert saved_data["ui"]["theme"] == "dark"
+
+    def test_save_config_write_error(self):
+        """Test save_config error handling when write fails."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manager = ConfigManager(temp_dir)
+            config = manager.load_config()
+            
+            # Make directory read-only to cause write error
+            config_dir = Path(temp_dir)
+            config_dir.chmod(0o555)  # Read and execute only
+            
+            try:
+                success = manager.save_config(config)
+                # Should return False due to permission error
+                assert success is False
+            finally:
+                # Restore permissions for cleanup
+                config_dir.chmod(0o755)
+
+    def test_save_config_json_encoding_error(self):
+        """Test save_config with JSON encoding issues."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manager = ConfigManager(temp_dir)
+            config = manager.load_config()
+            
+            # Mock json.dump to raise an exception during save
+            with patch('json.dump', side_effect=ValueError("Encoding error")):
+                success = manager.save_config(config)
+                assert success is False
+
+
+class TestAutoLoadingBehavior:
+    """Test automatic configuration loading behavior."""
+
+    def test_get_setting_auto_loads_config(self):
+        """Test that get_setting auto-loads config when not loaded."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manager = ConfigManager(temp_dir)
+            
+            # Config should not be loaded initially
+            assert not manager.is_loaded
+            
+            # Calling get_setting should auto-load
+            value = manager.get_setting("ui.theme")
+            assert value == "system"
+            assert manager.is_loaded
+
+    def test_set_setting_auto_loads_config(self):
+        """Test that set_setting auto-loads config when not loaded."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manager = ConfigManager(temp_dir)
+            
+            # Config should not be loaded initially
+            assert not manager.is_loaded
+            
+            # Calling set_setting should auto-load
+            success = manager.set_setting("ui.theme", "dark")
+            assert success
+            assert manager.is_loaded
+            assert manager.get_setting("ui.theme") == "dark"
+
+    def test_set_setting_error_handling(self):
+        """Test set_setting error handling."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manager = ConfigManager(temp_dir)
+            manager.load_config()
+            
+            # Use an invalid key that will cause set_nested_value to fail
+            success = manager.set_setting("nonexistent.deeply.nested.invalid.key", "value")
+            assert success is False
+
+
+class TestFileReadingErrors:
+    """Test error handling for file reading operations."""
+
+    def test_load_config_file_permission_error(self):
+        """Test configuration loading with file permission errors."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create settings file
+            settings_file = Path(temp_dir) / "settings.json"
+            settings_data = {"ui": {"theme": "dark"}}
+            with open(settings_file, "w") as f:
+                json.dump(settings_data, f)
+            
+            # Make file unreadable
+            settings_file.chmod(0o000)
+            
+            manager = ConfigManager(temp_dir)
+            
+            try:
+                with pytest.raises(ConfigurationError, match="Cannot read"):
+                    manager.load_config()
+            finally:
+                # Restore permissions for cleanup
+                settings_file.chmod(0o644)
+
+    def test_load_config_file_not_found_error(self):
+        """Test configuration loading with file not found (should not raise error)."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manager = ConfigManager(temp_dir)
+            
+            # Should load defaults without error even if files don't exist
+            config = manager.load_config()
+            assert isinstance(config, Config)
+            assert config.ui.theme == "system"
+
+
+class TestEnvironmentVariableEdgeCases:
+    """Test edge cases in environment variable conversion."""
+
+    def test_float_conversion_ai_variables(self):
+        """Test conversion of float AI environment variables."""
+        float_vars = {
+            "APP_AI_TEMPERATURE": "0.7",
+            "APP_AI_TOP_P": "0.9",
+        }
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with patch.dict(os.environ, float_vars):
+                manager = ConfigManager(temp_dir)
+                config = manager.load_config()
+                
+                assert config.ai.temperature == 0.7
+                assert config.ai.top_p == 0.9
+
+    def test_float_conversion_invalid_value(self):
+        """Test float conversion with invalid values falls back to string."""
+        invalid_float_vars = {
+            "APP_AI_TEMPERATURE": "invalid_float",
+        }
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with patch.dict(os.environ, invalid_float_vars):
+                manager = ConfigManager(temp_dir)
+                # This should raise ConfigurationError due to Pydantic validation
+                with pytest.raises(ConfigurationError, match="Failed to load configuration"):
+                    manager.load_config()
+
+    def test_integer_conversion_invalid_value(self):
+        """Test integer conversion with invalid values falls back to string."""
+        invalid_int_vars = {
+            "OLLAMA_TIMEOUT": "not_a_number",
+        }
+        
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with patch.dict(os.environ, invalid_int_vars):
+                manager = ConfigManager(temp_dir)
+                # This should raise ConfigurationError due to Pydantic validation
+                with pytest.raises(ConfigurationError, match="Failed to load configuration"):
+                    manager.load_config()
+
+    def test_list_conversion_ai_models(self):
+        """Test conversion of comma-separated list variables."""
+        list_vars = {
+            "APP_AI_PREFERRED_MODELS": "llama2,codellama,mistral",
+        }
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with patch.dict(os.environ, list_vars):
+                manager = ConfigManager(temp_dir)
+                config = manager.load_config()
+                
+                assert config.ai.preferred_models == ["llama2", "codellama", "mistral"]
+
+    def test_window_size_array_expansion(self):
+        """Test window size array expansion for out-of-bounds indices."""
+        # Test setting window height when window_size array needs expansion
+        window_vars = {
+            "UI_WINDOW_HEIGHT": "1080",
+        }
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with patch.dict(os.environ, window_vars):
+                manager = ConfigManager(temp_dir)
+                config = manager.load_config()
+                
+                # Should expand array and set height
+                assert len(config.ui.window_size) >= 2
+                assert config.ui.window_size[1] == 1080
+
+    def test_window_size_array_expansion_large_index(self):
+        """Test window size array expansion for very large index (covers line 438)."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manager = ConfigManager(temp_dir)
+            
+            # Manually create environment with large window size index
+            env_config = {}
+            # Simulate setting a very large index that requires array expansion
+            manager._set_nested_dict_value(env_config, ("ui", "window_size", 5), 1200)
+            
+            # Verify array was expanded properly
+            assert len(env_config["ui"]["window_size"]) >= 6
+            assert env_config["ui"]["window_size"][5] == 1200
+
+
+class TestComplexConfigurationScenarios:
+    """Test complex configuration scenarios and edge cases."""
+
+    def test_nested_config_merging_deep(self):
+        """Test deep nested configuration merging."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create nested defaults that respect the schema
+            defaults_file = Path(temp_dir) / "defaults.json"
+            defaults_data = {
+                "ui": {
+                    "theme": "light",
+                    "window_size": [1024, 768]
+                },
+                "ollama": {
+                    "api_url": "http://localhost:11434",
+                    "timeout": 30
+                }
+            }
+            with open(defaults_file, "w") as f:
+                json.dump(defaults_data, f)
+            
+            # Create settings that partially override
+            settings_file = Path(temp_dir) / "settings.json"
+            settings_data = {
+                "ui": {
+                    "theme": "dark"  # Override only theme, keep window_size from defaults
+                },
+                "ollama": {
+                    "timeout": 60  # Override only timeout, keep api_url from defaults
+                }
+            }
+            with open(settings_file, "w") as f:
+                json.dump(settings_data, f)
+            
+            manager = ConfigManager(temp_dir)
+            config = manager.load_config()
+            
+            # Should preserve base URL but override timeout
+            assert config.ollama.api_url == "http://localhost:11434"
+            assert config.ollama.timeout == 60
+            # Should preserve window_size from defaults but override theme
+            assert config.ui.theme == "dark"
+            assert config.ui.window_size == [1024, 768]
+
+    def test_config_with_all_sources_precedence(self):
+        """Test configuration precedence with all sources active."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create defaults with valid theme
+            defaults_file = Path(temp_dir) / "defaults.json"
+            defaults_data = {"ui": {"theme": "system"}}
+            with open(defaults_file, "w") as f:
+                json.dump(defaults_data, f)
+            
+            # Create settings with different valid theme
+            settings_file = Path(temp_dir) / "settings.json"
+            settings_data = {"ui": {"theme": "light"}}
+            with open(settings_file, "w") as f:
+                json.dump(settings_data, f)
+            
+            # Set environment variable with valid theme (should win)
+            with patch.dict(os.environ, {"UI_THEME": "dark"}):
+                manager = ConfigManager(temp_dir)
+                config = manager.load_config()
+                
+                # Environment variable should take precedence
+                assert config.ui.theme == "dark"
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
