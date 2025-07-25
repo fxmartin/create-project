@@ -12,6 +12,7 @@ This module contains reusable custom widgets that provide enhanced functionality
 """
 
 from .collapsible_section import CollapsibleSection
+from .config_aware_widget import ConfigAwareWidget, ConfigChangeNotifier
 from .file_path_edit import FilePathEdit, SelectionMode
 from .license_preview import LicensePreviewDialog
 from .progress_dialog import ProgressDialog
@@ -19,6 +20,8 @@ from .validated_line_edit import ValidatedLineEdit
 
 __all__ = [
     "CollapsibleSection",
+    "ConfigAwareWidget",
+    "ConfigChangeNotifier",
     "FilePathEdit",
     "LicensePreviewDialog",
     "ProgressDialog",
