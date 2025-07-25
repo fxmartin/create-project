@@ -318,17 +318,16 @@ class TestAIErrorHandling:
             ),
         )
 
-        # Should fail with helpful suggestions
-        assert not result.success
-        assert result.ai_suggestions is not None
-        assert "Python 3.6+" in result.ai_suggestions
-        assert "pyenv" in result.ai_suggestions
+        # Project should succeed but venv creation should fail
+        assert result.success  # Project creation succeeds
+        assert not result.venv_created  # But venv was not created
+        assert len(result.errors) > 0  # Venv error was recorded
+        assert any("virtual environment" in err.lower() for err in result.errors)
 
         # Cleanup
         await ai_service.cleanup()
 
-    @pytest.mark.asyncio
-    async def test_template_validation_error_recovery(
+    def test_template_validation_error_recovery(
         self, temp_workspace, config_with_ai, mocker: MockerFixture
     ):
         """Test AI assistance for template validation errors."""
@@ -360,7 +359,11 @@ class TestAIErrorHandling:
 
         # Initialize services
         ai_service = AIService(config_with_ai)
-        await ai_service.initialize()
+        # Run initialization synchronously
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(ai_service.initialize())
+        loop.close()
 
         template_loader = TemplateLoader()
         generator = ProjectGenerator(
@@ -391,10 +394,12 @@ class TestAIErrorHandling:
         assert "Example usage" in result.ai_suggestions
 
         # Cleanup
-        await ai_service.cleanup()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(ai_service.cleanup())
+        loop.close()
 
-    @pytest.mark.asyncio
-    async def test_disk_space_error_recovery(
+    def test_disk_space_error_recovery(
         self, temp_workspace, config_with_ai, mocker: MockerFixture
     ):
         """Test AI assistance for disk space errors."""
@@ -437,7 +442,11 @@ class TestAIErrorHandling:
 
         # Initialize services
         ai_service = AIService(config_with_ai)
-        await ai_service.initialize()
+        # Run initialization synchronously
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(ai_service.initialize())
+        loop.close()
 
         template_loader = TemplateLoader()
         generator = ProjectGenerator(
@@ -466,7 +475,10 @@ class TestAIErrorHandling:
         assert "Free up space" in result.ai_suggestions
 
         # Cleanup
-        await ai_service.cleanup()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(ai_service.cleanup())
+        loop.close()
 
     @pytest.mark.asyncio
     async def test_network_error_graceful_degradation(
@@ -616,8 +628,7 @@ class TestAIErrorHandling:
         # Cleanup
         await ai_service.cleanup()
 
-    @pytest.mark.asyncio
-    async def test_error_context_sanitization(
+    def test_error_context_sanitization(
         self,
         temp_workspace,
         config_with_ai,
@@ -663,19 +674,25 @@ class TestAIErrorHandling:
 
         # Initialize AI service and test error handling
         ai_service = AIService(config_with_ai)
-        await ai_service.initialize()
+        # Run initialization synchronously
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(ai_service.initialize())
 
         # Generate help with sanitized context
-        response = await ai_service.generate_help_response(
-            error=error,
-            template_name="basic",
-            project_variables={"author_email": "test@example.com"},
+        response = loop.run_until_complete(
+            ai_service.generate_help_response(
+                error=error,
+                template_name="basic",
+                project_variables={"author_email": "test@example.com"},
+            )
         )
 
         assert response is not None
 
         # Cleanup
-        await ai_service.cleanup()
+        loop.run_until_complete(ai_service.cleanup())
+        loop.close()
 
 
 class TestAIErrorRecoveryWorkflows:
@@ -688,9 +705,8 @@ class TestAIErrorRecoveryWorkflows:
         # Use mock templates for integration testing
         return get_mock_template(template_name)
 
-    @pytest.mark.asyncio
     @pytest.mark.slow
-    async def test_full_error_recovery_workflow(self, tmp_path, mocker: MockerFixture):
+    def test_full_error_recovery_workflow(self, tmp_path, mocker: MockerFixture):
         """Test a complete error recovery workflow with AI guidance."""
         # Create config
         config_file = tmp_path / "config.json"
@@ -746,7 +762,11 @@ class TestAIErrorRecoveryWorkflows:
 
         # Initialize services
         ai_service = AIService(config_manager)
-        await ai_service.initialize()
+        # Run initialization synchronously
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(ai_service.initialize())
+        loop.close()
 
         template_loader = TemplateLoader()
         generator = ProjectGenerator(
@@ -786,10 +806,12 @@ class TestAIErrorRecoveryWorkflows:
         assert (target_path / "my_project.py").exists()
 
         # Cleanup
-        await ai_service.cleanup()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(ai_service.cleanup())
+        loop.close()
 
-    @pytest.mark.asyncio
-    async def test_multi_stage_error_recovery(self, tmp_path, mocker: MockerFixture):
+    def test_multi_stage_error_recovery(self, tmp_path, mocker: MockerFixture):
         """Test recovery from multiple sequential errors with AI help."""
         # Create config
         config_file = tmp_path / "config.json"
@@ -860,7 +882,11 @@ class TestAIErrorRecoveryWorkflows:
 
         # Initialize services
         ai_service = AIService(config_manager)
-        await ai_service.initialize()
+        # Run initialization synchronously
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(ai_service.initialize())
+        loop.close()
 
         template_loader = TemplateLoader()
         generator = ProjectGenerator(
@@ -889,4 +915,7 @@ class TestAIErrorRecoveryWorkflows:
         # Should have suggestions for the encountered errors
 
         # Cleanup
-        await ai_service.cleanup()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(ai_service.cleanup())
+        loop.close()

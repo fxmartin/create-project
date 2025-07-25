@@ -216,7 +216,7 @@ def create_mock_cli_template() -> Template:
             name="CLI Application (Single Package)",
             description="Command-line application packaged as installable Python package",
             version="1.0.0",
-            category="cli",
+            category="cli_single",
             tags=["cli", "command-line", "package"],
             author="Test Author",
         ),
