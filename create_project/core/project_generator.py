@@ -270,11 +270,25 @@ class ProjectGenerator:
         )
 
         try:
-            # Progress reporting helper
-            def report_progress(message: str) -> None:
+            # Progress reporting helper with percentage calculation
+            total_steps = 5  # Base steps: validate, prepare, directories, files, complete
+            if options.create_git_repo:
+                total_steps += 2  # git init + initial commit
+            if options.create_venv:
+                total_steps += 1
+            if options.execute_post_commands and hasattr(template, "hooks") and hasattr(template.hooks, "post_generation"):
+                total_steps += 1
+            
+            current_step = 0
+            
+            def report_progress(message: str, increment: bool = True) -> None:
+                nonlocal current_step
+                if increment:
+                    current_step += 1
+                percentage = int((current_step / total_steps) * 100)
                 if progress_callback:
-                    progress_callback(message)
-                self.logger.debug("Generation progress", message=message)
+                    progress_callback(message, percentage)
+                self.logger.debug("Generation progress", message=message, percentage=percentage)
 
             report_progress("Validating template and target path...")
             self._validate_target_path(target_path)
@@ -295,13 +309,13 @@ class ProjectGenerator:
                 if options.create_git_repo:
                     report_progress("Initializing git repository...")
                     git_initialized = self._initialize_git_repository(
-                        target_path, options.git_config, report_progress
+                        target_path, options.git_config, lambda msg: report_progress(msg, increment=False)
                     )
 
                 if options.create_venv:
                     report_progress("Creating virtual environment...")
                     venv_created = self._create_virtual_environment(
-                        target_path, options, report_progress
+                        target_path, options, lambda msg: report_progress(msg, increment=False)
                     )
 
                 if (
@@ -311,7 +325,7 @@ class ProjectGenerator:
                 ):
                     report_progress("Executing post-creation commands...")
                     commands_executed = self._execute_post_commands(
-                        template, target_path, report_progress
+                        template, target_path, lambda msg: report_progress(msg, increment=False)
                     )
 
                 # Create initial git commit if git was initialized
