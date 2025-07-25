@@ -21,6 +21,7 @@ from ..templates.loader import TemplateLoader
 from ..templates.schema.template import Template
 from .command_executor import CommandExecutor
 from .directory_creator import DirectoryCreator
+from .error_recovery import RecoveryContext, RecoveryManager, RecoveryStrategy
 from .exceptions import (
     GitError,
     PathError,
@@ -85,6 +86,7 @@ class GenerationResult:
     venv_created: bool = False
     commands_executed: int = 0
     ai_suggestions: Optional[str] = None
+    recovery_context: Optional[RecoveryContext] = None
 
 
 class ProjectGenerator:
@@ -158,6 +160,7 @@ class ProjectGenerator:
         self.generation_errors: List[str] = []
         self.rollback_handlers: List[Callable[[], None]] = []
         self.logger = get_logger(__name__)
+        self.recovery_manager = RecoveryManager()
 
         # Initialize AI service if not provided and enabled in config
         if self.ai_service is None:
@@ -313,6 +316,14 @@ class ProjectGenerator:
 
             # Start validation phase
             progress_tracker.start_phase("validation")
+            
+            # Create recovery point for validation
+            self.recovery_manager.create_recovery_point(
+                phase="validation",
+                description="Starting validation phase",
+                state_data={"template": template.name, "target_path": str(target_path)},
+            )
+            
             self._validate_target_path(target_path)
             progress_tracker.complete_phase("validation")
 
@@ -323,11 +334,27 @@ class ProjectGenerator:
             if not dry_run:
                 # Directory creation phase
                 progress_tracker.start_phase("directory_creation")
+                
+                # Create recovery point before directory creation
+                self.recovery_manager.create_recovery_point(
+                    phase="directory_creation",
+                    description="Creating directory structure",
+                    state_data={"directories_to_create": self._count_directories_recursive(template.structure.root_directory.directories) if hasattr(template, "structure") and hasattr(template.structure, "root_directory") and hasattr(template.structure.root_directory, "directories") else 0},
+                )
+                
                 self._create_directories(template, target_path, prepared_variables, progress_tracker)
                 progress_tracker.complete_phase("directory_creation")
 
                 # File rendering phase
                 progress_tracker.start_phase("file_rendering")
+                
+                # Create recovery point before file rendering
+                self.recovery_manager.create_recovery_point(
+                    phase="file_rendering",
+                    description="Rendering template files",
+                    state_data={"files_to_render": len(self._build_file_structure_from_template(template, prepared_variables))},
+                )
+                
                 self._render_files(
                     template, prepared_variables, target_path, progress_tracker
                 )
@@ -412,6 +439,27 @@ class ProjectGenerator:
             )
 
             if not dry_run:
+                # Create recovery context
+                partial_results = {
+                    "git_initialized": git_initialized,
+                    "venv_created": venv_created,
+                    "commands_executed": commands_executed,
+                    "files_created": len(files_created) if "files_created" in locals() else 0,
+                    "directories_created": len(self.directory_creator.created_dirs) if self.directory_creator else 0,
+                }
+                
+                recovery_context = self.recovery_manager.create_recovery_context(
+                    error=e,
+                    phase=progress_tracker.get_current_phase() if "progress_tracker" in locals() else "unknown",
+                    failed_operation="project_generation",
+                    target_path=target_path,
+                    template_name=template.name,
+                    project_variables=variables,
+                    partial_results=partial_results,
+                )
+                
+                # Use recovery manager for rollback
+                self.recovery_manager.rollback_all()
                 self._execute_rollback()
 
             duration = time.time() - start_time
@@ -447,6 +495,7 @@ class ProjectGenerator:
                 venv_created=venv_created,
                 commands_executed=commands_executed,
                 ai_suggestions=ai_suggestions,
+                recovery_context=recovery_context if "recovery_context" in locals() else None,
             )
 
         except Exception as e:

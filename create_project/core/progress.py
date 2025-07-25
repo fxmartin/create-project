@@ -110,6 +110,14 @@ class ProgressTracker:
         
         self._report_progress(f"Completed {phase.replace('_', ' ').title()}")
     
+    def get_current_phase(self) -> str:
+        """Get the current phase name.
+        
+        Returns:
+            Current phase name or "unknown"
+        """
+        return self.current_phase
+    
     def get_overall_progress(self) -> DetailedProgress:
         """Calculate overall progress across all phases.
         

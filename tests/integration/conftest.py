@@ -11,6 +11,7 @@ This module provides:
 - Integration test utilities
 """
 
+import asyncio
 import tempfile
 from pathlib import Path
 from typing import Any, Dict, Generator
@@ -206,3 +207,16 @@ def mock_external_services():
 pytest.mark.integration = pytest.mark.mark(name="integration")
 pytest.mark.slow = pytest.mark.mark(name="slow")
 pytest.mark.requires_network = pytest.mark.mark(name="requires_network")
+
+
+@pytest.fixture
+def run_async():
+    """Helper to run async functions in tests."""
+    def _run_async(coro):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            return loop.run_until_complete(coro)
+        finally:
+            loop.close()
+    return _run_async
