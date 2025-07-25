@@ -45,7 +45,8 @@
       "Bash(echo:*)",
       "Bash(awk:*)",
       "mcp__memory__search_by_tag",
-      "Bash(uv add:*)"
+      "Bash(uv add:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }
