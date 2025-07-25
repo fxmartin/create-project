@@ -9,7 +9,7 @@ from typing import Any, Dict
 
 from create_project.templates.loader import TemplateLoader
 from create_project.templates.engine import TemplateEngine
-from create_project.config.manager import ConfigManager
+from create_project.config.config_manager import ConfigManager
 from tests.performance.benchmarks import check_performance
 
 
