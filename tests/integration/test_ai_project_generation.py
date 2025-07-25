@@ -339,7 +339,7 @@ class TestAIProjectGeneration:
         assert len(result.errors) > 0
         # Check for missing required variable errors
         assert any(
-            "required variable" in str(error).lower() or 
+            "required variable" in str(error).lower() or
             "cli_name" in str(error).lower() or
             "variable" in str(error).lower()
             for error in result.errors

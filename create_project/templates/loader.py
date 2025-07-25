@@ -207,14 +207,14 @@ class TemplateLoader:
             if basename == name:
                 self.logger.debug(f"Found template '{name}' by filename at: {template_file}")
                 return template_file
-                
+
             try:
                 metadata = self.load_template_metadata(template_file)
                 # Check by metadata name
                 if metadata.get("name") == name:
                     self.logger.debug(f"Found template '{name}' at: {template_file}")
                     return template_file
-                # Check by template_id  
+                # Check by template_id
                 if metadata.get("template_id") == name:
                     self.logger.debug(f"Found template '{name}' by ID at: {template_file}")
                     return template_file

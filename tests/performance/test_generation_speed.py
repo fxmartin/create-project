@@ -13,10 +13,8 @@ This module provides comprehensive benchmarking for project generation performan
 - Performance regression detection
 """
 
-import tempfile
-import time
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any, Dict
 from unittest.mock import MagicMock
 
 import pytest
@@ -25,15 +23,13 @@ from pytest_benchmark.fixture import BenchmarkFixture
 from create_project.config.config_manager import ConfigManager
 from create_project.core.api import create_project
 from create_project.core.project_generator import ProjectGenerator, ProjectOptions
-from create_project.templates.engine import TemplateEngine
-from create_project.templates.loader import TemplateLoader
 
 
 @pytest.mark.benchmark
 class TestProjectGenerationSpeed:
     """Benchmark project generation speed across different scenarios."""
 
-    def test_python_library_generation_speed(self, benchmark: BenchmarkFixture, 
+    def test_python_library_generation_speed(self, benchmark: BenchmarkFixture,
                                             temp_dir: Path, config_manager: ConfigManager):
         """Benchmark Python library template generation speed."""
         def generate_python_library():
@@ -49,7 +45,7 @@ class TestProjectGenerationSpeed:
                 },
                 config_manager=config_manager
             )
-        
+
         result = benchmark(generate_python_library)
         assert result.success, f"Generation failed: {result.error_message}"
 
@@ -69,7 +65,7 @@ class TestProjectGenerationSpeed:
                 },
                 config_manager=config_manager
             )
-        
+
         result = benchmark(generate_python_package)
         assert result.success, f"Generation failed: {result.errors}"
 
@@ -89,7 +85,7 @@ class TestProjectGenerationSpeed:
                 },
                 config_manager=config_manager
             )
-        
+
         result = benchmark(generate_cli_package)
         assert result.success, f"Generation failed: {result.errors}"
 
@@ -110,7 +106,7 @@ class TestProjectGenerationSpeed:
                 },
                 config_manager=config_manager
             )
-        
+
         result = benchmark(generate_django_app)
         assert result.success, f"Generation failed: {result.errors}"
 
@@ -130,7 +126,7 @@ class TestProjectGenerationSpeed:
                 },
                 config_manager=config_manager
             )
-        
+
         result = benchmark(generate_flask_app)
         assert result.success, f"Generation failed: {result.errors}"
 
@@ -150,7 +146,7 @@ class TestProjectGenerationSpeed:
                 },
                 config_manager=config_manager
             )
-        
+
         result = benchmark(generate_script)
         assert result.success, f"Generation failed: {result.errors}"
 
@@ -167,10 +163,10 @@ class TestProjectSizeScaling:
         # Create a mock template with specified file count
         mock_template.structure = self._create_large_template_structure(file_count)["structure"]
         mock_template.name = "large_project"
-        
+
         def generate_large_project():
             # Use the mock template directly with ProjectGenerator
-            
+
             # Create a mock project with direct API call - testing file scaling
             # This uses a mocked template for performance testing
             options = ProjectOptions(
@@ -185,7 +181,7 @@ class TestProjectSizeScaling:
                 target_path=temp_dir / f"benchmark_large_{file_count}",
                 options=options
             )
-        
+
         result = benchmark(generate_large_project)
         assert result.success, f"Generation failed for {file_count} files: {result.errors}"
 
@@ -201,10 +197,10 @@ class TestProjectSizeScaling:
                 current[f"level_{i}"]["__init__.py"] = ""
                 current[f"level_{i}"][f"module_{i}.py"] = f"# Module at level {i}"
                 current = current[f"level_{i}"]
-            
+
             mock_template.name = "nested_project"
             mock_template.structure = nested_structure
-            
+
             options = ProjectOptions(
                 create_git_repo=False,
                 create_venv=False,
@@ -217,7 +213,7 @@ class TestProjectSizeScaling:
                 target_path=temp_dir / "benchmark_nested",
                 options=options
             )
-        
+
         result = benchmark(generate_nested_project)
         assert result.success, f"Nested generation failed: {result.errors}"
 
@@ -231,16 +227,16 @@ class TestProjectSizeScaling:
                 "__init__.py": "",
             }
         }
-        
+
         # Add files to src directory
         files_per_dir = max(1, file_count // 2)
         for i in range(files_per_dir):
             structure["src"][f"module_{i}.py"] = f"# Module {i}\nclass Module{i}:\n    pass"
-        
+
         # Add test files
         for i in range(file_count - files_per_dir):
             structure["tests"][f"test_module_{i}.py"] = f"# Test {i}\ndef test_module_{i}():\n    pass"
-        
+
         return {
             "name": "large_project",
             "structure": structure,
@@ -283,7 +279,7 @@ class TestBatchOperations:
                 )
                 results.append(result)
             return results
-        
+
         results = benchmark(generate_multiple_projects)
         assert all(r.success for r in results), "Some batch generations failed"
 
@@ -291,7 +287,7 @@ class TestBatchOperations:
                                           temp_dir: Path, config_manager: ConfigManager):
         """Benchmark performance when switching between different templates."""
         templates = ["python_library", "cli_single_package", "flask_web_app"]
-        
+
         def generate_mixed_templates():
             results = []
             for i, template in enumerate(templates * 2):  # 6 projects total
@@ -309,7 +305,7 @@ class TestBatchOperations:
                 )
                 results.append(result)
             return results
-        
+
         results = benchmark(generate_mixed_templates)
         assert all(r.success for r in results), "Some mixed template generations failed"
 
@@ -328,20 +324,20 @@ class TestTemplateRenderingSpeed:
             "version": "0.1.0",
             "description": "Testing variable substitution performance"
         })
-        
+
         def render_with_many_variables():
             # Mock template with many variables
             template_content = "# Project: {{ project_name }}\n"
             template_content += "# Author: {{ author }}\n"
             for i in range(100):
                 template_content += f"# Variable {i}: {{{{ var_{i} }}}}\n"
-            
+
             # Simulate template rendering
             rendered = template_content
             for key, value in large_variables.items():
                 rendered = rendered.replace("{{ " + key + " }}", str(value))
             return rendered
-        
+
         result = benchmark(render_with_many_variables)
         assert "variable_test" in result
 
@@ -369,12 +365,12 @@ CONFIG = {
     {% endfor %}
 }
             """
-            
+
             # Mock complex rendering
             variables = {
                 "config_items": {f"setting_{i}": f"value_{i}" for i in range(20)}
             }
-            
+
             # Simulate Jinja2 rendering complexity
             lines = []
             for i in range(10):
@@ -383,12 +379,12 @@ CONFIG = {
                     lines.append(f"    def even_method(self): return {i}")
                 else:
                     lines.append(f"    def odd_method(self): return {i}")
-            
+
             config_lines = [f'    "{k}": "{v}",' for k, v in variables["config_items"].items()]
             lines.extend(["CONFIG = {"] + config_lines + ["}"])
-            
+
             return "\n".join(lines)
-        
+
         result = benchmark(render_complex_template)
         assert "Module0" in result and "CONFIG" in result
 
@@ -407,7 +403,7 @@ class TestDirectoryCreationSpeed:
                 dir_path.mkdir(parents=True, exist_ok=True)
                 directories.append(dir_path)
             return directories
-        
+
         result = benchmark(create_flat_directories)
         assert len(result) == 50
 
@@ -421,38 +417,38 @@ class TestDirectoryCreationSpeed:
                 current_path.mkdir(parents=True, exist_ok=True)
                 paths.append(current_path)
             return paths
-        
+
         result = benchmark(create_deep_directories)
         assert len(result) == 20
 
-    def test_mixed_directory_structure_creation(self, benchmark: BenchmarkFixture, 
+    def test_mixed_directory_structure_creation(self, benchmark: BenchmarkFixture,
                                               temp_dir: Path):
         """Benchmark creation of complex mixed directory structures."""
         def create_mixed_structure():
             base_dir = temp_dir / "mixed_test"
             base_dir.mkdir(exist_ok=True)
-            
+
             paths = []
             # Create src structure
             for i in range(10):
                 src_dir = base_dir / "src" / f"module_{i}"
                 src_dir.mkdir(parents=True, exist_ok=True)
                 paths.append(src_dir)
-                
+
                 # Create subdirectories
                 for j in range(3):
                     sub_dir = src_dir / f"submodule_{j}"
                     sub_dir.mkdir(exist_ok=True)
                     paths.append(sub_dir)
-            
-            # Create tests structure  
+
+            # Create tests structure
             for i in range(10):
                 test_dir = base_dir / "tests" / f"test_module_{i}"
                 test_dir.mkdir(parents=True, exist_ok=True)
                 paths.append(test_dir)
-            
+
             return paths
-        
+
         result = benchmark(create_mixed_structure)
         assert len(result) == 50  # 10 modules * 4 dirs + 10 test dirs
 
@@ -471,26 +467,26 @@ class TestPerformanceRegression:
                 target_directory=temp_dir,
                 variables={
                     "author": "Baseline User",
-                    "version": "0.1.0", 
+                    "version": "0.1.0",
                     "description": "Baseline performance test",
                     "license": "MIT",
                 },
                 config_manager=config_manager
             )
-        
+
         result = benchmark(baseline_generation)
         assert result.success, f"Baseline generation failed: {result.errors}"
-        
+
         # Performance assertions for regression detection
         stats = benchmark.stats
         mean_time = stats.stats.mean
-        
+
         # Assert performance targets (adjust based on actual measurements)
         assert mean_time < 2.0, f"Generation too slow: {mean_time:.3f}s (target: <2.0s)"
-        
+
         # Memory usage assertion (if available)
-        if hasattr(stats, 'memory'):
-            peak_memory = getattr(stats.memory, 'peak', 0)
+        if hasattr(stats, "memory"):
+            peak_memory = getattr(stats.memory, "peak", 0)
             assert peak_memory < 100 * 1024 * 1024, f"Memory usage too high: {peak_memory} bytes"
 
     def test_performance_consistency(self, benchmark: BenchmarkFixture,
@@ -509,14 +505,14 @@ class TestPerformanceRegression:
                 },
                 config_manager=config_manager
             )
-        
+
         # Run with increased rounds for consistency testing
         result = benchmark.pedantic(consistent_generation, rounds=10, iterations=1)
         assert result.success, f"Consistency generation failed: {result.errors}"
-        
+
         # Check consistency metrics
         stats = benchmark.stats
-        if hasattr(stats.stats, 'stddev'):
+        if hasattr(stats.stats, "stddev"):
             coefficient_variation = stats.stats.stddev / stats.stats.mean
             assert coefficient_variation < 0.5, f"Performance too inconsistent: CV={coefficient_variation:.3f}"
 
@@ -525,7 +521,7 @@ class TestPerformanceRegression:
 def mock_template():
     """Provide a mock template for performance tests that require direct template access."""
     from create_project.templates.schema.template import Template
-    
+
     # Create a mock template object for direct generator testing
     template = MagicMock(spec=Template)
     template.name = "test_template"
@@ -542,7 +538,7 @@ def mock_template():
     return template
 
 
-@pytest.fixture  
+@pytest.fixture
 def config_manager():
     """Provide a config manager for performance tests."""
     config = MagicMock()

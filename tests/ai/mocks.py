@@ -66,7 +66,7 @@ class MockModelData:
         "modified_at": "2024-09-25T12:00:00Z",
         "size": "2022440019",
         "digest": "abc123",
-        "details": "{\"parent_model\":\"\",\"format\":\"gguf\",\"family\":\"llama\",\"families\":[\"llama\"],\"parameter_size\":\"3.2B\",\"quantization_level\":\"Q4_K_M\"}",
+        "details": '{"parent_model":"","format":"gguf","family":"llama","families":["llama"],"parameter_size":"3.2B","quantization_level":"Q4_K_M"}',
     }
 
     CODELLAMA_7B = {
@@ -75,7 +75,7 @@ class MockModelData:
         "modified_at": "2024-08-15T10:30:00Z",
         "size": "3826793677",
         "digest": "def456",
-        "details": "{\"parent_model\":\"\",\"format\":\"gguf\",\"family\":\"llama\",\"families\":[\"llama\"],\"parameter_size\":\"7B\",\"quantization_level\":\"Q4_0\"}",
+        "details": '{"parent_model":"","format":"gguf","family":"llama","families":["llama"],"parameter_size":"7B","quantization_level":"Q4_0"}',
     }
 
     MISTRAL_7B = {
@@ -84,7 +84,7 @@ class MockModelData:
         "modified_at": "2024-07-20T08:00:00Z",
         "size": "4113041887",
         "digest": "ghi789",
-        "details": "{\"parent_model\":\"\",\"format\":\"gguf\",\"family\":\"mistral\",\"families\":[\"mistral\"],\"parameter_size\":\"7B\",\"quantization_level\":\"Q5_K_M\"}",
+        "details": '{"parent_model":"","format":"gguf","family":"mistral","families":["mistral"],"parameter_size":"7B","quantization_level":"Q5_K_M"}',
     }
 
     DEEPSEEK_CODER = {
@@ -93,7 +93,7 @@ class MockModelData:
         "modified_at": "2024-06-10T14:20:00Z",
         "size": "3600000000",
         "digest": "jkl012",
-        "details": "{\"parent_model\":\"\",\"format\":\"gguf\",\"family\":\"deepseek\",\"families\":[\"deepseek\"],\"parameter_size\":\"6.7B\",\"quantization_level\":\"Q4_K_M\"}",
+        "details": '{"parent_model":"","format":"gguf","family":"deepseek","families":["deepseek"],"parameter_size":"6.7B","quantization_level":"Q4_K_M"}',
     }
 
     @classmethod
@@ -299,12 +299,12 @@ class MockOllamaClient:
         """Mock synchronous request."""
         self._request_count += 1
         self._last_request = {"method": method, "endpoint": endpoint, "data": data, "kwargs": kwargs}
-        
+
         if self.network_condition == "connection_error":
             raise MockNetworkConditions.connection_error()
         elif self.network_condition == "timeout":
             raise MockNetworkConditions.timeout_error()
-        
+
         # Handle specific endpoints
         if endpoint == "tags":
             return OllamaResponse(
@@ -320,7 +320,7 @@ class MockOllamaClient:
                 data=self.default_response,
                 response_time=0.2
             )
-        
+
         return OllamaResponse(
             success=True,
             status_code=200,
@@ -331,23 +331,23 @@ class MockOllamaClient:
     def get_models(self) -> OllamaResponse:
         """Get available models (mock implementation)."""
         return self.request("GET", "tags")
-    
+
     @property
     def is_available(self) -> bool:
         """Check if client is available."""
         return self.network_condition != "connection_error"
-    
+
     def chat_completion(self, model: str, messages: list, stream: bool = False, **kwargs) -> OllamaResponse:
         """Mock chat completion."""
         return self.request("POST", "chat", data={"model": model, "messages": messages, "stream": stream, **kwargs})
-    
+
     async def generate(self, model: str, prompt: str, stream: bool = False, **kwargs) -> OllamaResponse:
         """Mock generate completion - returns the default response."""
         if self.network_condition == "connection_error":
             raise httpx.ConnectError("Connection failed")
         elif self.network_condition == "timeout":
             raise httpx.TimeoutException("Request timed out", request=None)
-        
+
         # Return the default response wrapped in OllamaResponse
         return OllamaResponse(
             success=True,
@@ -355,7 +355,7 @@ class MockOllamaClient:
             data={"response": self.default_response["message"]["content"]},
             response_time=0.1
         )
-    
+
     def close(self) -> None:
         """Mock close method."""
         pass

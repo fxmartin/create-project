@@ -188,7 +188,7 @@ class Template(BaseTemplate):
     def _validate_variable_usage(self, errors: List[str]):
         """Validate that variables used in structure are defined."""
         defined_vars = {var.name for var in self.variables}
-        
+
         # Special system-injected variables that don't need to be declared
         system_vars = {"license_text"}
 
@@ -209,9 +209,9 @@ class Template(BaseTemplate):
             if file.content:
                 # Skip validation for HTML/template files that likely contain
                 # application-level template syntax (not project template variables)
-                if file.name.endswith(('.html', '.htm', '.jinja', '.jinja2', '.j2')):
+                if file.name.endswith((".html", ".htm", ".jinja", ".jinja2", ".j2")):
                     continue
-                    
+
                 content_vars = re.findall(
                     r"\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}", file.content
                 )

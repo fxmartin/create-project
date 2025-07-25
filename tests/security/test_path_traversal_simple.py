@@ -9,13 +9,12 @@ application using realistic test scenarios.
 """
 
 import os
-from pathlib import Path
-from typing import List
+
 import pytest
 
-from create_project.core.path_utils import PathHandler
 from create_project.core.directory_creator import DirectoryCreator
 from create_project.core.file_renderer import FileRenderer
+from create_project.core.path_utils import PathHandler
 
 
 @pytest.mark.security
@@ -26,12 +25,12 @@ class TestPathSecurityConcepts:
     def test_directory_traversal_detection(self):
         """Test detection of directory traversal patterns."""
         traversal_patterns = [
-            "../", "..\\", 
+            "../", "..\\",
             "../../", "..\\..\\",
             "../../../etc/passwd",
             "..\\..\\..\\windows\\system32",
         ]
-        
+
         for pattern in traversal_patterns:
             # Should be able to identify traversal patterns
             has_traversal = ".." in pattern
@@ -41,16 +40,16 @@ class TestPathSecurityConcepts:
         """Test detection of absolute paths."""
         paths_to_test = [
             "/etc/passwd",           # Unix absolute
-            "C:\\Windows\\System32", # Windows absolute  
+            "C:\\Windows\\System32", # Windows absolute
             "\\\\server\\share",     # UNC path
             "relative/path",         # Relative (safe)
             "./relative/path",       # Explicit relative (safe)
         ]
-        
+
         for path in paths_to_test:
             is_absolute = os.path.isabs(path) or path.startswith("\\\\")
             is_relative = not is_absolute
-            
+
             if "relative" in path:
                 assert is_relative
             elif path.startswith("/") or (len(path) > 1 and path[1] == ":") or path.startswith("\\\\"):
@@ -60,10 +59,10 @@ class TestPathSecurityConcepts:
         """Test path normalization security concepts."""
         problematic_paths = [
             "normal/./../../etc/passwd",
-            "normal//../../etc/passwd", 
+            "normal//../../etc/passwd",
             "normal/foo/../../../etc/passwd",
         ]
-        
+
         for path in problematic_paths:
             # Normalization should handle these safely
             normalized = os.path.normpath(path)
@@ -88,14 +87,14 @@ class TestPathHandlerSecurity:
     def test_safe_path_operations(self, security_temp_dir):
         """Test safe path operations."""
         path_handler = PathHandler()
-        
+
         # Test with safe relative paths
         safe_paths = [
             "project1",
-            "sub/project2", 
+            "sub/project2",
             "deep/sub/project3",
         ]
-        
+
         for safe_path in safe_paths:
             full_path = security_temp_dir / safe_path
             try:
@@ -112,19 +111,19 @@ class TestPathHandlerSecurity:
         # Paths that should be rejected
         dangerous_paths = [
             "../../../etc/passwd",
-            "/etc/passwd", 
+            "/etc/passwd",
             "C:\\Windows\\System32",
             "\\\\server\\share\\file",
             "normal\x00hidden.txt",  # Null byte
         ]
-        
+
         for dangerous_path in dangerous_paths:
             # Check for various dangerous patterns
             has_traversal = ".." in dangerous_path
             has_absolute = os.path.isabs(dangerous_path)
             has_unc = dangerous_path.startswith("\\\\")
             has_null = "\x00" in dangerous_path
-            
+
             is_dangerous = has_traversal or has_absolute or has_unc or has_null
             assert is_dangerous
 
@@ -144,14 +143,14 @@ class TestDirectoryCreatorSecurity:
         """Test safe directory creation."""
         path_handler = PathHandler()
         directory_creator = DirectoryCreator(path_handler)
-        
+
         # Test creating directories in safe locations
         safe_directories = [
             security_temp_dir / "new_project",
-            security_temp_dir / "sub" / "project", 
+            security_temp_dir / "sub" / "project",
             security_temp_dir / "deep" / "nested" / "project",
         ]
-        
+
         for safe_dir in safe_directories:
             try:
                 # Should be able to create these safely
@@ -165,20 +164,20 @@ class TestDirectoryCreatorSecurity:
         """Test directory boundary concepts."""
         # Test that we can identify when paths would escape boundaries
         base_dir = security_temp_dir
-        
+
         test_paths = [
             base_dir / "safe_project",                    # Safe
-            base_dir / "sub" / "safe_project",           # Safe  
+            base_dir / "sub" / "safe_project",           # Safe
             base_dir / ".." / "escaped_project",         # Would escape
         ]
-        
+
         for test_path in test_paths:
             resolved = test_path.resolve()
             base_resolved = base_dir.resolve()
-            
+
             # Check if resolved path is within base directory
             is_within_base = str(resolved).startswith(str(base_resolved))
-            
+
             if "safe" in str(test_path):
                 # Safe paths should stay within base
                 assert is_within_base
@@ -202,23 +201,23 @@ class TestFileRendererSecurity:
         """Test safe file operations."""
         path_handler = PathHandler()
         file_renderer = FileRenderer(path_handler)
-        
+
         # Test creating files in safe locations
         safe_files = [
             security_temp_dir / "test.txt",
             security_temp_dir / "sub" / "test.py",
             security_temp_dir / "project" / "README.md",
         ]
-        
+
         for safe_file in safe_files:
             try:
                 # Ensure parent directory exists
                 safe_file.parent.mkdir(parents=True, exist_ok=True)
-                
+
                 # Create a simple file
                 safe_file.write_text("test content")
                 assert safe_file.exists()
-                
+
                 # Clean up
                 safe_file.unlink()
             except Exception:
@@ -235,20 +234,20 @@ class TestFileRendererSecurity:
             "/etc/passwd",                  # Dangerous
             "normal\x00.txt",              # Dangerous (null byte)
         ]
-        
+
         base_path = security_temp_dir
-        
+
         for file_path in test_file_paths:
             full_path = base_path / file_path
-            
+
             try:
                 resolved = full_path.resolve()
                 base_resolved = base_path.resolve()
-                
+
                 # Check if file would be within base directory
                 is_safe = str(resolved).startswith(str(base_resolved))
                 has_null = "\x00" in file_path
-                
+
                 if "normal" in file_path and not has_null:
                     # Normal files should be safe
                     assert is_safe
@@ -256,7 +255,7 @@ class TestFileRendererSecurity:
                     # Dangerous patterns
                     is_dangerous = not is_safe or has_null
                     assert is_dangerous
-                    
+
             except Exception:
                 # Invalid paths may raise exceptions, which is acceptable
                 pass
@@ -272,25 +271,25 @@ class TestSymlinkSecurity:
         # Create a regular file and directory for testing
         regular_file = security_temp_dir / "regular.txt"
         regular_file.write_text("content")
-        
+
         regular_dir = security_temp_dir / "regular_dir"
         regular_dir.mkdir()
-        
+
         # Test symlink detection
         assert regular_file.is_file()
         assert not regular_file.is_symlink()
         assert regular_dir.is_dir()
         assert not regular_dir.is_symlink()
-        
+
         # Test creating a symlink (if supported)
         try:
             symlink_file = security_temp_dir / "symlink.txt"
             symlink_file.symlink_to(regular_file)
-            
+
             # Should be detectable as a symlink
             assert symlink_file.is_symlink()
             assert symlink_file.is_file()  # Also follows to a file
-            
+
         except (OSError, NotImplementedError):
             # Symlinks may not be supported on all systems
             pytest.skip("Symlinks not supported on this system")
@@ -301,20 +300,20 @@ class TestSymlinkSecurity:
             # Create test files
             safe_target = security_temp_dir / "safe_target.txt"
             safe_target.write_text("safe content")
-            
+
             # Create symlinks with different targets
             safe_symlink = security_temp_dir / "safe_symlink.txt"
             safe_symlink.symlink_to(safe_target)
-            
+
             # Validate symlink targets
             target = safe_symlink.readlink()
             resolved_target = safe_symlink.resolve()
-            
+
             # Check that target is within safe boundaries
             base_resolved = security_temp_dir.resolve()
             is_target_safe = str(resolved_target).startswith(str(base_resolved))
             assert is_target_safe
-            
+
         except (OSError, NotImplementedError):
             # Symlinks may not be supported
             pytest.skip("Symlinks not supported on this system")
@@ -330,22 +329,22 @@ class TestProjectPathSecurity:
         # Common project structure paths
         project_paths = [
             "src/main.py",
-            "tests/test_main.py", 
+            "tests/test_main.py",
             "docs/README.md",
             "requirements.txt",
             ".gitignore",
         ]
-        
+
         project_root = security_temp_dir / "test_project"
         project_root.mkdir()
-        
+
         for path in project_paths:
             file_path = project_root / path
-            
+
             # Ensure these are safe relative paths
             assert not os.path.isabs(str(path))
             assert ".." not in str(path)
-            
+
             # Should resolve within project root
             resolved = file_path.resolve()
             project_resolved = project_root.resolve()
@@ -359,13 +358,13 @@ class TestProjectPathSecurity:
             "config/settings.json.j2",
             "docs/README.md.j2",
         ]
-        
+
         for template_file in template_files:
             # Template paths should be safe
             assert not os.path.isabs(template_file)
             assert ".." not in template_file
             assert not template_file.startswith("/")
-            
+
             # Should not contain dangerous characters
             dangerous_chars = ["\x00", "\n", "\r"]
             has_dangerous = any(char in template_file for char in dangerous_chars)

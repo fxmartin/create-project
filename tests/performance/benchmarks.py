@@ -10,17 +10,17 @@ from typing import Dict, Optional
 @dataclass
 class PerformanceMetric:
     """Define a performance metric with acceptable thresholds."""
-    
+
     operation: str
     max_duration_ms: float
     max_memory_mb: float
     description: str
     critical: bool = True
-    
+
     def check_duration(self, duration_ms: float) -> bool:
         """Check if duration is within acceptable limits."""
         return duration_ms <= self.max_duration_ms
-    
+
     def check_memory(self, memory_mb: float) -> bool:
         """Check if memory usage is within acceptable limits."""
         return memory_mb <= self.max_memory_mb
@@ -47,7 +47,7 @@ PERFORMANCE_BASELINES: Dict[str, PerformanceMetric] = {
         max_memory_mb=5,
         description="Template validation should be lightweight",
     ),
-    
+
     # File operations
     "create_small_project": PerformanceMetric(
         operation="Create small project (10 files)",
@@ -68,7 +68,7 @@ PERFORMANCE_BASELINES: Dict[str, PerformanceMetric] = {
         description="Large project generation should remain responsive",
         critical=False,
     ),
-    
+
     # Configuration operations
     "config_load": PerformanceMetric(
         operation="Load configuration",
@@ -82,7 +82,7 @@ PERFORMANCE_BASELINES: Dict[str, PerformanceMetric] = {
         max_memory_mb=5,
         description="Configuration saving should be quick",
     ),
-    
+
     # Path operations
     "path_validation": PerformanceMetric(
         operation="Validate file path",
@@ -96,7 +96,7 @@ PERFORMANCE_BASELINES: Dict[str, PerformanceMetric] = {
         max_memory_mb=1,
         description="Path expansion should be quick",
     ),
-    
+
     # Rendering operations
     "render_template_small": PerformanceMetric(
         operation="Render small template",
@@ -110,7 +110,7 @@ PERFORMANCE_BASELINES: Dict[str, PerformanceMetric] = {
         max_memory_mb=20,
         description="Large template rendering should be efficient",
     ),
-    
+
     # GUI operations (when applicable)
     "wizard_step_transition": PerformanceMetric(
         operation="Wizard step transition",
@@ -124,7 +124,7 @@ PERFORMANCE_BASELINES: Dict[str, PerformanceMetric] = {
         max_memory_mb=20,
         description="Dialog opening should be responsive",
     ),
-    
+
     # AI operations (non-critical)
     "ai_model_detection": PerformanceMetric(
         operation="Detect AI models",
@@ -161,13 +161,13 @@ def check_performance(
     baseline = get_baseline(operation)
     if not baseline:
         return True, f"No baseline defined for {operation}"
-    
+
     duration_ok = baseline.check_duration(duration_ms)
     memory_ok = baseline.check_memory(memory_mb)
-    
+
     if duration_ok and memory_ok:
         return True, "Performance within acceptable limits"
-    
+
     issues = []
     if not duration_ok:
         issues.append(
@@ -177,7 +177,7 @@ def check_performance(
         issues.append(
             f"Memory {memory_mb:.1f}MB exceeds limit {baseline.max_memory_mb}MB"
         )
-    
+
     return False, "; ".join(issues)
 
 

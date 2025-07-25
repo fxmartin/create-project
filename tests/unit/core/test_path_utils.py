@@ -231,7 +231,7 @@ class TestPathHandler:
                 "start" in str(exc_info.value).lower()
                 or "end" in str(exc_info.value).lower()
             )
-        
+
         # Dotfiles like .gitignore should be allowed
         handler.validate_filename(".gitignore")
         handler.validate_filename(".env")

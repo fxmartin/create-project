@@ -12,10 +12,10 @@ This module provides:
 """
 
 import asyncio
-import tempfile
+from collections.abc import Generator
 from pathlib import Path
-from typing import Any, Dict, Generator
-from unittest.mock import MagicMock, patch
+from typing import Any, Dict
+from unittest.mock import patch
 
 import pytest
 
@@ -25,7 +25,6 @@ from create_project.templates.engine import TemplateEngine
 from create_project.templates.loader import TemplateLoader
 
 # Import GUI fixtures to make them available in integration tests
-from tests.gui.conftest import mock_config_manager
 
 
 @pytest.fixture(scope="session")
@@ -37,16 +36,16 @@ def integration_app() -> Dict[str, Any]:
     """
     # Create test configuration
     config = ConfigManager()
-    
+
     # Set test-specific configurations
     config.set_setting("ai.enabled", False)  # Disable AI for predictable tests
     config.set_setting("logging.level", "DEBUG")
     config.set_setting("templates.builtin_path", "create_project/templates/builtin")
-    
+
     # Initialize components
     template_loader = TemplateLoader(config_manager=config)
     template_engine = TemplateEngine(config_manager=config)
-    
+
     return {
         "config": config,
         "template_loader": template_loader,
@@ -133,11 +132,11 @@ def integration_test_helper(integration_app, test_project_dir):
         def __init__(self, app_components, project_dir):
             self.app = app_components
             self.project_dir = project_dir
-            
+
         def create_test_project(self, template_name: str, variables: Dict[str, Any]) -> Path:
             """Create a test project and return its path."""
             project_name = variables["project_name"]
-            
+
             # Use the API to create project
             result = create_project(
                 template_name=template_name,
@@ -146,12 +145,12 @@ def integration_test_helper(integration_app, test_project_dir):
                 variables=variables,
                 config_manager=self.app["config"]
             )
-            
+
             if not result.success:
                 raise RuntimeError(f"Failed to create test project: {result.errors}")
-                
+
             return self.project_dir / project_name
-            
+
         def verify_project_structure(self, project_path: Path, expected_files: list) -> bool:
             """Verify that expected files exist in the project."""
             for file_path in expected_files:
@@ -159,14 +158,14 @@ def integration_test_helper(integration_app, test_project_dir):
                 if not full_path.exists():
                     return False
             return True
-            
+
         def read_project_file(self, project_path: Path, file_name: str) -> str:
             """Read content of a file in the generated project."""
             file_path = project_path / file_name
             if not file_path.exists():
                 raise FileNotFoundError(f"File not found: {file_path}")
             return file_path.read_text()
-    
+
     return IntegrationTestHelper(integration_app, test_project_dir)
 
 
@@ -196,10 +195,10 @@ def mock_external_services():
     with patch("create_project.ai.ai_service.AIService") as ai_mock:
         ai_instance = ai_mock.return_value
         ai_instance.is_available.return_value = False
-        
+
         with patch("requests.get") as requests_mock:
             requests_mock.return_value.status_code = 200
-            
+
             yield {
                 "ai": ai_instance,
                 "requests": requests_mock,

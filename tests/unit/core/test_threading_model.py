@@ -6,19 +6,16 @@
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch, call
+from unittest.mock import MagicMock, patch
 
 import pytest
 
+from create_project.core.exceptions import ThreadingError
 from create_project.core.threading_model import (
-    ThreadingModel,
     BackgroundOperation,
     OperationStatus,
-    ProgressUpdate,
-    OperationResult,
+    ThreadingModel,
 )
-from create_project.core.exceptions import ThreadingError
 from create_project.templates.schema.template import Template
 
 
@@ -29,7 +26,7 @@ class TestBackgroundOperation:
         """Test BackgroundOperation initialization."""
         def dummy_func():
             return "result"
-        
+
         operation = BackgroundOperation(
             operation_id="test-123",
             operation_func=dummy_func,
@@ -37,7 +34,7 @@ class TestBackgroundOperation:
             operation_kwargs={},
             progress_callback=None,
         )
-        
+
         assert operation.operation_id == "test-123"
         assert operation.status == OperationStatus.PENDING
         assert operation.result is None
@@ -48,17 +45,17 @@ class TestBackgroundOperation:
         """Test starting an operation successfully."""
         def dummy_func():
             return "result"
-        
+
         operation = BackgroundOperation(
             operation_id="test-123",
             operation_func=dummy_func,
             operation_args=(),
             operation_kwargs={},
         )
-        
+
         with ThreadPoolExecutor(max_workers=1) as executor:
             operation.start(executor)
-            
+
             assert operation.status == OperationStatus.RUNNING
             assert operation.start_time is not None
             assert operation.future is not None
@@ -67,49 +64,49 @@ class TestBackgroundOperation:
         """Test starting an operation in invalid state."""
         def dummy_func():
             return "result"
-        
+
         operation = BackgroundOperation(
             operation_id="test-123",
             operation_func=dummy_func,
             operation_args=(),
             operation_kwargs={},
         )
-        
+
         # Set to non-pending state
         operation.status = OperationStatus.RUNNING
-        
+
         with ThreadPoolExecutor(max_workers=1) as executor:
             with pytest.raises(ThreadingError) as exc_info:
                 operation.start(executor)
-            
+
             assert "Cannot start operation" in str(exc_info.value)
 
     def test_cancel_running_operation(self):
         """Test cancelling a running operation."""
         cancel_event = threading.Event()
-        
+
         def long_running_func():
             # Wait for cancel or timeout
             cancel_event.wait(timeout=10)
             return "result"
-        
+
         operation = BackgroundOperation(
             operation_id="test-123",
             operation_func=long_running_func,
             operation_args=(),
             operation_kwargs={},
         )
-        
+
         with ThreadPoolExecutor(max_workers=1) as executor:
             operation.start(executor)
-            
+
             # Give it time to start
             time.sleep(0.1)
-            
+
             # Cancel the operation
             cancelled = operation.cancel()
             cancel_event.set()  # Release the function
-            
+
             assert cancelled is True
             assert operation.is_cancelled() is True
 
@@ -121,9 +118,9 @@ class TestBackgroundOperation:
             operation_args=(),
             operation_kwargs={},
         )
-        
+
         operation.status = OperationStatus.COMPLETED
-        
+
         cancelled = operation.cancel()
         assert cancelled is False
 
@@ -131,18 +128,18 @@ class TestBackgroundOperation:
         """Test getting result of successful operation."""
         def dummy_func():
             return "success_result"
-        
+
         operation = BackgroundOperation(
             operation_id="test-123",
             operation_func=dummy_func,
             operation_args=(),
             operation_kwargs={},
         )
-        
+
         with ThreadPoolExecutor(max_workers=1) as executor:
             operation.start(executor)
             result = operation.get_result(timeout=5.0)
-            
+
             assert result.operation_id == "test-123"
             assert result.status == OperationStatus.COMPLETED
             assert result.result == "success_result"
@@ -153,18 +150,18 @@ class TestBackgroundOperation:
         """Test getting result of failed operation."""
         def failing_func():
             raise ValueError("Test error")
-        
+
         operation = BackgroundOperation(
             operation_id="test-123",
             operation_func=failing_func,
             operation_args=(),
             operation_kwargs={},
         )
-        
+
         with ThreadPoolExecutor(max_workers=1) as executor:
             operation.start(executor)
             result = operation.get_result(timeout=5.0)
-            
+
             assert result.operation_id == "test-123"
             assert result.status == OperationStatus.FAILED
             assert result.result is None
@@ -178,19 +175,19 @@ class TestBackgroundOperation:
             operation_args=(),
             operation_kwargs={},
         )
-        
+
         with pytest.raises(ThreadingError) as exc_info:
             operation.get_result()
-        
+
         assert "Operation not started" in str(exc_info.value)
 
     def test_add_progress_update(self):
         """Test adding progress updates."""
         progress_updates = []
-        
+
         def progress_callback(update):
             progress_updates.append(update)
-        
+
         operation = BackgroundOperation(
             operation_id="test-123",
             operation_func=lambda: "result",
@@ -198,12 +195,12 @@ class TestBackgroundOperation:
             operation_kwargs={},
             progress_callback=progress_callback,
         )
-        
+
         operation.add_progress_update("Step 1", 1, 10, {"key": "value"})
-        
+
         assert len(operation.progress_updates) == 1
         assert len(progress_updates) == 1
-        
+
         update = progress_updates[0]
         assert update.operation_id == "test-123"
         assert update.message == "Step 1"
@@ -216,7 +213,7 @@ class TestBackgroundOperation:
         """Test that progress callback exceptions don't break operation."""
         def bad_callback(update):
             raise ValueError("Callback error")
-        
+
         operation = BackgroundOperation(
             operation_id="test-123",
             operation_func=lambda: "result",
@@ -224,7 +221,7 @@ class TestBackgroundOperation:
             operation_kwargs={},
             progress_callback=bad_callback,
         )
-        
+
         # Should not raise
         operation.add_progress_update("Step 1", 1, 10)
         assert len(operation.progress_updates) == 1
@@ -232,25 +229,25 @@ class TestBackgroundOperation:
     def test_run_operation_with_progress_callback(self):
         """Test running operation with progress callback integration."""
         progress_messages = []
-        
+
         def operation_func(progress_callback=None):
             if progress_callback:
                 progress_callback("Starting")
                 progress_callback("Processing")
                 progress_callback("Finishing")
             return "done"
-        
+
         operation = BackgroundOperation(
             operation_id="test-123",
             operation_func=operation_func,
             operation_args=(),
             operation_kwargs={"progress_callback": lambda msg: progress_messages.append(msg)},
         )
-        
+
         with ThreadPoolExecutor(max_workers=1) as executor:
             operation.start(executor)
             result = operation.get_result(timeout=5.0)
-            
+
             assert result.status == OperationStatus.COMPLETED
             assert result.result == "done"
             assert len(progress_messages) == 3
@@ -264,23 +261,23 @@ class TestBackgroundOperation:
                 time.sleep(0.1)
                 progress_callback("Step 2")  # This should raise if cancelled
             return "done"
-        
+
         operation = BackgroundOperation(
             operation_id="test-123",
             operation_func=operation_func,
             operation_args=(),
             operation_kwargs={"progress_callback": None},
         )
-        
+
         with ThreadPoolExecutor(max_workers=1) as executor:
             operation.start(executor)
-            
+
             # Cancel after a short delay
             time.sleep(0.05)
             operation.cancel()
-            
+
             result = operation.get_result(timeout=5.0)
-            
+
             # When cancelled via progress callback, it raises ThreadingError
             # which causes FAILED status with "Operation was cancelled" message
             assert result.status == OperationStatus.FAILED
@@ -347,10 +344,10 @@ class TestThreadingModel:
             target_path=tmp_path,
             dry_run=False,
         )
-        
+
         assert operation_id == "gen-123"
         assert "gen-123" in threading_model.operations
-        
+
         # Status could be RUNNING or already COMPLETED depending on timing
         status = threading_model.get_operation_status("gen-123")
         assert status in [OperationStatus.RUNNING, OperationStatus.COMPLETED]
@@ -371,7 +368,7 @@ class TestThreadingModel:
             variables={},
             target_path=tmp_path,
         )
-        
+
         # Try to start with same ID
         with pytest.raises(ThreadingError) as exc_info:
             threading_model.start_project_generation(
@@ -381,7 +378,7 @@ class TestThreadingModel:
                 variables={},
                 target_path=tmp_path,
             )
-        
+
         assert "already exists" in str(exc_info.value)
 
     def test_start_project_generation_with_progress_callback(
@@ -393,10 +390,10 @@ class TestThreadingModel:
     ):
         """Test starting project generation with progress callback."""
         progress_updates = []
-        
+
         def progress_callback(update):
             progress_updates.append(update)
-        
+
         operation_id = threading_model.start_project_generation(
             operation_id="gen-123",
             project_generator=mock_project_generator,
@@ -405,10 +402,10 @@ class TestThreadingModel:
             target_path=tmp_path,
             progress_callback=progress_callback,
         )
-        
+
         # Wait for completion
         result = threading_model.get_operation_result(operation_id, timeout=5.0)
-        
+
         assert result.status == OperationStatus.COMPLETED
 
     def test_cancel_operation_success(
@@ -420,13 +417,13 @@ class TestThreadingModel:
         """Test cancelling an operation successfully."""
         # Create a slow generator
         generator = MagicMock()
-        
+
         def slow_generate(*args, **kwargs):
             time.sleep(10)  # Long enough to cancel
             return {"success": True}
-        
+
         generator.generate_project.side_effect = slow_generate
-        
+
         operation_id = threading_model.start_project_generation(
             operation_id="gen-123",
             project_generator=generator,
@@ -434,10 +431,10 @@ class TestThreadingModel:
             variables={},
             target_path=tmp_path,
         )
-        
+
         # Give it time to start
         time.sleep(0.1)
-        
+
         # Cancel the operation
         cancelled = threading_model.cancel_operation(operation_id)
         assert cancelled is True
@@ -456,7 +453,7 @@ class TestThreadingModel:
     ):
         """Test getting result of successful operation."""
         mock_project_generator.generate_project.return_value = {"success": True, "files": 10}
-        
+
         operation_id = threading_model.start_project_generation(
             operation_id="gen-123",
             project_generator=mock_project_generator,
@@ -464,9 +461,9 @@ class TestThreadingModel:
             variables={},
             target_path=tmp_path,
         )
-        
+
         result = threading_model.get_operation_result(operation_id, timeout=5.0)
-        
+
         assert result.operation_id == "gen-123"
         assert result.status == OperationStatus.COMPLETED
         assert result.result == {"success": True, "files": 10}
@@ -481,7 +478,7 @@ class TestThreadingModel:
     ):
         """Test getting result of failed operation."""
         mock_project_generator.generate_project.side_effect = ValueError("Generation failed")
-        
+
         operation_id = threading_model.start_project_generation(
             operation_id="gen-123",
             project_generator=mock_project_generator,
@@ -489,9 +486,9 @@ class TestThreadingModel:
             variables={},
             target_path=tmp_path,
         )
-        
+
         result = threading_model.get_operation_result(operation_id, timeout=5.0)
-        
+
         assert result.operation_id == "gen-123"
         assert result.status == OperationStatus.FAILED
         assert result.result is None
@@ -501,7 +498,7 @@ class TestThreadingModel:
         """Test getting result of non-existent operation."""
         with pytest.raises(ThreadingError) as exc_info:
             threading_model.get_operation_result("non-existent")
-        
+
         assert "not found" in str(exc_info.value)
 
     def test_get_operation_result_remove_completed(
@@ -519,10 +516,10 @@ class TestThreadingModel:
             variables={},
             target_path=tmp_path,
         )
-        
+
         # Get result with remove_completed=True (default)
         result = threading_model.get_operation_result(operation_id, timeout=5.0)
-        
+
         assert result.status == OperationStatus.COMPLETED
         assert operation_id not in threading_model.operations
 
@@ -541,14 +538,14 @@ class TestThreadingModel:
             variables={},
             target_path=tmp_path,
         )
-        
+
         status = threading_model.get_operation_status(operation_id)
         # Could be PENDING, RUNNING, or already COMPLETED
         assert status in [OperationStatus.PENDING, OperationStatus.RUNNING, OperationStatus.COMPLETED]
-        
+
         # Wait for completion
         threading_model.get_operation_result(operation_id, timeout=5.0)
-        
+
         # Should be None after removal
         status = threading_model.get_operation_status(operation_id)
         assert status is None
@@ -570,9 +567,9 @@ class TestThreadingModel:
                 variables={},
                 target_path=tmp_path / f"project_{i}",
             )
-        
+
         active_ops = threading_model.list_active_operations()
-        
+
         assert len(active_ops) == 3
         assert all(op_id in active_ops for op_id in ["gen-0", "gen-1", "gen-2"])
 
@@ -593,20 +590,20 @@ class TestThreadingModel:
                 variables={},
                 target_path=tmp_path / f"project_{i}",
             )
-            
+
             # Get result but don't remove
             threading_model.get_operation_result(
                 operation_id,
                 timeout=5.0,
                 remove_completed=False,
             )
-        
+
         # All should still be in memory
         assert len(threading_model.operations) == 3
-        
+
         # Cleanup
         removed = threading_model.cleanup_completed_operations()
-        
+
         assert removed == 3
         assert len(threading_model.operations) == 0
 
@@ -626,10 +623,10 @@ class TestThreadingModel:
             variables={},
             target_path=tmp_path,
         )
-        
+
         # Shutdown with wait
         threading_model.shutdown(wait=True, timeout=5.0)
-        
+
         assert len(threading_model.operations) == 0
 
     def test_shutdown_no_wait(
@@ -642,7 +639,7 @@ class TestThreadingModel:
         # Create a slow generator
         generator = MagicMock()
         generator.generate_project.side_effect = lambda *args, **kwargs: time.sleep(10)
-        
+
         # Start an operation
         threading_model.start_project_generation(
             operation_id="gen-123",
@@ -651,10 +648,10 @@ class TestThreadingModel:
             variables={},
             target_path=tmp_path,
         )
-        
+
         # Shutdown without wait
         threading_model.shutdown(wait=False)
-        
+
         assert len(threading_model.operations) == 0
 
     def test_context_manager(self, mock_project_generator, mock_template, tmp_path):
@@ -667,10 +664,10 @@ class TestThreadingModel:
                 variables={},
                 target_path=tmp_path,
             )
-            
+
             result = model.get_operation_result(operation_id, timeout=5.0)
             assert result.status == OperationStatus.COMPLETED
-        
+
         # Model should be shut down after context exit
 
     def test_concurrent_operations(
@@ -682,7 +679,7 @@ class TestThreadingModel:
     ):
         """Test running multiple operations concurrently."""
         operation_ids = []
-        
+
         # Start multiple operations
         for i in range(5):
             op_id = f"gen-{i}"
@@ -694,13 +691,13 @@ class TestThreadingModel:
                 target_path=tmp_path / f"project_{i}",
             )
             operation_ids.append(op_id)
-        
+
         # Get all results
         results = []
         for op_id in operation_ids:
             result = threading_model.get_operation_result(op_id, timeout=5.0)
             results.append(result)
-        
+
         # All should complete successfully
         assert all(r.status == OperationStatus.COMPLETED for r in results)
         assert len(results) == 5

@@ -3,11 +3,11 @@
 
 """Performance testing fixtures and configuration."""
 
-import os
 import shutil
 import tempfile
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterator
+from typing import Any, Callable, Dict
 
 import pytest
 from pytest_benchmark.fixture import BenchmarkFixture  # type: ignore
@@ -74,7 +74,7 @@ def large_template_structure() -> Dict[str, Any]:
         "README.md": "# Test Project",
         "LICENSE": "MIT License",
     }
-    
+
     # Flatten nested model/view/controller definitions
     for category in ["models", "views", "controllers"]:
         category_dict = {}
@@ -82,35 +82,35 @@ def large_template_structure() -> Dict[str, Any]:
         for i in range(10):
             category_dict[f"{category[:-1]}_{i}.py"] = f"# {category[:-1].title()} {i}"
         structure["src"][category] = category_dict
-    
+
     # Flatten test definitions
     unit_dict = {"__init__.py": ""}
     for i in range(10):
         unit_dict[f"test_model_{i}.py"] = f"# Test model {i}"
     structure["tests"]["unit"] = unit_dict
-    
+
     integration_dict = {"__init__.py": ""}
     for i in range(5):
         integration_dict[f"test_integration_{i}.py"] = f"# Integration test {i}"
     structure["tests"]["integration"] = integration_dict
-    
+
     # Flatten docs definitions
     api_dict = {}
     for i in range(5):
         api_dict[f"api_{i}.md"] = f"# API doc {i}"
     structure["docs"]["api"] = api_dict
-    
+
     guides_dict = {}
     for i in range(5):
         guides_dict[f"guide_{i}.md"] = f"# Guide {i}"
     structure["docs"]["guides"] = guides_dict
-    
+
     # Flatten scripts
     scripts_dict = {}
     for i in range(5):
         scripts_dict[f"script_{i}.py"] = f"# Script {i}"
     structure["scripts"] = scripts_dict
-    
+
     return structure
 
 
@@ -180,9 +180,10 @@ def project_generator(
 @pytest.fixture
 def memory_snapshot() -> Callable[[], Dict[str, float]]:
     """Provide a function to capture memory usage snapshot."""
-    import psutil
     import gc
-    
+
+    import psutil
+
     def snapshot() -> Dict[str, float]:
         gc.collect()
         process = psutil.Process()
@@ -192,7 +193,7 @@ def memory_snapshot() -> Callable[[], Dict[str, float]]:
             "vms_mb": memory_info.vms / 1024 / 1024,
             "percent": process.memory_percent(),
         }
-    
+
     return snapshot
 
 

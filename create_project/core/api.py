@@ -13,8 +13,8 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Union
 
 from ..config.config_manager import ConfigManager
-from ..templates.loader import TemplateLoader
 from ..templates.engine import TemplateEngine
+from ..templates.loader import TemplateLoader
 from .project_generator import (
     GenerationResult,
     ProjectGenerator,
@@ -71,7 +71,7 @@ def create_project(
             files_created=[],
             errors=[f"Template '{template_name}' not found"],
         )
-    
+
     # Load template
     template = template_engine.load_template(template_path)
 
@@ -142,7 +142,7 @@ def create_project_async(
     template_path = template_loader.find_template_by_name(template_name)
     if not template_path:
         raise ValueError(f"Template '{template_name}' not found")
-    
+
     # Load template
     template = template_engine.load_template(template_path)
 

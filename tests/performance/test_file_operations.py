@@ -3,9 +3,10 @@
 
 """Performance tests for file and directory operations."""
 
-import pytest
 from pathlib import Path
 from typing import Any, Dict
+
+import pytest
 
 from create_project.core.directory_creator import DirectoryCreator
 from create_project.core.file_renderer import FileRenderer
@@ -23,7 +24,7 @@ def test_create_small_project(
 ) -> None:
     """Benchmark creating a small project (10 files)."""
     project_path = temp_dir / "small_project"
-    
+
     # Define a small project structure
     structure = {
         "src": {
@@ -40,13 +41,13 @@ def test_create_small_project(
         "pyproject.toml": "[project]\nname = 'small'",
         "LICENSE": "MIT",
     }
-    
+
     initial_memory = memory_snapshot()
-    
+
     def create_project() -> None:
         # Create directories
         directory_creator.create_directory_structure(project_path, structure)
-        
+
         # Render files
         file_count = 0
         for root, dirs, files in directory_creator.walk_structure(structure):
@@ -54,19 +55,19 @@ def test_create_small_project(
                 file_path = project_path / root / file_name
                 file_renderer.render_file(file_path, content, {})
                 file_count += 1
-    
+
     benchmark(create_project)
-    
+
     final_memory = memory_snapshot()
     memory_used = final_memory["rss_mb"] - initial_memory["rss_mb"]
-    
+
     duration_ms = benchmark.stats["mean"] * 1000
     passed, message = check_performance(
         "create_small_project",
         duration_ms,
         memory_used,
     )
-    
+
     assert passed, f"Performance check failed: {message}"
     assert project_path.exists()
     assert (project_path / "src" / "main.py").exists()
@@ -83,11 +84,11 @@ def test_create_medium_project(
 ) -> None:
     """Benchmark creating a medium project (50 files)."""
     project_path = temp_dir / "medium_project"
-    
+
     # Use first 50 files from large structure
     structure = {}
     file_count = 0
-    
+
     def add_files(d: Dict, target: Dict, limit: int) -> int:
         count = 0
         for key, value in d.items():
@@ -100,30 +101,30 @@ def test_create_medium_project(
                 target[key] = value
                 count += 1
         return count
-    
+
     add_files(large_template_structure, structure, 50)
-    
+
     initial_memory = memory_snapshot()
-    
+
     def create_project() -> None:
         directory_creator.create_directory_structure(project_path, structure)
         for root, dirs, files in directory_creator.walk_structure(structure):
             for file_name, content in files:
                 file_path = project_path / root / file_name
                 file_renderer.render_file(file_path, content, {})
-    
+
     benchmark(create_project)
-    
+
     final_memory = memory_snapshot()
     memory_used = final_memory["rss_mb"] - initial_memory["rss_mb"]
-    
+
     duration_ms = benchmark.stats["mean"] * 1000
     passed, message = check_performance(
         "create_medium_project",
         duration_ms,
         memory_used,
     )
-    
+
     assert passed, f"Performance check failed: {message}"
     assert project_path.exists()
 
@@ -140,15 +141,15 @@ def test_create_large_project(
 ) -> None:
     """Benchmark creating a large project (100+ files)."""
     project_path = temp_dir / "large_project"
-    
+
     initial_memory = memory_snapshot()
-    
+
     def create_project() -> int:
         directory_creator.create_directory_structure(
             project_path,
             large_template_structure,
         )
-        
+
         file_count = 0
         for root, dirs, files in directory_creator.walk_structure(
             large_template_structure
@@ -158,23 +159,23 @@ def test_create_large_project(
                 file_renderer.render_file(file_path, content, {})
                 file_count += 1
         return file_count
-    
+
     file_count = benchmark(create_project)
-    
+
     final_memory = memory_snapshot()
     memory_used = final_memory["rss_mb"] - initial_memory["rss_mb"]
-    
+
     duration_ms = benchmark.stats["mean"] * 1000
     passed, message = check_performance(
         "create_large_project",
         duration_ms,
         memory_used,
     )
-    
+
     # Large projects may exceed limits but shouldn't fail the test
     if not passed:
         pytest.skip(f"Large project performance: {message}")
-    
+
     assert project_path.exists()
     assert file_count > 100
 
@@ -194,9 +195,9 @@ def test_path_validation(
         "path/with spaces/file.txt",
         "path/with/special!@#$%/chars.py",
     ]
-    
+
     initial_memory = memory_snapshot()
-    
+
     def validate_paths() -> list:
         results = []
         for path in test_paths:
@@ -206,19 +207,19 @@ def test_path_validation(
             except Exception:
                 results.append(None)
         return results
-    
+
     result = benchmark(validate_paths)
-    
+
     final_memory = memory_snapshot()
     memory_used = final_memory["rss_mb"] - initial_memory["rss_mb"]
-    
+
     duration_ms = benchmark.stats["mean"] * 1000
     passed, message = check_performance(
         "path_validation",
         duration_ms,
         memory_used,
     )
-    
+
     assert passed, f"Performance check failed: {message}"
     assert len(result) == len(test_paths)
 
@@ -237,28 +238,28 @@ def test_path_expansion(
         ("./relative", Path.cwd() / "relative"),
         ("../parent", Path.cwd().parent / "parent"),
     ]
-    
+
     initial_memory = memory_snapshot()
-    
+
     def expand_paths() -> list:
         results = []
         for path_str, expected in test_cases:
             expanded = path_handler.expand_path(Path(path_str))
             results.append(expanded)
         return results
-    
+
     result = benchmark(expand_paths)
-    
+
     final_memory = memory_snapshot()
     memory_used = final_memory["rss_mb"] - initial_memory["rss_mb"]
-    
+
     duration_ms = benchmark.stats["mean"] * 1000
     passed, message = check_performance(
         "path_expansion",
         duration_ms,
         memory_used,
     )
-    
+
     assert passed, f"Performance check failed: {message}"
     assert len(result) == len(test_cases)
 
@@ -272,28 +273,28 @@ def test_file_rendering_memory_usage(
 ) -> None:
     """Test memory usage during file rendering operations."""
     import gc
-    
+
     # Force garbage collection
     gc.collect()
-    
+
     initial_memory = memory_snapshot()
-    
+
     # Create many files to test memory usage
     for i in range(1000):
         file_path = temp_dir / f"file_{i}.txt"
         content = f"This is file {i}\n" * 100  # ~2KB per file
         file_renderer.render_file(file_path, content, {})
-        
+
         # Check memory every 100 files
         if i % 100 == 0:
             gc.collect()
             current_memory = memory_snapshot()
             memory_growth = current_memory["rss_mb"] - initial_memory["rss_mb"]
-            
+
             # Memory shouldn't grow unbounded
             assert memory_growth < 100, f"Memory grew by {memory_growth:.1f}MB after {i} files"
-    
+
     final_memory = memory_snapshot()
     total_memory_used = final_memory["rss_mb"] - initial_memory["rss_mb"]
-    
+
     print(f"\nTotal memory used for 1000 files: {total_memory_used:.1f}MB")

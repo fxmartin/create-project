@@ -21,7 +21,7 @@ from ..templates.loader import TemplateLoader
 from ..templates.schema.template import Template
 from .command_executor import CommandExecutor
 from .directory_creator import DirectoryCreator
-from .error_recovery import RecoveryContext, RecoveryManager, RecoveryStrategy
+from .error_recovery import RecoveryContext, RecoveryManager
 from .exceptions import (
     GitError,
     PathError,
@@ -32,8 +32,8 @@ from .exceptions import (
 from .file_renderer import FileRenderer
 from .git_manager import GitConfig, GitManager
 from .path_utils import PathHandler
-from .venv_manager import VenvManager
 from .progress import DetailedProgress, ProgressTracker, StepTracker
+from .venv_manager import VenvManager
 
 
 @dataclass
@@ -276,7 +276,7 @@ class ProjectGenerator:
         try:
             # Initialize progress tracker
             progress_tracker = ProgressTracker()
-            
+
             # Progress reporting helper that includes percentage
             def report_progress(message: str, increment: bool = True) -> None:
                 nonlocal current_step
@@ -286,7 +286,7 @@ class ProjectGenerator:
                 if progress_callback:
                     progress_callback(message, percentage)
                 self.logger.debug("Generation progress", message=message, percentage=percentage)
-            
+
             # Enhanced progress callback for ProgressTracker
             def detailed_progress_callback(progress: DetailedProgress) -> None:
                 if progress_callback:
@@ -299,9 +299,9 @@ class ProjectGenerator:
                     elapsed=progress.time_elapsed,
                     remaining=progress.estimated_remaining,
                 )
-            
+
             progress_tracker.progress_callback = detailed_progress_callback
-            
+
             # Calculate total steps for basic progress tracking
             total_steps = 6  # Base steps
             if hasattr(template, "structure"):
@@ -311,19 +311,19 @@ class ProjectGenerator:
                         total_steps += len(root.directories)
                     if hasattr(root, "files"):
                         total_steps += len(root.files)
-            
+
             current_step = 0
 
             # Start validation phase
             progress_tracker.start_phase("validation")
-            
+
             # Create recovery point for validation
             self.recovery_manager.create_recovery_point(
                 phase="validation",
                 description="Starting validation phase",
                 state_data={"template": template.name, "target_path": str(target_path)},
             )
-            
+
             self._validate_target_path(target_path)
             progress_tracker.complete_phase("validation")
 
@@ -334,27 +334,27 @@ class ProjectGenerator:
             if not dry_run:
                 # Directory creation phase
                 progress_tracker.start_phase("directory_creation")
-                
+
                 # Create recovery point before directory creation
                 self.recovery_manager.create_recovery_point(
                     phase="directory_creation",
                     description="Creating directory structure",
                     state_data={"directories_to_create": self._count_directories_recursive(template.structure.root_directory.directories) if hasattr(template, "structure") and hasattr(template.structure, "root_directory") and hasattr(template.structure.root_directory, "directories") else 0},
                 )
-                
+
                 self._create_directories(template, target_path, prepared_variables, progress_tracker)
                 progress_tracker.complete_phase("directory_creation")
 
                 # File rendering phase
                 progress_tracker.start_phase("file_rendering")
-                
+
                 # Create recovery point before file rendering
                 self.recovery_manager.create_recovery_point(
                     phase="file_rendering",
                     description="Rendering template files",
                     state_data={"files_to_render": len(self._build_file_structure_from_template(template, prepared_variables))},
                 )
-                
+
                 self._render_files(
                     template, prepared_variables, target_path, progress_tracker
                 )
@@ -447,7 +447,7 @@ class ProjectGenerator:
                     "files_created": len(files_created) if "files_created" in locals() else 0,
                     "directories_created": len(self.directory_creator.created_dirs) if self.directory_creator else 0,
                 }
-                
+
                 recovery_context = self.recovery_manager.create_recovery_context(
                     error=e,
                     phase=progress_tracker.get_current_phase() if "progress_tracker" in locals() else "unknown",
@@ -457,7 +457,7 @@ class ProjectGenerator:
                     project_variables=variables,
                     partial_results=partial_results,
                 )
-                
+
                 # Use recovery manager for rollback
                 self.recovery_manager.rollback_all()
                 self._execute_rollback()
@@ -605,12 +605,12 @@ class ProjectGenerator:
                 "GPL-3.0": "GNU General Public License v3 (GPLv3)",
                 "BSD-3-Clause": "BSD License",
             }
-            
+
             if "license" in prepared_vars:
                 prepared_vars["license_classifier"] = license_classifiers.get(
                     prepared_vars["license"], "Other/Proprietary License"
                 )
-                
+
                 # Add license text
                 # For now, we'll add a simple placeholder - in a real implementation,
                 # this would load the actual license text from a file
@@ -621,7 +621,7 @@ class ProjectGenerator:
                     "BSD-3-Clause": "BSD 3-Clause License...",
                 }
                 prepared_vars["license_text"] = license_texts.get(
-                    prepared_vars["license"], 
+                    prepared_vars["license"],
                     f"{prepared_vars['license']} License\n\nCopyright (c) {prepared_vars.get('current_year', '')} {prepared_vars.get('author', '')}"
                 )
 
@@ -675,7 +675,7 @@ class ProjectGenerator:
             # Extract directory structure from template
             structure = {}
             dir_count = 0
-            
+
             # Handle root_directory structure
             if hasattr(template, "structure"):
                 if hasattr(template.structure, "root_directory"):
@@ -697,14 +697,14 @@ class ProjectGenerator:
                             if part not in current:
                                 current[part] = {}
                             current = current[part]
-            
+
             # Create step tracker for directory creation
             step_tracker = StepTracker(
                 total_items=max(1, dir_count),
                 phase_name="directory_creation",
                 progress_tracker=progress_tracker
             )
-            
+
             # Progress callback for DirectoryCreator
             def dir_progress_callback(message: str) -> None:
                 if "Creating directory:" in message:
@@ -756,7 +756,7 @@ class ProjectGenerator:
 
             # Count total files for progress tracking
             file_count = self._count_files_in_structure(file_structure)
-            
+
             # Create step tracker for file rendering
             step_tracker = StepTracker(
                 total_items=max(1, file_count),
@@ -774,7 +774,7 @@ class ProjectGenerator:
             template_base_path = (
                 package_root / "templates" / "builtin" / "template_files"
             )
-            
+
             # Progress callback for FileRenderer
             def file_progress_callback(message: str) -> None:
                 if "Rendering file:" in message or "Creating file:" in message:
@@ -827,7 +827,7 @@ class ProjectGenerator:
                 # It's a file
                 count += 1
         return count
-    
+
     def _build_file_structure_from_template(
         self, template: Template, variables: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -958,7 +958,7 @@ class ProjectGenerator:
             if hasattr(directory, "directories") and directory.directories:
                 count += self._count_directories_recursive(directory.directories)
         return count
-    
+
     def _extract_directories_recursive(
         self, directories: List[Any], structure: Dict[str, Any], variables: Dict[str, Any]
     ) -> None:
@@ -1117,7 +1117,7 @@ class ProjectGenerator:
         try:
             if progress_tracker:
                 progress_tracker.update_phase_progress(0.5, "Initializing git repository...")
-                
+
             self.git_manager.init_repository(target_path, git_config)
 
             self.logger.info("Git repository initialized", target_path=str(target_path))
@@ -1167,7 +1167,7 @@ class ProjectGenerator:
         try:
             if progress_tracker:
                 progress_tracker.update_phase_progress(0.1, "Looking for requirements file...")
-                
+
             # Look for requirements file
             requirements_file = None
             for req_name in ["requirements.txt", "pyproject.toml", "Pipfile"]:
@@ -1178,7 +1178,7 @@ class ProjectGenerator:
 
             if progress_tracker:
                 progress_tracker.update_phase_progress(0.3, "Creating virtual environment...")
-                
+
             result = self.venv_manager.create_venv(
                 project_path=target_path,
                 venv_name=options.venv_name,
@@ -1276,7 +1276,7 @@ class ProjectGenerator:
                 target_path=str(target_path),
                 command_count=len(commands),
             )
-            
+
             # Create step tracker for commands
             command_tracker = StepTracker(
                 total_items=len(commands),

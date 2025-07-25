@@ -37,19 +37,17 @@ from tests.ai.mocks import (
     MockOllamaClient,
     MockOllamaResponse,
 )
-from tests.integration.test_templates import get_mock_template
 from tests.integration.test_ai_integration_fixes import (
     simulate_disk_space_error,
-    ensure_ai_service_sync,
-    fix_template_validation_test,
 )
+from tests.integration.test_templates import get_mock_template
 
 
 def patch_ollama_client(mocker, mock_client):
     """Properly patch OllamaClient to return mock client."""
     def mock_client_new(cls, *args, **kwargs):
         return mock_client
-    
+
     mocker.patch(
         "create_project.ai.ollama_client.OllamaClient.__new__",
         side_effect=mock_client_new,
@@ -463,7 +461,7 @@ class TestAIErrorHandling:
 
         # Try to generate large project with disk space error simulation
         template = self._load_template(template_loader, "Python Library/Package")
-        
+
         with simulate_disk_space_error("large_project"):
             result = generator.generate_project(
                 template=template,
@@ -772,10 +770,10 @@ class TestAIErrorRecoveryWorkflows:
         ]
 
         step_index = 0
-        
+
         # Create mock client with initial response
         mock_client = MockOllamaClient(default_response=recovery_steps[0])
-        
+
         # Override the default response based on call count
         original_post = mock_client.post
         async def custom_post(url, **kwargs):
@@ -785,7 +783,7 @@ class TestAIErrorRecoveryWorkflows:
                 step_index += 1
                 return MockOllamaResponse(json_data=response_data)
             return await original_post(url, **kwargs)
-        
+
         mock_client.post = custom_post
 
         mocker.patch(

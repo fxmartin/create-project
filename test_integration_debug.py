@@ -3,8 +3,9 @@
 
 import tempfile
 from pathlib import Path
-from create_project.core.api import create_project
+
 from create_project.config import ConfigManager
+from create_project.core.api import create_project
 
 # Create temp directory
 with tempfile.TemporaryDirectory() as tmpdir:
@@ -30,12 +31,12 @@ with tempfile.TemporaryDirectory() as tmpdir:
         },
         config_manager=config
     )
-    
+
     print(f"Success: {result.success}")
     print(f"Files created: {len(result.files_created)}")
     print(f"Files list: {result.files_created}")
     print(f"Errors: {result.errors}")
-    
+
     # Check actual files
     project_path = Path(tmpdir) / "test_debug"
     if project_path.exists():

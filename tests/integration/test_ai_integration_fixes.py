@@ -14,8 +14,8 @@ This module provides utilities and patches to fix issues with:
 import asyncio
 import os
 from pathlib import Path
-from typing import Any, Callable
-from unittest.mock import MagicMock, patch
+from typing import Callable
+from unittest.mock import MagicMock
 
 
 def fix_async_test(test_func: Callable) -> Callable:
@@ -38,7 +38,7 @@ def fix_async_test(test_func: Callable) -> Callable:
                 loop.close()
         else:
             return test_func(*args, **kwargs)
-    
+
     # Copy attributes
     wrapper.__name__ = test_func.__name__
     wrapper.__doc__ = test_func.__doc__
@@ -57,36 +57,36 @@ def simulate_disk_space_error(path_pattern: str = "large_project"):
             self.original_mkdir = None
             self.original_makedirs = None
             self.original_open = None
-            
+
         def __enter__(self):
             # Store originals
             self.original_mkdir = Path.mkdir
             self.original_makedirs = os.makedirs
             self.original_open = open
-            
+
             # Create mock functions
             def mock_mkdir(path_self, *args, **kwargs):
                 if self.pattern in str(path_self):
                     raise OSError(28, "No space left on device", str(path_self))
                 return self.original_mkdir(path_self, *args, **kwargs)
-            
+
             def mock_makedirs(path, *args, **kwargs):
                 if self.pattern in str(path):
                     raise OSError(28, "No space left on device", path)
                 return self.original_makedirs(path, *args, **kwargs)
-            
+
             def mock_open(file, *args, **kwargs):
                 if self.pattern in str(file):
                     raise OSError(28, "No space left on device", str(file))
                 return self.original_open(file, *args, **kwargs)
-            
+
             # Apply patches
             Path.mkdir = mock_mkdir
             os.makedirs = mock_makedirs
             # Don't patch open globally, it breaks too many things
-            
+
             return self
-            
+
         def __exit__(self, exc_type, exc_val, exc_tb):
             # Restore originals
             if self.original_mkdir:
@@ -96,7 +96,7 @@ def simulate_disk_space_error(path_pattern: str = "large_project"):
             if self.original_open:
                 # Restore if we patched it
                 pass
-    
+
     return DiskSpaceErrorSimulator(path_pattern)
 
 
@@ -106,9 +106,9 @@ def ensure_ai_service_sync(ai_service):
     Args:
         ai_service: AIService instance to initialize
     """
-    if hasattr(ai_service, '_initialized') and ai_service._initialized:
+    if hasattr(ai_service, "_initialized") and ai_service._initialized:
         return
-    
+
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
@@ -125,7 +125,7 @@ def create_template_validation_error(template_name: str, missing_vars: list):
         missing_vars: List of missing required variables
     """
     from create_project.templates.exceptions import TemplateValidationError
-    
+
     error_details = {
         "template": template_name,
         "missing_variables": missing_vars,
@@ -133,7 +133,7 @@ def create_template_validation_error(template_name: str, missing_vars: list):
             f"Required variable '{var}' is missing" for var in missing_vars
         ]
     }
-    
+
     error_msg = f"Template validation failed: Missing required variables: {', '.join(missing_vars)}"
     return TemplateValidationError(error_msg, details=error_details)
 
@@ -150,7 +150,7 @@ def patch_ollama_client_sync(mocker, mock_client):
         "create_project.ai.ollama_client.OllamaClient.__new__",
         return_value=mock_client,
     )
-    
+
     # Also patch httpx client to prevent real network calls
     mock_httpx = MagicMock()
     mock_httpx.get.return_value.status_code = 200
@@ -172,23 +172,23 @@ def fix_template_validation_test(generator, template, variables, expected_missin
         Modified generator that will produce validation errors
     """
     original_prepare = generator._prepare_template_variables
-    
+
     def mock_prepare(tmpl, vars):
         # Check if required variables are missing
-        if hasattr(tmpl, 'variables'):
+        if hasattr(tmpl, "variables"):
             missing = []
             for var_def in tmpl.variables:
                 if var_def.required and var_def.name not in vars:
                     missing.append(var_def.name)
-            
+
             if missing:
                 from create_project.core.exceptions import ProjectGenerationError
                 raise ProjectGenerationError(
                     f"Template validation failed: Missing required variables: {', '.join(missing)}"
                 )
-        
+
         return original_prepare(tmpl, vars)
-    
+
     # Monkey patch the method
     generator._prepare_template_variables = mock_prepare
     return generator

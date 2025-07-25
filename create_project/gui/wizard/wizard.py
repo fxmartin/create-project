@@ -180,20 +180,20 @@ class ProjectGenerationThread(QThread):
             )
 
             self.progress.emit(40, "Starting project generation...")
-            
+
             # Performance monitoring metadata
             perf_metadata = {
-                'template_name': getattr(template, 'name', 'unknown'),
-                'project_name': self.wizard_data.project_name,
-                'target_path': str(self.project_path),
-                'variables_count': len(variables),
-                'options': {
-                    'git': options.create_git_repo,
-                    'venv': options.create_venv,
-                    'commands': options.execute_post_commands,
+                "template_name": getattr(template, "name", "unknown"),
+                "project_name": self.wizard_data.project_name,
+                "target_path": str(self.project_path),
+                "variables_count": len(variables),
+                "options": {
+                    "git": options.create_git_repo,
+                    "venv": options.create_venv,
+                    "commands": options.execute_post_commands,
                 }
             }
-            
+
             # Generate project with performance monitoring
             with measure_operation("gui_project_generation", perf_metadata):
                 result = generator.generate_project(

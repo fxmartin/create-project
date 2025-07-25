@@ -15,10 +15,9 @@ This module provides comprehensive memory profiling for project generation inclu
 
 import gc
 import os
-import tempfile
 import time
 from pathlib import Path
-from typing import Dict, List, Any, Tuple
+from typing import Any, Dict
 from unittest.mock import MagicMock
 
 import psutil
@@ -28,7 +27,6 @@ from pytest_benchmark.fixture import BenchmarkFixture
 from create_project.config.config_manager import ConfigManager
 from create_project.core.project_generator import ProjectGenerator, ProjectOptions
 from create_project.templates.engine import TemplateEngine
-from create_project.utils.performance import PerformanceMonitor
 
 
 @pytest.mark.memory
@@ -39,13 +37,13 @@ class TestMemoryGrowthTracking:
                                         config_manager: ConfigManager):
         """Track memory growth during single project generation."""
         process = psutil.Process(os.getpid())
-        
+
         # Take baseline memory measurement
         gc.collect()  # Force garbage collection
         baseline_memory = process.memory_info().rss
-        
+
         memory_snapshots = [baseline_memory]
-        
+
         # Generate project and track memory
         options = ProjectOptions(
             template_name="python_library",
@@ -58,38 +56,38 @@ class TestMemoryGrowthTracking:
                 "license": "MIT",
             }
         )
-        
+
         generator = ProjectGenerator(config_manager, template_engine)
-        
+
         # Take memory snapshot before generation
         pre_generation = process.memory_info().rss
         memory_snapshots.append(pre_generation)
-        
+
         # Generate project
         result = generator.create_project(options)
-        
+
         # Take memory snapshot after generation
         post_generation = process.memory_info().rss
         memory_snapshots.append(post_generation)
-        
+
         # Force cleanup
         del generator, result
         gc.collect()
-        
+
         # Take final memory snapshot
         final_memory = process.memory_info().rss
         memory_snapshots.append(final_memory)
-        
+
         # Analysis
         peak_growth = max(memory_snapshots) - baseline_memory
         final_growth = final_memory - baseline_memory
-        
+
         # Assertions for memory usage
         assert peak_growth < 50 * 1024 * 1024, f"Peak memory growth too high: {peak_growth / 1024 / 1024:.1f}MB"
         assert final_growth < 10 * 1024 * 1024, f"Memory leak detected: {final_growth / 1024 / 1024:.1f}MB not cleaned up"
-        
+
         # Log memory progression for analysis
-        print(f"\nMemory progression (MB):")
+        print("\nMemory progression (MB):")
         print(f"Baseline: {baseline_memory / 1024 / 1024:.1f}")
         print(f"Pre-generation: {pre_generation / 1024 / 1024:.1f}")
         print(f"Post-generation: {post_generation / 1024 / 1024:.1f}")
@@ -99,14 +97,14 @@ class TestMemoryGrowthTracking:
                                            config_manager: ConfigManager):
         """Track memory growth across multiple project generations."""
         process = psutil.Process(os.getpid())
-        
+
         # Baseline measurement
         gc.collect()
         baseline_memory = process.memory_info().rss
-        
+
         memory_readings = []
         project_count = 5
-        
+
         for i in range(project_count):
             # Generate project
             options = ProjectOptions(
@@ -120,34 +118,34 @@ class TestMemoryGrowthTracking:
                     "license": "MIT",
                 }
             )
-            
+
             generator = ProjectGenerator(config_manager, template_engine)
             result = generator.create_project(options)
-            
+
             # Take memory reading
             current_memory = process.memory_info().rss
             memory_readings.append(current_memory)
-            
+
             # Cleanup
             del generator, result
             gc.collect()
-        
+
         # Analysis
         memory_deltas = [reading - baseline_memory for reading in memory_readings]
         max_growth = max(memory_deltas)
         final_growth = memory_deltas[-1]
-        
+
         # Check for linear memory growth (potential leak)
         if len(memory_deltas) > 2:
             growth_trend = memory_deltas[-1] - memory_deltas[0]
             per_project_growth = growth_trend / project_count
         else:
             per_project_growth = 0
-        
+
         # Assertions
         assert max_growth < 100 * 1024 * 1024, f"Peak memory too high: {max_growth / 1024 / 1024:.1f}MB"
         assert per_project_growth < 5 * 1024 * 1024, f"Memory leak per project: {per_project_growth / 1024 / 1024:.1f}MB"
-        
+
         print(f"\nMemory growth across {project_count} projects:")
         for i, delta in enumerate(memory_deltas):
             print(f"Project {i}: +{delta / 1024 / 1024:.1f}MB")
@@ -157,11 +155,11 @@ class TestMemoryGrowthTracking:
         """Track memory when switching between different templates."""
         process = psutil.Process(os.getpid())
         templates = ["python_library", "cli_single_package", "flask_web_app"]
-        
+
         gc.collect()
         baseline_memory = process.memory_info().rss
         template_memories = {}
-        
+
         for template_name in templates:
             # Generate project with this template
             options = ProjectOptions(
@@ -175,24 +173,24 @@ class TestMemoryGrowthTracking:
                     "license": "MIT",
                 }
             )
-            
+
             generator = ProjectGenerator(config_manager, template_engine)
             result = generator.create_project(options)
-            
+
             # Record memory for this template
             current_memory = process.memory_info().rss
             template_memories[template_name] = current_memory - baseline_memory
-            
+
             del generator, result
             gc.collect()
-        
+
         # Analysis
         max_template_memory = max(template_memories.values())
         memory_variance = max(template_memories.values()) - min(template_memories.values())
-        
+
         assert max_template_memory < 75 * 1024 * 1024, f"Template memory too high: {max_template_memory / 1024 / 1024:.1f}MB"
-        
-        print(f"\nMemory usage by template:")
+
+        print("\nMemory usage by template:")
         for template, memory in template_memories.items():
             print(f"{template}: +{memory / 1024 / 1024:.1f}MB")
 
@@ -204,18 +202,18 @@ class TestPeakMemoryUsage:
     def test_peak_memory_large_project(self, temp_dir: Path, config_manager: ConfigManager):
         """Measure peak memory during large project generation."""
         process = psutil.Process(os.getpid())
-        
+
         # Create large template structure
         large_template = self._create_large_template(100)  # 100 files
-        
+
         template_engine = MagicMock()
         template_engine.get_template.return_value = large_template
         template_engine.render_template.return_value = self._create_large_rendered_files(100)
-        
+
         # Monitor peak memory during generation
         memory_monitor = MemoryMonitor()
         memory_monitor.start()
-        
+
         try:
             options = ProjectOptions(
                 template_name="large_project",
@@ -223,22 +221,22 @@ class TestPeakMemoryUsage:
                 target_directory=temp_dir,
                 variables={"author": "Peak User", "file_count": 100}
             )
-            
+
             generator = ProjectGenerator(config_manager, template_engine)
             result = generator.create_project(options)
-            
+
         finally:
             memory_monitor.stop()
-        
+
         peak_memory = memory_monitor.get_peak_memory()
         baseline_memory = memory_monitor.get_baseline_memory()
         peak_growth = peak_memory - baseline_memory
-        
+
         # Assertions
         assert result.success, "Large project generation failed"
         assert peak_growth < 150 * 1024 * 1024, f"Peak memory too high: {peak_growth / 1024 / 1024:.1f}MB"
-        
-        print(f"\nPeak memory analysis:")
+
+        print("\nPeak memory analysis:")
         print(f"Baseline: {baseline_memory / 1024 / 1024:.1f}MB")
         print(f"Peak: {peak_memory / 1024 / 1024:.1f}MB")
         print(f"Growth: {peak_growth / 1024 / 1024:.1f}MB")
@@ -247,13 +245,13 @@ class TestPeakMemoryUsage:
                                              config_manager: ConfigManager):
         """Measure peak memory with concurrent-like operations."""
         import threading
-        
+
         memory_monitor = MemoryMonitor()
         memory_monitor.start()
-        
+
         results = []
         threads = []
-        
+
         def generate_project(project_id: int):
             options = ProjectOptions(
                 template_name="python_library",
@@ -269,25 +267,25 @@ class TestPeakMemoryUsage:
             generator = ProjectGenerator(config_manager, template_engine)
             result = generator.create_project(options)
             results.append(result)
-        
+
         try:
             # Create multiple threads (simulating concurrent operations)
             for i in range(3):
                 thread = threading.Thread(target=generate_project, args=(i,))
                 threads.append(thread)
                 thread.start()
-            
+
             # Wait for all threads
             for thread in threads:
                 thread.join()
-        
+
         finally:
             memory_monitor.stop()
-        
+
         peak_memory = memory_monitor.get_peak_memory()
         baseline_memory = memory_monitor.get_baseline_memory()
         peak_growth = peak_memory - baseline_memory
-        
+
         # Assertions
         assert all(r.success for r in results), "Some concurrent generations failed"
         assert peak_growth < 200 * 1024 * 1024, f"Concurrent peak memory too high: {peak_growth / 1024 / 1024:.1f}MB"
@@ -295,11 +293,11 @@ class TestPeakMemoryUsage:
     def _create_large_template(self, file_count: int) -> Dict[str, Any]:
         """Create template structure with many files."""
         structure = {"src": {}, "tests": {}}
-        
+
         for i in range(file_count // 2):
             structure["src"][f"module_{i}.py"] = f"# Module {i}"
             structure["tests"][f"test_module_{i}.py"] = f"# Test {i}"
-        
+
         return {
             "name": "large_template",
             "structure": structure,
@@ -309,7 +307,7 @@ class TestPeakMemoryUsage:
     def _create_large_rendered_files(self, file_count: int) -> Dict[str, str]:
         """Create rendered file content for large template."""
         files = {}
-        
+
         for i in range(file_count // 2):
             # Create realistic Python file content
             module_content = f"""# Module {i}
@@ -328,7 +326,7 @@ class Module{i}:
         return f"Module {i} processed: {{data}}"
 """
             files[f"src/module_{i}.py"] = module_content
-            
+
             test_content = f"""# Test module {i}
 import pytest
 from src.module_{i} import Module{i}
@@ -348,7 +346,7 @@ class TestModule{i}:
         assert "Module {i} processed: test" in result
 """
             files[f"tests/test_module_{i}.py"] = test_content
-        
+
         return files
 
 
@@ -362,50 +360,50 @@ class TestMemoryLeakDetection:
         process = psutil.Process(os.getpid())
         iterations = 10
         memory_readings = []
-        
+
         # Warm up (first generation may allocate caches)
         self._generate_test_project(temp_dir / "warmup", template_engine, config_manager)
         gc.collect()
-        
+
         # Take baseline after warmup
         baseline_memory = process.memory_info().rss
-        
+
         for i in range(iterations):
             # Generate project
             project_dir = temp_dir / f"leak_test_{i}"
             self._generate_test_project(project_dir, template_engine, config_manager)
-            
+
             # Force cleanup
             gc.collect()
-            
+
             # Record memory
             current_memory = process.memory_info().rss
             memory_readings.append(current_memory)
-            
+
             # Clean up project directory to avoid disk space issues
             if project_dir.exists():
                 import shutil
                 shutil.rmtree(project_dir)
-        
+
         # Analyze for leaks
         memory_deltas = [reading - baseline_memory for reading in memory_readings]
-        
+
         # Calculate trend (positive slope indicates leak)
         if len(memory_deltas) > 1:
             trend = (memory_deltas[-1] - memory_deltas[0]) / len(memory_deltas)
         else:
             trend = 0
-        
+
         # Check for consistent growth
-        growing_count = sum(1 for i in range(1, len(memory_deltas)) 
+        growing_count = sum(1 for i in range(1, len(memory_deltas))
                           if memory_deltas[i] > memory_deltas[i-1])
         growth_ratio = growing_count / (len(memory_deltas) - 1) if len(memory_deltas) > 1 else 0
-        
+
         # Assertions for leak detection
         assert trend < 1 * 1024 * 1024, f"Memory leak detected: {trend / 1024 / 1024:.1f}MB/iteration trend"
         assert growth_ratio < 0.7, f"Suspicious memory growth pattern: {growth_ratio:.1%} iterations growing"
-        
-        print(f"\nLeak detection results:")
+
+        print("\nLeak detection results:")
         print(f"Iterations: {iterations}")
         print(f"Memory trend: {trend / 1024:.1f}KB/iteration")
         print(f"Growth ratio: {growth_ratio:.1%}")
@@ -414,11 +412,11 @@ class TestMemoryLeakDetection:
     def test_template_caching_memory_leak(self, temp_dir: Path, config_manager: ConfigManager):
         """Test for memory leaks in template caching."""
         process = psutil.Process(os.getpid())
-        
+
         # Create multiple templates to stress caching
         templates = [f"template_{i}" for i in range(20)]
         memory_readings = []
-        
+
         for i, template_name in enumerate(templates):
             # Create mock template
             template_engine = MagicMock()
@@ -430,7 +428,7 @@ class TestMemoryLeakDetection:
             template_engine.render_template.return_value = {
                 "main.py": f"# Generated from {template_name}"
             }
-            
+
             # Generate project
             options = ProjectOptions(
                 template_name=template_name,
@@ -438,22 +436,22 @@ class TestMemoryLeakDetection:
                 target_directory=temp_dir / f"cache_{i}",
                 variables={"author": "Cache User"}
             )
-            
+
             generator = ProjectGenerator(config_manager, template_engine)
             result = generator.create_project(options)
-            
+
             # Record memory
             gc.collect()
             current_memory = process.memory_info().rss
             memory_readings.append(current_memory)
-            
+
             del generator, result, template_engine
-        
+
         # Analyze caching impact
         if memory_readings:
             memory_growth = memory_readings[-1] - memory_readings[0]
             avg_per_template = memory_growth / len(templates)
-            
+
             assert memory_growth < 100 * 1024 * 1024, f"Template caching uses too much memory: {memory_growth / 1024 / 1024:.1f}MB"
             assert avg_per_template < 5 * 1024 * 1024, f"Per-template memory too high: {avg_per_template / 1024 / 1024:.1f}MB"
 
@@ -486,7 +484,7 @@ class TestGarbageCollectionPerformance:
         gc.collect()
         gc_stats_before = gc.get_stats()
         gc_counts_before = gc.get_count()
-        
+
         # Generate multiple projects to trigger GC
         for i in range(5):
             options = ProjectOptions(
@@ -503,23 +501,23 @@ class TestGarbageCollectionPerformance:
             generator = ProjectGenerator(config_manager, template_engine)
             result = generator.create_project(options)
             del generator, result
-        
+
         # Check GC stats after
         gc.collect()
         gc_stats_after = gc.get_stats()
         gc_counts_after = gc.get_count()
-        
+
         # Calculate GC activity
-        total_collections_before = sum(stat['collections'] for stat in gc_stats_before)
-        total_collections_after = sum(stat['collections'] for stat in gc_stats_after)
+        total_collections_before = sum(stat["collections"] for stat in gc_stats_before)
+        total_collections_after = sum(stat["collections"] for stat in gc_stats_after)
         gc_activity = total_collections_after - total_collections_before
-        
+
         # Analysis
-        print(f"\nGC Performance Analysis:")
+        print("\nGC Performance Analysis:")
         print(f"GC collections triggered: {gc_activity}")
         print(f"Objects before: {gc_counts_before}")
         print(f"Objects after: {gc_counts_after}")
-        
+
         # Reasonable GC activity assertions
         assert gc_activity < 50, f"Too much GC activity: {gc_activity} collections"
 
@@ -530,7 +528,7 @@ class TestGarbageCollectionPerformance:
             gc_start = time.perf_counter()
             gc.collect()  # Force GC
             gc_time = time.perf_counter() - gc_start
-            
+
             options = ProjectOptions(
                 template_name="flask_web_app",
                 project_name="gc_impact_test",
@@ -542,12 +540,12 @@ class TestGarbageCollectionPerformance:
                     "license": "MIT",
                 }
             )
-            
+
             generator = ProjectGenerator(config_manager, template_engine)
             result = generator.create_project(options)
-            
+
             return {"result": result, "gc_time": gc_time}
-        
+
         outcome = benchmark(generation_with_gc_monitoring)
         assert outcome["result"].success, "Generation failed during GC test"
         assert outcome["gc_time"] < 0.1, f"GC taking too long: {outcome['gc_time']:.3f}s"
@@ -555,14 +553,14 @@ class TestGarbageCollectionPerformance:
 
 class MemoryMonitor:
     """Utility class for monitoring memory usage during operations."""
-    
+
     def __init__(self):
         self.process = psutil.Process(os.getpid())
         self.baseline_memory = None
         self.peak_memory = None
         self.readings = []
         self.monitoring = False
-    
+
     def start(self):
         """Start memory monitoring."""
         gc.collect()
@@ -570,13 +568,13 @@ class MemoryMonitor:
         self.peak_memory = self.baseline_memory
         self.readings = [self.baseline_memory]
         self.monitoring = True
-    
+
     def stop(self):
         """Stop memory monitoring."""
         self.monitoring = False
         if self.readings:
             self.peak_memory = max(self.readings)
-    
+
     def record(self):
         """Record current memory usage."""
         if self.monitoring:
@@ -584,15 +582,15 @@ class MemoryMonitor:
             self.readings.append(current)
             if current > self.peak_memory:
                 self.peak_memory = current
-    
+
     def get_baseline_memory(self) -> int:
         """Get baseline memory usage."""
         return self.baseline_memory or 0
-    
+
     def get_peak_memory(self) -> int:
         """Get peak memory usage."""
         return self.peak_memory or 0
-    
+
     def get_current_memory(self) -> int:
         """Get current memory usage."""
         return self.process.memory_info().rss

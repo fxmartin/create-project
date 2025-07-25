@@ -19,12 +19,12 @@ from PyQt6.QtWidgets import QApplication, QMessageBox
 
 from create_project.ai.ai_service import AIService
 from create_project.config.config_manager import ConfigManager
+from create_project.gui.dialogs.performance_dialog import PerformanceDialog
 from create_project.resources.styles import StyleManager
 from create_project.templates.engine import TemplateEngine
 from create_project.templates.loader import TemplateLoader
 from create_project.utils.logger import get_logger
-from create_project.utils.performance import get_monitor, enable_monitoring
-from create_project.gui.dialogs.performance_dialog import PerformanceDialog
+from create_project.utils.performance import enable_monitoring
 
 from .wizard.wizard import ProjectWizard
 
@@ -241,12 +241,12 @@ def main(args=None) -> int:
 
         # Run event loop
         result = app.exec()
-        
+
         # Log performance summary if monitoring was enabled
         if hasattr(parsed_args, "debug") and parsed_args.debug:
             from create_project.utils.performance import log_performance_summary
             log_performance_summary()
-        
+
         return result
 
     except Exception as e:

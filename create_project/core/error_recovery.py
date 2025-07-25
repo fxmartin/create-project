@@ -22,14 +22,12 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from structlog import get_logger
 
-from ..utils.logger import get_logger as get_app_logger
-
 logger = get_logger(__name__)
 
 
 class RecoveryStrategy(Enum):
     """Available recovery strategies."""
-    
+
     FULL_ROLLBACK = "full_rollback"  # Remove everything and start fresh
     PARTIAL_RECOVERY = "partial_recovery"  # Keep completed parts, retry failed
     RETRY_OPERATION = "retry_operation"  # Retry the failed operation
@@ -40,7 +38,7 @@ class RecoveryStrategy(Enum):
 @dataclass
 class RecoveryPoint:
     """Represents a point in the generation process that can be restored."""
-    
+
     id: str
     timestamp: datetime
     phase: str
@@ -49,7 +47,7 @@ class RecoveryPoint:
     modified_paths: Set[Path] = field(default_factory=set)
     state_data: Dict[str, Any] = field(default_factory=dict)
     parent_id: Optional[str] = None
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
@@ -62,7 +60,7 @@ class RecoveryPoint:
             "state_data": self.state_data,
             "parent_id": self.parent_id,
         }
-    
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "RecoveryPoint":
         """Create from dictionary."""
@@ -81,7 +79,7 @@ class RecoveryPoint:
 @dataclass
 class RecoveryContext:
     """Context information for recovery operations."""
-    
+
     error: Exception
     recovery_points: List[RecoveryPoint]
     current_phase: str
@@ -96,7 +94,7 @@ class RecoveryContext:
 
 class RecoveryManager:
     """Manages error recovery and rollback operations."""
-    
+
     def __init__(self, log_dir: Optional[Path] = None) -> None:
         """Initialize recovery manager.
         
@@ -109,7 +107,7 @@ class RecoveryManager:
         self.log_dir = log_dir or Path(tempfile.gettempdir()) / "create_project" / "recovery"
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self._point_counter = 0
-        
+
     def create_recovery_point(
         self,
         phase: str,
@@ -128,7 +126,7 @@ class RecoveryManager:
         """
         self._point_counter += 1
         point_id = f"rp_{self._point_counter}_{phase}"
-        
+
         point = RecoveryPoint(
             id=point_id,
             timestamp=datetime.now(),
@@ -137,19 +135,19 @@ class RecoveryManager:
             state_data=state_data or {},
             parent_id=self.current_point_id,
         )
-        
+
         self.recovery_points.append(point)
         self.current_point_id = point_id
-        
+
         self.logger.debug(
             "Created recovery point",
             point_id=point_id,
             phase=phase,
             description=description,
         )
-        
+
         return point
-    
+
     def track_created_path(self, path: Path) -> None:
         """Track a newly created path for potential rollback.
         
@@ -165,7 +163,7 @@ class RecoveryManager:
                     path=str(path),
                     point_id=self.current_point_id,
                 )
-    
+
     def track_modified_path(self, path: Path) -> None:
         """Track a modified path for potential restoration.
         
@@ -181,7 +179,7 @@ class RecoveryManager:
                     path=str(path),
                     point_id=self.current_point_id,
                 )
-    
+
     def rollback_to_point(self, point_id: str) -> bool:
         """Rollback to a specific recovery point.
         
@@ -192,34 +190,34 @@ class RecoveryManager:
             True if rollback successful, False otherwise
         """
         self.logger.info("Starting rollback", target_point=point_id)
-        
+
         target_point = self._get_point(point_id)
         if not target_point:
             self.logger.error("Recovery point not found", point_id=point_id)
             return False
-        
+
         # Find all points after the target point
         target_index = self.recovery_points.index(target_point)
         points_to_rollback = self.recovery_points[target_index + 1:]
-        
+
         # Rollback in reverse order
         success = True
         for point in reversed(points_to_rollback):
             if not self._rollback_point(point):
                 success = False
-                
+
         # Remove rolled back points
         self.recovery_points = self.recovery_points[:target_index + 1]
         self.current_point_id = point_id
-        
+
         self.logger.info(
             "Rollback completed",
             success=success,
             rolled_back_count=len(points_to_rollback),
         )
-        
+
         return success
-    
+
     def rollback_all(self) -> bool:
         """Rollback all recovery points (full cleanup).
         
@@ -227,20 +225,20 @@ class RecoveryManager:
             True if rollback successful, False otherwise
         """
         self.logger.info("Starting full rollback")
-        
+
         success = True
         for point in reversed(self.recovery_points):
             if not self._rollback_point(point):
                 success = False
-                
+
         self.recovery_points.clear()
         self.current_point_id = None
-        
+
         self.logger.info("Full rollback completed", success=success)
         return success
-    
+
     def suggest_recovery_strategy(
-        self, 
+        self,
         error: Exception,
         phase: str,
         partial_results: Dict[str, Any],
@@ -257,26 +255,26 @@ class RecoveryManager:
         """
         error_type = type(error).__name__
         error_msg = str(error).lower()
-        
+
         # Permission errors - usually need full rollback
         if error_type in ["PermissionError", "OSError"] and "permission" in error_msg:
             return RecoveryStrategy.FULL_ROLLBACK
-            
+
         # Path already exists - might be able to continue
         if "exists" in error_msg or "already exists" in error_msg:
             return RecoveryStrategy.PARTIAL_RECOVERY
-            
+
         # Network or temporary errors - retry might work
         if error_type in ["ConnectionError", "TimeoutError", "HTTPError"]:
             return RecoveryStrategy.RETRY_OPERATION
-            
+
         # Git or venv errors - can often skip
         if phase in ["git_init", "venv_setup"] and partial_results.get("files_created"):
             return RecoveryStrategy.SKIP_AND_CONTINUE
-            
+
         # Default to full rollback for safety
         return RecoveryStrategy.FULL_ROLLBACK
-    
+
     def create_recovery_context(
         self,
         error: Exception,
@@ -304,7 +302,7 @@ class RecoveryManager:
         suggested_strategy = self.suggest_recovery_strategy(
             error, phase, partial_results or {}
         )
-        
+
         context = RecoveryContext(
             error=error,
             recovery_points=self.recovery_points.copy(),
@@ -316,15 +314,15 @@ class RecoveryManager:
             partial_results=partial_results or {},
             suggested_strategy=suggested_strategy,
         )
-        
+
         # Save error log
         self._save_error_log(context)
-        
+
         return context
-    
+
     def execute_recovery(
-        self, 
-        context: RecoveryContext, 
+        self,
+        context: RecoveryContext,
         strategy: RecoveryStrategy,
     ) -> Tuple[bool, Optional[str]]:
         """Execute a recovery strategy.
@@ -341,12 +339,12 @@ class RecoveryManager:
             strategy=strategy.value,
             phase=context.current_phase,
         )
-        
+
         try:
             if strategy == RecoveryStrategy.FULL_ROLLBACK:
                 success = self.rollback_all()
                 message = "All changes rolled back successfully" if success else "Rollback failed"
-                
+
             elif strategy == RecoveryStrategy.PARTIAL_RECOVERY:
                 # Find the last successful phase
                 last_good_point = self._find_last_successful_point(context.current_phase)
@@ -356,12 +354,12 @@ class RecoveryManager:
                 else:
                     success = False
                     message = "No valid recovery point found"
-                    
+
             elif strategy == RecoveryStrategy.RETRY_OPERATION:
                 # Just return success, caller will retry
                 success = True
                 message = "Ready to retry operation"
-                
+
             elif strategy == RecoveryStrategy.SKIP_AND_CONTINUE:
                 # Mark current phase as skipped in state
                 if self.current_point_id:
@@ -370,20 +368,20 @@ class RecoveryManager:
                         current_point.state_data["skipped"] = True
                 success = True
                 message = f"Skipped {context.failed_operation}"
-                
+
             elif strategy == RecoveryStrategy.ABORT:
                 # Minimal cleanup, just clear tracking
                 self.recovery_points.clear()
                 self.current_point_id = None
                 success = True
                 message = "Aborted with minimal cleanup"
-                
+
             else:
                 success = False
                 message = f"Unknown strategy: {strategy.value}"
-                
+
             return success, message
-            
+
         except Exception as e:
             self.logger.error(
                 "Recovery execution failed",
@@ -391,14 +389,14 @@ class RecoveryManager:
                 error=str(e),
             )
             return False, f"Recovery failed: {str(e)}"
-    
+
     def _get_point(self, point_id: str) -> Optional[RecoveryPoint]:
         """Get a recovery point by ID."""
         for point in self.recovery_points:
             if point.id == point_id:
                 return point
         return None
-    
+
     def _rollback_point(self, point: RecoveryPoint) -> bool:
         """Rollback a single recovery point.
         
@@ -409,9 +407,9 @@ class RecoveryManager:
             True if successful, False otherwise
         """
         self.logger.debug("Rolling back point", point_id=point.id, phase=point.phase)
-        
+
         success = True
-        
+
         # Remove created paths
         for path in point.created_paths:
             try:
@@ -428,9 +426,9 @@ class RecoveryManager:
                     error=str(e),
                 )
                 success = False
-                
+
         return success
-    
+
     def _find_last_successful_point(self, failed_phase: str) -> Optional[RecoveryPoint]:
         """Find the last successful recovery point before a failed phase.
         
@@ -445,7 +443,7 @@ class RecoveryManager:
             if point.phase != failed_phase and not point.state_data.get("skipped"):
                 return point
         return None
-    
+
     def _save_error_log(self, context: RecoveryContext) -> None:
         """Save detailed error log for debugging.
         
@@ -454,7 +452,7 @@ class RecoveryManager:
         """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_file = self.log_dir / f"error_{timestamp}_{context.current_phase}.json"
-        
+
         log_data = {
             "timestamp": datetime.now().isoformat(),
             "error": {
@@ -472,14 +470,14 @@ class RecoveryManager:
             "partial_results": context.partial_results,
             "suggested_strategy": context.suggested_strategy.value if context.suggested_strategy else None,
         }
-        
+
         try:
             with open(log_file, "w") as f:
                 json.dump(log_data, f, indent=2)
             self.logger.info("Error log saved", log_file=str(log_file))
         except Exception as e:
             self.logger.error("Failed to save error log", error=str(e))
-    
+
     def _sanitize_variables(self, variables: Dict[str, Any]) -> Dict[str, Any]:
         """Sanitize sensitive information from variables.
         
@@ -491,11 +489,11 @@ class RecoveryManager:
         """
         sensitive_keys = {"password", "token", "secret", "key", "email"}
         sanitized = {}
-        
+
         for key, value in variables.items():
             if any(sensitive in key.lower() for sensitive in sensitive_keys):
                 sanitized[key] = "[REDACTED]"
             else:
                 sanitized[key] = value
-                
+
         return sanitized
