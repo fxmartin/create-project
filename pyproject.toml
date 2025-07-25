@@ -89,6 +89,7 @@ markers = [
     "security: mark test as a security test",
     "injection: mark test as an injection attack test",
     "traversal: mark test as a path traversal test",
+    "asyncio: mark test as async",
 ]
 addopts = [
     "--strict-markers",
