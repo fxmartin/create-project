@@ -1,0 +1,242 @@
+name: Performance Tests
+
+on:
+  schedule:
+    # Run at 2 AM UTC every day
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      compare_to_main:
+        description: 'Compare results to main branch'
+        required: false
+        default: 'true'
+        type: boolean
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  performance-benchmarks:
+    # Only run on schedule, manual trigger, or when 'performance' label is added
+    if: |
+      github.event_name == 'schedule' || 
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.label.name == 'performance')
+    
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.11"]  # Use consistent Python version for benchmarks
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Need full history for comparisons
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
+    
+    - name: Set up cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/uv
+          .venv
+        key: ${{ runner.os }}-py${{ matrix.python-version }}-uv-perf-${{ hashFiles('uv.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-py${{ matrix.python-version }}-uv-perf-
+    
+    - name: Install dependencies
+      run: |
+        uv sync --all-extras --dev
+        uv pip install pytest-benchmark memory_profiler
+    
+    - name: Download previous benchmark data
+      uses: actions/cache@v4
+      with:
+        path: .benchmarks
+        key: ${{ runner.os }}-benchmark-data
+        restore-keys: |
+          ${{ runner.os }}-benchmark-
+    
+    - name: Run performance benchmarks
+      run: |
+        uv run pytest tests/performance/ -v --benchmark-only --benchmark-json=benchmark_results.json --benchmark-save=current --benchmark-verbose --benchmark-min-rounds=5
+      continue-on-error: true
+    
+    - name: Run memory profiling
+      run: |
+        uv run pytest tests/performance/test_memory_usage.py -v -s --tb=short > memory_report.txt
+      continue-on-error: true
+    
+    - name: Compare with baseline
+      if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.compare_to_main == 'true')
+      run: |
+        # Checkout main branch baseline
+        git checkout main -- .benchmarks/ || true
+        
+        if [ -d ".benchmarks" ]; then
+          uv run pytest-benchmark compare .benchmarks/*/current.json benchmark_results.json --csv=comparison.csv --json=comparison.json || true
+        fi
+    
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: benchmark-results-${{ matrix.os }}
+        path: |
+          benchmark_results.json
+          comparison.csv
+          comparison.json
+          memory_report.txt
+          .benchmarks/
+    
+    - name: Process benchmark results
+      if: always()
+      run: |
+        uv run python -c "
+        import json
+        import os
+        
+        # Load benchmark results
+        with open('benchmark_results.json', 'r') as f:
+            data = json.load(f)
+        
+        # Create summary
+        summary = []
+        summary.append('## Performance Benchmark Results\\n')
+        summary.append(f'**Platform:** {data.get('machine_info', {}).get('system', 'Unknown')} {data.get('machine_info', {}).get('release', '')}\\n')
+        summary.append(f'**Python:** {data.get('machine_info', {}).get('python_version', 'Unknown')}\\n')
+        summary.append('\\n### Benchmark Results\\n')
+        summary.append('| Test | Min | Max | Mean | StdDev | Median |')
+        summary.append('|------|-----|-----|------|--------|--------|')
+        
+        for benchmark in data.get('benchmarks', []):
+            stats = benchmark.get('stats', {})
+            summary.append(f\"| {benchmark['name']} | {stats.get('min', 0):.4f}s | {stats.get('max', 0):.4f}s | {stats.get('mean', 0):.4f}s | {stats.get('stddev', 0):.4f}s | {stats.get('median', 0):.4f}s |\")
+        
+        # Write summary
+        with open('benchmark_summary.md', 'w') as f:
+            f.write('\\n'.join(summary))
+        
+        # Check for regressions
+        if os.path.exists('comparison.json'):
+            with open('comparison.json', 'r') as f:
+                comparison = json.load(f)
+            
+            regressions = []
+            for test in comparison:
+                if test.get('performance_ratio', 1.0) > 1.1:  # 10% regression threshold
+                    regressions.append(f\"- {test['name']}: {test['performance_ratio']:.1%} slower\")
+            
+            if regressions:
+                with open('regressions.txt', 'w') as f:
+                    f.write('\\n'.join(regressions))
+        "
+    
+    - name: Comment PR with results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          let comment = '## 📊 Performance Test Results\n\n';
+          
+          // Add benchmark summary
+          if (fs.existsSync('benchmark_summary.md')) {
+            comment += fs.readFileSync('benchmark_summary.md', 'utf8');
+          }
+          
+          // Add regression warnings
+          if (fs.existsSync('regressions.txt')) {
+            comment += '\n\n### ⚠️ Performance Regressions Detected\n\n';
+            comment += fs.readFileSync('regressions.txt', 'utf8');
+          }
+          
+          // Add memory report summary
+          if (fs.existsSync('memory_report.txt')) {
+            const memoryReport = fs.readFileSync('memory_report.txt', 'utf8');
+            const lines = memoryReport.split('\n').slice(-20); // Last 20 lines
+            comment += '\n\n### 💾 Memory Usage Summary\n\n```\n';
+            comment += lines.join('\n');
+            comment += '\n```';
+          }
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+
+  performance-regression-check:
+    needs: performance-benchmarks
+    runs-on: ubuntu-latest
+    if: always() && github.event_name == 'pull_request'
+    
+    steps:
+    - name: Download benchmark artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: benchmark-results-*
+        merge-multiple: true
+    
+    - name: Check for regressions
+      run: |
+        if [ -f "regressions.txt" ]; then
+          echo "❌ Performance regressions detected:"
+          cat regressions.txt
+          exit 1
+        else
+          echo "✅ No significant performance regressions detected"
+        fi
+
+  create-performance-issue:
+    needs: performance-benchmarks
+    runs-on: ubuntu-latest
+    if: |
+      always() && 
+      github.event_name == 'schedule' &&
+      needs.performance-benchmarks.result == 'failure'
+    
+    steps:
+    - name: Create issue for performance regression
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const date = new Date().toISOString().split('T')[0];
+          const issue = await github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `Performance Regression Detected - ${date}`,
+            body: `## Performance Regression Alert
+            
+            The nightly performance tests have detected a regression.
+            
+            **Date:** ${date}
+            **Workflow Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}
+            
+            Please investigate the performance regression and address any issues found.
+            
+            ### Next Steps
+            1. Review the workflow run for detailed benchmark results
+            2. Compare with previous baseline performance
+            3. Identify the commit that introduced the regression
+            4. Create a fix or revert if necessary
+            `,
+            labels: ['performance', 'regression', 'automated']
+          });

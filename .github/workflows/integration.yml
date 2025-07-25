@@ -1,0 +1,192 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  integration-tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        exclude:
+          # Exclude older Python on newer OS combinations that may have issues
+          - os: macos-latest
+            python-version: "3.9"
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
+    
+    - name: Set up cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/uv
+          .venv
+        key: ${{ runner.os }}-py${{ matrix.python-version }}-uv-${{ hashFiles('uv.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-py${{ matrix.python-version }}-uv-
+    
+    - name: Install dependencies
+      run: |
+        uv sync --all-extras --dev
+    
+    - name: Run integration tests
+      run: |
+        uv run pytest tests/integration/ -v --tb=short --junitxml=junit/test-results-${{ matrix.os }}-${{ matrix.python-version }}.xml --cov=create_project --cov-report=xml --cov-report=html --cov-report=term
+      continue-on-error: true
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-integration-${{ matrix.os }}-${{ matrix.python-version }}
+        path: junit/test-results-*.xml
+    
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage-integration-${{ matrix.os }}-${{ matrix.python-version }}
+        path: |
+          coverage.xml
+          htmlcov/
+    
+    - name: Coverage report comment
+      uses: py-cov-action/python-coverage-comment-action@v3
+      if: github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+      with:
+        GITHUB_TOKEN: ${{ github.token }}
+        MINIMUM_GREEN: 80
+        MINIMUM_ORANGE: 60
+    
+    - name: Test Report
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: Integration Tests - ${{ matrix.os }} - Python ${{ matrix.python-version }}
+        path: junit/test-results-*.xml
+        reporter: java-junit
+        fail-on-error: false
+
+  all-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11"]  # Use a single version for comprehensive tests
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
+    
+    - name: Install system dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y xvfb x11-utils libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xfixes0
+    
+    - name: Install dependencies
+      run: |
+        uv sync --all-extras --dev
+    
+    - name: Run all tests with coverage
+      run: |
+        if [ "${{ runner.os }}" == "Linux" ]; then
+          xvfb-run -a uv run pytest -v --tb=short --cov=create_project --cov-report=xml --cov-report=html --cov-report=term --junitxml=junit/test-results-all.xml
+        else
+          uv run pytest -v --tb=short --cov=create_project --cov-report=xml --cov-report=html --cov-report=term --junitxml=junit/test-results-all.xml
+        fi
+      continue-on-error: true
+    
+    - name: Generate coverage badge
+      if: github.ref == 'refs/heads/main'
+      run: |
+        uv run coverage json
+        export TOTAL=$(python -c "import json;print(json.load(open('coverage.json'))['totals']['percent_covered_display'])")
+        echo "COVERAGE=$TOTAL" >> $GITHUB_ENV
+        echo "Coverage: $TOTAL%"
+    
+    - name: Create coverage badge
+      if: github.ref == 'refs/heads/main'
+      uses: schneegans/dynamic-badges-action@v1.7.0
+      with:
+        auth: ${{ secrets.GIST_SECRET }}
+        gistID: YOUR_GIST_ID  # Replace with your Gist ID
+        filename: coverage-badge.json
+        label: Coverage
+        message: ${{ env.COVERAGE }}%
+        valColorRange: ${{ env.COVERAGE }}
+        maxColorRange: 100
+        minColorRange: 0
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-all
+        path: junit/test-results-all.xml
+    
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage-all
+        path: |
+          coverage.xml
+          coverage.json
+          htmlcov/
+    
+    - name: Test Report
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: All Tests Report
+        path: junit/test-results-all.xml
+        reporter: java-junit
+        fail-on-error: false
+
+  check-status:
+    needs: [integration-tests, all-tests]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+    - name: Check test results
+      run: |
+        if [[ "${{ needs.integration-tests.result }}" == "failure" ]] || [[ "${{ needs.all-tests.result }}" == "failure" ]]; then
+          echo "❌ Tests failed"
+          exit 1
+        else
+          echo "✅ All tests passed"
+        fi
