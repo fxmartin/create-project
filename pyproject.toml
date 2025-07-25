@@ -86,6 +86,9 @@ markers = [
     "gui: mark test as a GUI test",
     "automation: mark test as an automation test",
     "workflow: mark test as a workflow test",
+    "security: mark test as a security test",
+    "injection: mark test as an injection attack test",
+    "traversal: mark test as a path traversal test",
 ]
 addopts = [
     "--strict-markers",
