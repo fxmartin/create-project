@@ -94,7 +94,12 @@ class PerformanceMonitor:
         self._lock = threading.Lock()
         
         # System info
-        self.process = psutil.Process()
+        try:
+            self.process = psutil.Process()
+        except Exception as e:
+            logger.warning(f"Failed to initialize process object: {e}")
+            self.process = None
+            
         self.system_info = self._get_system_info()
         
         logger.debug(f"Performance monitor initialized (enabled: {enabled})")
@@ -124,10 +129,30 @@ class PerformanceMonitor:
     def take_memory_snapshot(self) -> MemorySnapshot:
         """Take a snapshot of current memory usage."""
         if not self.enabled:
-            return MemorySnapshot(0, 0, 0, 0, 0, 0, {})
+            return MemorySnapshot(
+                timestamp=time.time(),
+                rss_mb=0,
+                vms_mb=0,
+                percent=0,
+                available_mb=0,
+                objects_count=0,
+                gc_stats={}
+            )
         
         try:
             # Process memory info
+            if self.process is None:
+                # Return empty snapshot if process is not available
+                return MemorySnapshot(
+                    timestamp=time.time(),
+                    rss_mb=0,
+                    vms_mb=0,
+                    percent=0,
+                    available_mb=0,
+                    objects_count=0,
+                    gc_stats={}
+                )
+                
             memory_info = self.process.memory_info()
             system_memory = psutil.virtual_memory()
             
@@ -136,8 +161,8 @@ class PerformanceMonitor:
             
             # Garbage collection stats
             gc_stats = {
-                f'generation_{i}': stats.count
-                for i, stats in enumerate(gc.get_stats())
+                f'generation_{i}': gc.get_count()[i] if i < len(gc.get_count()) else 0
+                for i in range(gc.get_count().__len__())
             }
             
             return MemorySnapshot(
@@ -257,10 +282,7 @@ class PerformanceMonitor:
         total_duration = end_time - self.start_time
         
         # Count garbage collections
-        gc_collections = sum(
-            sum(stats.count for stats in gc.get_stats()) 
-            for op in self.operations
-        )
+        gc_collections = sum(gc.get_count())
         
         return PerformanceReport(
             report_id=f"perf_{int(self.start_time)}_{os.getpid()}",
