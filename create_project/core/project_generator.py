@@ -277,16 +277,6 @@ class ProjectGenerator:
             # Initialize progress tracker
             progress_tracker = ProgressTracker()
 
-            # Progress reporting helper that includes percentage
-            def report_progress(message: str, increment: bool = True) -> None:
-                nonlocal current_step
-                if increment:
-                    current_step += 1
-                percentage = int((current_step / total_steps) * 100)
-                if progress_callback:
-                    progress_callback(message, percentage)
-                self.logger.debug("Generation progress", message=message, percentage=percentage)
-
             # Enhanced progress callback for ProgressTracker
             def detailed_progress_callback(progress: DetailedProgress) -> None:
                 if progress_callback:

@@ -124,13 +124,13 @@ class ProjectGenerationThread(QThread):
             if self._cancelled:
                 return
 
-            # Use the async API directly with required parameters
-            from create_project.core.project_generator import ProjectGenerator
-
-            # Create generator
-            generator = ProjectGenerator(
-                template_loader=self.template_engine.template_loader if hasattr(self.template_engine, "template_loader") else None,
-                ai_service=self.ai_service
+            # Use the enhanced API for better UI integration
+            from create_project.core.api_enhanced import EnhancedProjectGenerator, DetailedProgress
+            
+            # Create enhanced generator
+            generator = EnhancedProjectGenerator(
+                template_loader=self.template_loader,
+                template_engine=self.template_engine
             )
 
             # Find template file path first
@@ -194,14 +194,28 @@ class ProjectGenerationThread(QThread):
                 }
             }
 
+            # Add callbacks for detailed progress
+            def detailed_progress_callback(progress: DetailedProgress):
+                # Emit both percentage and message
+                self.progress.emit(progress.percentage, progress.message)
+                
+                # Log detailed progress
+                logger.debug(
+                    "Generation progress",
+                    phase=progress.phase,
+                    step=f"{progress.current_step}/{progress.total_steps}",
+                    elapsed=f"{progress.time_elapsed:.1f}s"
+                )
+            
+            generator.add_progress_callback(detailed_progress_callback)
+
             # Generate project with performance monitoring
             with measure_operation("gui_project_generation", perf_metadata):
                 result = generator.generate_project(
-                    template=template,
-                    variables=variables,
+                    template_path=template_path,
                     target_path=self.project_path,
-                    options=options,
-                    progress_callback=self._progress_callback,
+                    variables=variables,
+                    options=options
                 )
 
             if result.success:
@@ -241,15 +255,6 @@ class ProjectGenerationThread(QThread):
             self.error_occurred.emit(e, context)
             self.finished.emit(False, str(e))
 
-    def _progress_callback(self, message: str, percentage: Optional[int] = None):
-        """Handle progress updates from generator."""
-        # Map internal progress to 40-90% range since we use 0-40% for setup
-        if percentage is not None:
-            scaled_percentage = 40 + int((percentage / 100.0) * 50)
-            self.progress.emit(scaled_percentage, message)
-        else:
-            # If no percentage, just emit the message with current progress
-            self.progress.emit(50, message)
 
     def cancel(self):
         """Cancel the generation process."""
