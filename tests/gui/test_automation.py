@@ -99,12 +99,12 @@ class TestAutomatedGUIInteractions:
         qtbot.mouseClick(git_checkbox, Qt.MouseButton.LeftButton)
         assert git_checkbox.isChecked() != initial_state
 
-        # Click again
+        # Click again to toggle back
         qtbot.mouseClick(git_checkbox, Qt.MouseButton.LeftButton)
         assert git_checkbox.isChecked() == initial_state
 
-    def test_combobox_selection(self, qtbot, mock_config_manager, mock_template_engine):
-        """Test combobox selection with automated interaction."""
+    def test_combo_box_selection(self, qtbot, mock_config_manager, mock_template_engine):
+        """Test combo box selection with keyboard and mouse."""
         wizard = ProjectWizard(mock_config_manager, mock_template_engine)
         qtbot.addWidget(wizard)
 
@@ -112,59 +112,21 @@ class TestAutomatedGUIInteractions:
         wizard.setCurrentId(3)
         options_step = wizard.currentPage()
 
-        # Select venv tool
-        venv_combo = options_step.venv_combo
-        venv_combo.setCurrentIndex(1)  # Select virtualenv
-        assert venv_combo.currentText() == "virtualenv"
+        # Test license combo box
+        license_combo = options_step.license_combo
+        initial_index = license_combo.currentIndex()
 
-        # Select another option
-        venv_combo.setCurrentIndex(2)  # Select venv
-        assert venv_combo.currentText() == "venv"
+        # Change selection with mouse
+        license_combo.setCurrentIndex(2)
+        assert license_combo.currentIndex() == 2
 
-    def test_dialog_interactions(self, qtbot, mock_config_manager):
-        """Test dialog button interactions."""
-        # Create error dialog
-        error = Exception("Test error")
-        context = {"test": "context"}
-        dialog = ErrorDialog(error, context, mock_config_manager)
-        qtbot.addWidget(dialog)
-        dialog.show()
-        qtbot.waitForWindowShown(dialog)
+        # Change with keyboard
+        license_combo.setFocus()
+        qtbot.keyClick(license_combo, Qt.Key.Key_Down)
+        assert license_combo.currentIndex() == 3
 
-        # Find and click copy button
-        copy_button = dialog.findChild(QPushButton, "copy_button")
-        if copy_button:
-            qtbot.mouseClick(copy_button, Qt.MouseButton.LeftButton)
-
-        # Click OK button to close
-        ok_button = dialog.button_box.button(dialog.button_box.StandardButton.Ok)
-        qtbot.mouseClick(ok_button, Qt.MouseButton.LeftButton)
-
-        # Dialog should close
-        qtbot.waitUntil(lambda: not dialog.isVisible(), timeout=1000)
-
-    def test_list_widget_selection(self, qtbot, mock_config_manager, mock_template_engine):
-        """Test list widget item selection."""
-        wizard = ProjectWizard(mock_config_manager, mock_template_engine)
-        qtbot.addWidget(wizard)
-        wizard.show()
-
-        # Get project type step
-        project_type_step = wizard.currentPage()
-        template_list = project_type_step.template_list
-
-        # Select first item
-        if template_list.count() > 0:
-            template_list.setCurrentRow(0)
-            assert template_list.currentRow() == 0
-
-            # Select second item if available
-            if template_list.count() > 1:
-                template_list.setCurrentRow(1)
-                assert template_list.currentRow() == 1
-
-    def test_file_dialog_interaction(self, qtbot, mock_config_manager, mock_template_engine):
-        """Test file dialog interaction (mocked)."""
+    def test_file_dialog_interactions(self, qtbot, mock_config_manager, mock_template_engine):
+        """Test file dialog interactions."""
         wizard = ProjectWizard(mock_config_manager, mock_template_engine)
         qtbot.addWidget(wizard)
 
@@ -172,29 +134,82 @@ class TestAutomatedGUIInteractions:
         wizard.setCurrentId(2)
         location_step = wizard.currentPage()
 
-        # Mock file dialog
-        with patch.object(QFileDialog, "getExistingDirectory", return_value="/test/path"):
+        # Mock file dialog to return a path
+        test_path = "/test/location"
+        with patch.object(QFileDialog, "getExistingDirectory", return_value=test_path):
             # Click browse button
             browse_button = location_step.browse_button
             qtbot.mouseClick(browse_button, Qt.MouseButton.LeftButton)
 
-            # Check path was set
-            assert location_step.location_edit.text() == "/test/path"
+            # Path should be updated
+            assert location_step.location_edit.text() == test_path
 
-    def test_progress_dialog_updates(self, qtbot):
-        """Test progress dialog automated updates."""
-        dialog = ProgressDialog("Test Progress", parent=None)
+    def test_multi_page_workflow(self, qtbot, mock_config_manager, mock_template_engine):
+        """Test complete multi-page workflow."""
+        wizard = ProjectWizard(mock_config_manager, mock_template_engine)
+        qtbot.addWidget(wizard)
+        wizard.show()
+
+        # Page 0: Select project type
+        project_type_step = wizard.currentPage()
+        project_type_step.template_list.setCurrentRow(0)
+        wizard.next()
+
+        # Page 1: Fill basic info
+        basic_info_step = wizard.currentPage()
+        basic_info_step.name_edit.setText("automated_project")
+        basic_info_step.author_edit.setText("Auto Tester")
+        basic_info_step.version_edit.setText("0.1.0")
+        basic_info_step.description_edit.setPlainText("Automated test project")
+        wizard.next()
+
+        # Page 2: Set location
+        location_step = wizard.currentPage()
+        location_step.location_edit.setText("/tmp")
+        wizard.next()
+
+        # Page 3: Configure options
+        options_step = wizard.currentPage()
+        options_step.git_checkbox.setChecked(True)
+        options_step.venv_combo.setCurrentIndex(1)
+        options_step.license_combo.setCurrentIndex(2)
+        wizard.next()
+
+        # Page 4: Review
+        assert wizard.currentId() == 4
+        review_step = wizard.currentPage()
+        
+        # Verify data propagated
+        assert "automated_project" in review_step.review_text.toPlainText()
+        assert "Auto Tester" in review_step.review_text.toPlainText()
+
+    def test_keyboard_navigation(self, qtbot, mock_config_manager, mock_template_engine):
+        """Test keyboard navigation through wizard."""
+        wizard = ProjectWizard(mock_config_manager, mock_template_engine)
+        qtbot.addWidget(wizard)
+        wizard.show()
+
+        # Select template with keyboard
+        project_type_step = wizard.currentPage()
+        template_list = project_type_step.template_list
+        template_list.setFocus()
+        
+        qtbot.keyClick(template_list, Qt.Key.Key_Down)
+        qtbot.keyClick(template_list, Qt.Key.Key_Space)
+        
+        # Navigate with Alt+N (Next)
+        qtbot.keyClick(wizard, Qt.Key.Key_N, modifier=Qt.KeyboardModifier.AltModifier)
+        assert wizard.currentId() == 1
+
+        # Navigate with Alt+B (Back)
+        qtbot.keyClick(wizard, Qt.Key.Key_B, modifier=Qt.KeyboardModifier.AltModifier)
+        assert wizard.currentId() == 0
+
+    def test_progress_dialog_lifecycle(self, qtbot):
+        """Test progress dialog lifecycle."""
+        dialog = ProgressDialog()
         qtbot.addWidget(dialog)
         dialog.show()
-        qtbot.waitForWindowShown(dialog)
-
-        # Update progress
-        dialog.update_progress(25)
-        assert dialog.progress_bar.value() == 25
-
-        # Add log entry
-        dialog.add_log_entry("Test log entry")
-        assert "Test log entry" in dialog.log_display.toPlainText()
 
         # Update to completion
         dialog.update_progress(100)
@@ -296,137 +311,234 @@ class TestAutomatedGUIInteractions:
             assert dialog.result() == dialog.DialogCode.Retry
 
 
-class TestAdvancedAutomation:
-    """Test advanced automation scenarios."""
+class TestComplexInteractions:
+    """Test complex interaction scenarios."""
 
-    def test_multi_step_workflow(self, qtbot, mock_config_manager, mock_template_engine):
-        """Test complete multi-step workflow automation."""
+    def test_validation_feedback_loop(self, qtbot, mock_config_manager, mock_template_engine):
+        """Test validation feedback loop with user corrections."""
         wizard = ProjectWizard(mock_config_manager, mock_template_engine)
         qtbot.addWidget(wizard)
-        wizard.show()
 
-        # Step 1: Select project type
-        project_type = wizard.currentPage()
-        project_type.template_list.setCurrentRow(0)
-        wizard.next()
-
-        # Step 2: Fill basic info
+        # Navigate to basic info
+        wizard.setCurrentId(1)
         basic_info = wizard.currentPage()
-        basic_info.name_edit.setText("automated_project")
-        basic_info.author_edit.setText("Automation Test")
-        basic_info.version_edit.setText("1.0.0")
-        basic_info.description_edit.setPlainText("Automated test project")
-        wizard.next()
 
-        # Step 3: Set location
-        location = wizard.currentPage()
-        location.location_edit.setText("/tmp/test_projects")
-        wizard.next()
-
-        # Step 4: Configure options
-        options = wizard.currentPage()
-        options.git_checkbox.setChecked(True)
-        options.license_combo.setCurrentIndex(0)  # MIT
-        wizard.next()
-
-        # Step 5: Review
-        review = wizard.currentPage()
-        assert wizard.currentId() == 4
-
-        # Verify all data is present
-        wizard_data = wizard.get_wizard_data()
-        assert wizard_data.project_name == "automated_project"
-        assert wizard_data.author == "Automation Test"
+        # Enter invalid project name
+        basic_info.name_edit.setText("123-invalid!")
+        
+        # Try to navigate forward
+        next_button = wizard.button(wizard.NextButton)
+        qtbot.mouseClick(next_button, Qt.MouseButton.LeftButton)
+        
+        # Should still be on same page due to validation
+        assert wizard.currentId() == 1
+        
+        # Correct the name
+        basic_info.name_edit.setText("valid_project_name")
+        
+        # Try again
+        qtbot.mouseClick(next_button, Qt.MouseButton.LeftButton)
+        
+        # Should advance now
+        assert wizard.currentId() == 2
 
     def test_concurrent_dialog_handling(self, qtbot, mock_config_manager):
         """Test handling multiple dialogs."""
-        # Create multiple dialogs
-        error1 = Exception("Error 1")
-        error2 = Exception("Error 2")
+        # Create progress dialog
+        progress_dialog = ProgressDialog()
+        qtbot.addWidget(progress_dialog)
+        progress_dialog.show()
 
-        dialog1 = ErrorDialog(error1, {}, mock_config_manager)
-        dialog2 = ErrorDialog(error2, {}, mock_config_manager)
+        # Create settings dialog
+        settings_dialog = SettingsDialog(mock_config_manager)
+        qtbot.addWidget(settings_dialog)
+        settings_dialog.show()
 
-        qtbot.addWidget(dialog1)
-        qtbot.addWidget(dialog2)
-
-        # Show both
-        dialog1.show()
-        dialog2.show()
+        # Both should be visible
+        assert progress_dialog.isVisible()
+        assert settings_dialog.isVisible()
 
         # Close in order
-        ok_button1 = dialog1.button_box.button(dialog1.button_box.StandardButton.Ok)
-        qtbot.mouseClick(ok_button1, Qt.MouseButton.LeftButton)
+        settings_dialog.close()
+        progress_dialog.close()
 
-        ok_button2 = dialog2.button_box.button(dialog2.button_box.StandardButton.Ok)
-        qtbot.mouseClick(ok_button2, Qt.MouseButton.LeftButton)
+        qtbot.waitUntil(lambda: not settings_dialog.isVisible(), timeout=1000)
+        qtbot.waitUntil(lambda: not progress_dialog.isVisible(), timeout=1000)
 
-        # Both should be closed
-        qtbot.waitUntil(lambda: not dialog1.isVisible() and not dialog2.isVisible(), timeout=1000)
+    def test_data_consistency_across_steps(self, qtbot, mock_config_manager, mock_template_engine):
+        """Test data consistency across all wizard steps."""
+        wizard = ProjectWizard(mock_config_manager, mock_template_engine)
+        qtbot.addWidget(wizard)
 
-    def test_stress_test_rapid_clicks(self, qtbot, mock_config_manager, mock_template_engine):
-        """Stress test with rapid button clicks."""
+        test_data = {
+            "project_name": "consistency_test",
+            "author": "Test Author",
+            "version": "1.2.3",
+            "description": "Testing data consistency",
+            "location": "/tmp/test",
+            "license": "MIT"
+        }
+
+        # Fill all fields
+        wizard.setCurrentId(1)
+        basic_info = wizard.currentPage()
+        basic_info.name_edit.setText(test_data["project_name"])
+        basic_info.author_edit.setText(test_data["author"])
+        basic_info.version_edit.setText(test_data["version"])
+        basic_info.description_edit.setPlainText(test_data["description"])
+
+        wizard.setCurrentId(2)
+        location_step = wizard.currentPage()
+        location_step.location_edit.setText(test_data["location"])
+
+        wizard.setCurrentId(3)
+        options_step = wizard.currentPage()
+        license_index = options_step.license_combo.findText(test_data["license"])
+        if license_index >= 0:
+            options_step.license_combo.setCurrentIndex(license_index)
+
+        # Navigate to review
+        wizard.setCurrentId(4)
+        review_step = wizard.currentPage()
+
+        # Verify all data appears in review
+        review_text = review_step.review_text.toPlainText()
+        for value in test_data.values():
+            assert value in review_text
+
+    def test_stress_rapid_clicks(self, qtbot, mock_config_manager, mock_template_engine):
+        """Test handling rapid button clicks."""
         wizard = ProjectWizard(mock_config_manager, mock_template_engine)
         qtbot.addWidget(wizard)
         wizard.show()
 
         next_button = wizard.button(wizard.NextButton)
-        back_button = wizard.button(wizard.BackButton)
-
-        # Rapid clicking shouldn't break the wizard
+        
+        # Rapid clicks without selection
         for _ in range(10):
             qtbot.mouseClick(next_button, Qt.MouseButton.LeftButton)
             qtbot.wait(10)
-            qtbot.mouseClick(back_button, Qt.MouseButton.LeftButton)
-            qtbot.wait(10)
 
-        # Wizard should still be functional
-        assert wizard.currentId() in range(5)
+        # Should still be on first page
+        assert wizard.currentId() == 0
 
-
-@pytest.mark.gui
-@pytest.mark.automation
-class TestGUIAutomationSuite:
-    """Complete GUI automation test suite."""
-
-    def test_complete_automation_suite(self, qtbot, mock_config_manager, mock_template_engine):
-        """Run complete automation test suite."""
-        results = {
-            "navigation": False,
-            "form_input": False,
-            "dialog_handling": False,
-            "state_persistence": False
-        }
-
+    def test_focus_chain_navigation(self, qtbot, mock_config_manager, mock_template_engine):
+        """Test tab key navigation through focus chain."""
         wizard = ProjectWizard(mock_config_manager, mock_template_engine)
         qtbot.addWidget(wizard)
         wizard.show()
 
-        # Test navigation
-        wizard.setCurrentId(1)
-        wizard.setCurrentId(0)
-        results["navigation"] = wizard.currentId() == 0
-
-        # Test form input
+        # Navigate to basic info page
         wizard.setCurrentId(1)
         basic_info = wizard.currentPage()
-        basic_info.name_edit.setText("test_project")
-        results["form_input"] = basic_info.name_edit.text() == "test_project"
 
-        # Test dialog handling
-        try:
-            error_dialog = ErrorDialog(Exception("Test"), {}, mock_config_manager)
-            qtbot.addWidget(error_dialog)
-            error_dialog.show()
-            error_dialog.accept()
-            results["dialog_handling"] = True
-        except:
-            results["dialog_handling"] = False
+        # Set focus to first field
+        basic_info.name_edit.setFocus()
+        assert basic_info.name_edit.hasFocus()
 
-        # Test state persistence
-        wizard.setCurrentId(2)
+        # Tab through fields
+        qtbot.keyClick(basic_info.name_edit, Qt.Key.Key_Tab)
+        assert basic_info.author_edit.hasFocus()
+
+        qtbot.keyClick(basic_info.author_edit, Qt.Key.Key_Tab)
+        assert basic_info.version_edit.hasFocus()
+
+        qtbot.keyClick(basic_info.version_edit, Qt.Key.Key_Tab)
+        assert basic_info.description_edit.hasFocus()
+
+    def test_partial_completion_recovery(self, qtbot, mock_config_manager, mock_template_engine):
+        """Test recovery from partial completion states."""
+        wizard = ProjectWizard(mock_config_manager, mock_template_engine)
+        qtbot.addWidget(wizard)
+
+        # Fill some data
         wizard.setCurrentId(1)
-        results["state_persistence"] = basic_info.name_edit.text() == "test_project"
+        basic_info = wizard.currentPage()
+        basic_info.name_edit.setText("partial_project")
+        
+        # Navigate forward
+        wizard.setCurrentId(2)
+        
+        # Navigate back
+        wizard.setCurrentId(1)
+        
+        # Data should still be there
+        assert basic_info.name_edit.text() == "partial_project"
+        
+        # Clear and refill
+        basic_info.name_edit.clear()
+        qtbot.keyClicks(basic_info.name_edit, "complete_project")
+        
+        # Verify new data
+        assert basic_info.name_edit.text() == "complete_project"
 
-        # All tests should pass
-        assert all(results.values()), f"Failed tests: {[k for k,v in results.items() if not v]}"
+    def test_edge_case_inputs(self, qtbot, mock_config_manager, mock_template_engine):
+        """Test edge case inputs in forms."""
+        wizard = ProjectWizard(mock_config_manager, mock_template_engine)
+        qtbot.addWidget(wizard)
+
+        wizard.setCurrentId(1)
+        basic_info = wizard.currentPage()
+
+        # Test very long input
+        long_name = "a" * 100
+        basic_info.name_edit.setText(long_name)
+        assert len(basic_info.name_edit.text()) <= basic_info.name_edit.maxLength()
+
+        # Test unicode characters
+        unicode_author = "Test 作者 🎉"
+        basic_info.author_edit.setText(unicode_author)
+        assert basic_info.author_edit.text() == unicode_author
+
+        # Test special characters in description
+        special_desc = "Test\nproject\twith\r\nspecial chars & symbols <>"
+        basic_info.description_edit.setPlainText(special_desc)
+        assert basic_info.description_edit.toPlainText() == special_desc
+
+    def test_complete_user_journey(self, qtbot, mock_config_manager, mock_template_engine):
+        """Test complete user journey from start to finish."""
+        wizard = ProjectWizard(mock_config_manager, mock_template_engine)
+        qtbot.addWidget(wizard)
+        wizard.show()
+        qtbot.waitForWindowShown(wizard)
+
+        # Select template
+        project_type = wizard.currentPage()
+        project_type.template_list.setCurrentRow(0)
+        wizard.next()
+
+        # Fill basic info
+        basic_info = wizard.currentPage()
+        qtbot.keyClicks(basic_info.name_edit, "complete_test_project")
+        qtbot.keyClicks(basic_info.author_edit, "Complete Tester")
+        qtbot.keyClicks(basic_info.version_edit, "1.0.0")
+        qtbot.keyClicks(basic_info.description_edit, "A complete test project")
+        wizard.next()
+
+        # Set location
+        location_step = wizard.currentPage()
+        qtbot.keyClicks(location_step.location_edit, "/tmp/test_projects")
+        wizard.next()
+
+        # Configure options
+        options_step = wizard.currentPage()
+        options_step.git_checkbox.setChecked(True)
+        options_step.venv_combo.setCurrentIndex(1)
+        options_step.license_combo.setCurrentText("MIT")
+        wizard.next()
+
+        # Review
+        review_step = wizard.currentPage()
+        assert wizard.currentId() == 4
+        
+        # Verify review contains all entered data
+        review_text = review_step.review_text.toPlainText()
+        assert "complete_test_project" in review_text
+        assert "Complete Tester" in review_text
+        assert "1.0.0" in review_text
+        assert "/tmp/test_projects" in review_text
+        assert "MIT" in review_text
+
+        # The actual project creation would happen here
+        # but we're just testing the UI flow
+        assert wizard.currentId() in range(5)
